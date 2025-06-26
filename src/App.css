@@ -1,0 +1,162 @@
+html,
+body,
+#root {
+    margin: 0;
+    height: 100%;
+}
+
+.app-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+/* 顶部 */
+.toolbar {
+    display: flex;
+    flex-direction: column;
+    /* 垂直排列子元素 */
+    padding: 8px;
+    background: #f5f5f5;
+    gap: 4px;
+}
+
+.toolbar input {
+    width: 100%;
+    padding: 6px 12px;
+    /* 设置输入框宽度与父容器一致 */
+    box-sizing: border-box;
+    /* 包括内边距和边框在宽度内 */
+}
+
+.toolbar button {
+    width: 100%;
+    /* 设置按钮宽度与输入框一致 */
+    padding: 6px 12px;
+}
+
+/* 中间 iframe */
+.iframe-wrapper {
+    position: relative;
+    flex: 1;
+    background: #fff;
+    overflow: hidden;
+    /* 禁止 iframe 容器滚动 */
+}
+
+.iframe-wrapper iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.empty-state {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #999;
+}
+
+/* 底部 */
+.bottom-bar {
+    height: 48px;
+    background: #fafafa;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 0 12px;
+    border-top: 1px solid #ddd;
+}
+
+.bottom-bar button {
+    padding: 4px 8px;
+}
+
+/* 弹窗 */
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.3);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal {
+    background: #fff;
+    padding: 16px;
+    border-radius: 4px;
+    width: 80%;
+    max-width: 300px;
+}
+
+.modal h3 {
+    margin-top: 0;
+}
+
+.modal ul {
+    list-style: none;
+    margin: 8px 0;
+    padding: 0;
+}
+
+.modal li {
+    padding: 6px 4px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+}
+
+.modal li:hover {
+    background: #f0f0f0;
+}
+
+.modal button {
+    margin-top: 8px;
+    padding: 4px 8px;
+}
+
+/* 弹窗里的页面列表 */
+.page-list {
+    list-style: none;
+    margin: 8px 0;
+    padding: 0;
+}
+
+.page-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 4px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+}
+
+.page-list li:hover {
+    background: #f0f0f0;
+}
+
+.page-list li.active {
+    font-weight: bold;
+}
+
+/* 关闭按钮 */
+.close-btn {
+    background: transparent;
+    border: none;
+    color: #999;
+    font-size: 20px;
+    /* 字体放大 */
+    line-height: 1;
+    /* 防止高度跑偏 */
+    padding: 0 8px;
+    /* 左右留更多空隙，方便点击 */
+    cursor: pointer;
+    padding: 0 4px;
+}
+
+.close-btn:hover {
+    color: #333;
+}
