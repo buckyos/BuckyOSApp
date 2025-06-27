@@ -10,4 +10,6 @@ npm i
 
 npm run tauri dev
 
+npm run tauri android init
+
 npm run tauri android dev
