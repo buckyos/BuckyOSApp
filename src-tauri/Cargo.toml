@@ -19,8 +19,22 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 tauri = { version = "2", features = [] }
+tauri-plugin-store = "2.0.0-beta.5"
 tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-tauri-plugin-os = "2"
+anyhow = "1.0"
+bip39 = "2.0"
+bitcoin = { version = "0.31.1", features = ["rand-std", "serde"] }
+sha3 = "0.10"
+aes-gcm = "0.10"
+pbkdf2 = { version = "0.12", features = ["simple"] }
+rand = "0.8"
+sha2 = "0.10"
+hex = "0.4"
+
+[features]
+# this feature is used for production builds or when `devPath` points to the filesystem
+# DO NOT REMOVE!!
+custom-protocol = ["tauri/custom-protocol"]
 
