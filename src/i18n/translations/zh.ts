@@ -5,6 +5,7 @@ export default {
       zh: "中文",
       switch_label: "语言",
     },
+    back: "返回",
     actions: {
       start: "开始",
       next: "下一步",
@@ -14,7 +15,7 @@ export default {
     },
     error: {
       passwords_mismatch: "两次输入的密码不一致。",
-      password_too_short: "密码长度至少需要8个字符。",
+      password_too_short: "密码长度至少需8个字符。",
       mnemonic_mismatch: "助记词不一致，请检查您的备份。",
       generate_mnemonic_failed: "生成助记词失败：{{message}}",
       create_did_failed: "创建DID失败：{{message}}",
@@ -23,26 +24,34 @@ export default {
   },
   welcome: {
     title: "创建去中心化身份（DID）",
-    description: "欢迎！本向导将引导您创建安全的去中心化身份。",
+    description:
+      "欢迎！本向导将引导您创建安全的去中心化身份。",
     app_name: "BuckyOS",
     subtitle: "安全的去中心化身份管理",
     import_did: "导入 DID",
   },
   create: {
-    title: "步骤一：设置昵称与密码",
+    title: "设置昵称与密码",
+    title_new: "创建 DID",
+    subtitle: "Setup your secure DID",
+    nickname_label: "用户名",
     nickname_placeholder: "输入昵称",
+    password_label: "密码",
     password_placeholder: "输入密码（至少8个字符）",
+    confirm_label: "确认密码",
     confirm_password_placeholder: "确认密码",
   },
   showMnemonic: {
-    title: "步骤二：备份您的助记词",
+    title: "备份助记词",
+    subtitle: "请按准确顺序抄写这些单词",
     tips:
-      "请按顺序抄写以下12个单词并妥善保管。这是找回账户的唯一方式。",
+      "请按顺序抄写以上12个单词并妥善保管。这是找回账户的唯一方式。",
   },
   confirmMnemonic: {
-    title: "步骤三：确认您的助记词",
-    tips: "为确保您已正确备份，请在下方输入助记词。",
-    placeholder: "输入12个单词，以空格分隔……",
+    title: "确认助记词",
+    tips:
+      "为确保您已正确备份，请在下方输入助记词。",
+    placeholder: "输入12个单词，以空格分隔…",
     instruction: "请按顺序点击以下单词",
     error_wrong_order: "助记词顺序不正确，请重试。",
   },

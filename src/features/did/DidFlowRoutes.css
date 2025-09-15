@@ -12,30 +12,75 @@
   padding: 12px 16px 28px; /* bottom padding to keep button shadow visible */
 }
 
+.page-content {
+  width: 100%;
+  max-width: 520px; /* unify visual width across pages */
+  margin: 0 auto;
+}
+
+.page-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--app-text);
+  margin: 8px 0 4px;
+  text-align: center;
+}
+
+.page-subtitle {
+  font-size: 14px;
+  color: var(--muted-text);
+  text-align: center;
+  margin: 0 0 4px;
+}
+
 .did-container h1 {
   font-size: 22px;
   line-height: 1.2;
   margin: 6px 0 2px;
 }
 
-.did-container p { color: #5b6473; margin: 0; }
+.did-container p { color: var(--muted-text); margin: 0; }
 
 input[type="text"], input[type="password"] {
   width: 100%;
   padding: 12px 14px;
-  border: 1px solid #e6e8f0;
+  border: 1px solid var(--input-border);
   border-radius: 14px;
-  background: #f7f8fb;
+  background: var(--card-bg);
+  color: var(--app-text);
+  caret-color: var(--app-text);
   box-shadow: none;
+  font-weight: normal;
+}
+
+/* Hide native password reveal/clear icons (Edge/IE) to avoid double eyes */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear { display: none; }
+
+input[type="text"]::placeholder,
+input[type="password"]::placeholder {
+  color: var(--muted-text);
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus {
+  border-color: #8f96ff;
+  box-shadow: 0 0 0 2px rgba(143, 150, 255, 0.25);
+}
+
+/* Slightly stronger borders in dark theme for readability */
+[data-theme='dark'] input[type="text"],
+[data-theme='dark'] input[type="password"] {
+  border-width: 1.5px;
 }
 
 textarea.mnemonic-textarea {
   width: 100%;
   min-height: 140px;
-  border: 1px solid #e6e8f0;
+  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 12px 14px;
-  background: #f7f8fb;
+  background: var(--card-bg);
   resize: vertical;
 }
 
@@ -59,7 +104,7 @@ button:disabled {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 10px;
-  background: #f3f4f7;
+  background: var(--card-bg);
   padding: 12px;
   border-radius: 16px;
   /* keep visible height even when empty (one row height + paddings) */
@@ -67,7 +112,7 @@ button:disabled {
 }
 
 .mnemonic-word {
-  background: #202733;
+  background: var(--chip-bg);
   color: #fff;
   height: 44px;
   width: 100%;
@@ -80,7 +125,7 @@ button:disabled {
   justify-content: center;
 }
 
-.selected-box .mnemonic-word { background: #202733; }
+.selected-box .mnemonic-word { background: var(--chip-bg); }
 
 .selected-grid {
   display: grid;

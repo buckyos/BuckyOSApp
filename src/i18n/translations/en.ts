@@ -5,6 +5,7 @@ export default {
       zh: "中文",
       switch_label: "Language",
     },
+    back: "Back",
     actions: {
       start: "Start",
       next: "Next",
@@ -31,18 +32,24 @@ export default {
     import_did: "Import DID",
   },
   create: {
-    title: "Step 1: Set Nickname and Password",
+    title: "Set Nickname & Password",
+    title_new: "Create DID",
+    subtitle: "Setup your secure DID",
+    nickname_label: "Username",
     nickname_placeholder: "Enter Nickname",
+    password_label: "Password",
     password_placeholder: "Enter Password (min 8 characters)",
+    confirm_label: "Confirm Password",
     confirm_password_placeholder: "Confirm Password",
   },
   showMnemonic: {
-    title: "Step 2: Backup Your Mnemonic Phrase",
+    title: "Backup Your Mnemonic",
+    subtitle: "Write these words in exact order",
     tips:
       "Write down these 12 words in order and keep them in a safe place. This is the only way to recover your account.",
   },
   confirmMnemonic: {
-    title: "Step 3: Confirm Your Mnemonic Phrase",
+    title: "Confirm Your Mnemonic",
     tips:
       "To ensure you have backed up your phrase correctly, please enter it below.",
     placeholder: "Enter the 12 words separated by spaces...",

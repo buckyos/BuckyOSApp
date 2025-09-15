@@ -14,14 +14,16 @@ const GradientButton: React.FC<React.PropsWithChildren<GradientButtonProps>> = (
 }) => {
   const base: React.CSSProperties = {
     width: fullWidth ? "100%" : undefined,
-    height: 52,
-    padding: "0 18px",
-    borderRadius: 20,
+    height: 56,
+    padding: "0 20px",
+    borderRadius: 22,
     border: "none",
-    fontSize: 16,
+    fontSize: 17,
+    fontWeight: "normal",
+    letterSpacing: 0.2,
     cursor: rest.disabled ? "not-allowed" : "pointer",
     opacity: rest.disabled ? 0.5 : 1,
-    transition: "transform .06s ease, box-shadow .12s ease",
+    transition: "transform .06s ease, box-shadow .12s ease, opacity .12s ease",
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -29,14 +31,14 @@ const GradientButton: React.FC<React.PropsWithChildren<GradientButtonProps>> = (
   };
   const primary: React.CSSProperties = {
     color: "#fff",
-    background: "#6a6ff3",
-    boxShadow: "0 8px 16px rgba(16, 18, 20, 0.08)",
+    background: "linear-gradient(90deg, #6366f1 0%, #6c5ce7 100%)",
+    boxShadow: "0 12px 24px rgba(99, 102, 241, 0.28), 0 4px 10px rgba(0,0,0,0.06)",
   };
   const secondary: React.CSSProperties = {
     color: "#101214",
-    background: "#fff",
-    border: "1px solid #e7e9f2",
-    boxShadow: "0 6px 14px rgba(16, 18, 20, 0.06)",
+    background: "#ffffff",
+    border: "1px solid #e9ecf5",
+    boxShadow: "0 10px 22px rgba(0,0,0,0.04)",
   };
   return (
     <button

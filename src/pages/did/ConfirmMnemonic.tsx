@@ -56,16 +56,24 @@ const ConfirmMnemonic: React.FC<ConfirmMnemonicProps> = ({
         confirmedMnemonic.length === mnemonic.length && wrongIndex === -1;
 
     return (
-        <div className="did-container">
-            <MobileHeader title={t("confirmMnemonic.title")} showBack />
-            <p>{t("confirmMnemonic.tips")}</p>
+        <div className="did-container" style={{ position: "relative" }}>
+            {/* Unified back arrow position */}
+            <div style={{ position: "absolute", top: 6, left: 6, zIndex: 2 }}>
+                <MobileHeader title="" showBack />
+            </div>
+
+            {/* Unified page heading */}
+            <div className="page-content" style={{ textAlign: "center", margin: "6px auto 8px" }}>
+                <div className="page-title">{t("confirmMnemonic.title")}</div>
+                <div className="page-subtitle">{t("confirmMnemonic.tips")}</div>
+            </div>
 
             <div
                 className="selected-box"
                 style={{
                     minHeight: 120,
-                    border: "1px dashed #e6e8f0",
-                    background: "#f7f8fb",
+                    border: "1px dashed var(--border)",
+                    background: "var(--card-bg)",
                     borderRadius: 16,
                     padding: 12,
                 }}
@@ -77,7 +85,7 @@ const ConfirmMnemonic: React.FC<ConfirmMnemonicProps> = ({
                             onClick={() => handleRemove(i)}
                             className="mnemonic-word"
                             style={{
-                                background: wrongIndex !== -1 ? "#ffe9e9" : "#202733",
+                                background: wrongIndex !== -1 ? "#ffe9e9" : "var(--chip-bg)",
                                 color: wrongIndex !== -1 ? "#b42318" : "#fff",
                                 border: "none",
                                 cursor: "pointer",
