@@ -13,8 +13,8 @@
     "windows": [
       {
         "title": "buckyosapp",
-        "width": 390,
-        "height": 780,
+        "width": 400,
+        "height": 800,
         "resizable": false
       }
     ],
