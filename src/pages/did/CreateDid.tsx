@@ -35,7 +35,7 @@ const CreateDid: React.FC<CreateDidProps> = ({
             </div>
 
             {/* Page title */}
-            <div className="page-content" style={{ textAlign: "center", margin: "36px auto 10px" }}>
+            <div className="page-header">
                 <div className="page-title">{t("create.title_new", "创建新 DID")}</div>
                 <div className="page-subtitle">{t("create.subtitle", "Setup your secure DID")}</div>
             </div>

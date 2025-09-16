@@ -97,8 +97,10 @@ const Welcome: React.FC<WelcomeProps> = ({ onStart }) => {
                     fontSize: 36,
                     boxShadow: "0 20px 40px rgba(104,108,243,0.25), 0 10px 25px rgba(0,0,0,0.06)",
                 }}>B</div>
-                <div className="page-title" style={{ marginTop: 4 }}>{t("welcome.app_name")}</div>
-                <div className="page-subtitle">{t("welcome.subtitle")}</div>
+                <div className="page-header" style={{ margin: 0 }}>
+                  <div className="page-title">{t("welcome.app_name")}</div>
+                  <div className="page-subtitle">{t("welcome.subtitle")}</div>
+                </div>
             </div>
 
             <div className="actions" style={{ gap: 14, display: "flex", flexDirection: "column" }}>

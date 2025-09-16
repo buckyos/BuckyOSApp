@@ -19,30 +19,10 @@ const ShowMnemonic: React.FC<ShowMnemonicProps> = ({ mnemonic, onNext }) => {
 
             {/* background circle textures removed for a cleaner look */}
 
-            {/* center icon + titles */}
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, marginTop: 12 }}>
-                <div style={{
-                    width: 64,
-                    height: 64,
-                    borderRadius: 16,
-                    background: "linear-gradient(180deg, #6b6ff3 0%, #7871f3 100%)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "#fff",
-                    boxShadow: "0 14px 24px rgba(104,108,243,0.18), 0 6px 16px rgba(0,0,0,0.06)",
-                }}>
-                    {/* document icon */}
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                        <path d="M14 2v6h6"/>
-                        <path d="M16 13H8"/>
-                        <path d="M16 17H8"/>
-                        <path d="M10 9H8"/>
-                    </svg>
-                </div>
-                <div style={{ fontSize: 24, fontWeight: 700, color: "var(--app-text)" }}>{t("showMnemonic.title", "您的助记词")}</div>
-                <div style={{ fontSize: 13, color: "var(--muted-text)" }}>{t("showMnemonic.subtitle", "请按准确顺序抄写这些单词")}</div>
+            {/* titles only (icon removed to save vertical space) */}
+            <div className="page-header">
+                <div className="page-title">{t("showMnemonic.title", "您的助记词")}</div>
+                <div className="page-subtitle">{t("showMnemonic.subtitle", "请按准确顺序抄写这些单词")}</div>
             </div>
 
             {/* mnemonic grid wrapped in soft container */}

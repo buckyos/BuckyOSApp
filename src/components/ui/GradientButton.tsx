@@ -32,13 +32,13 @@ const GradientButton: React.FC<React.PropsWithChildren<GradientButtonProps>> = (
   const primary: React.CSSProperties = {
     color: "#fff",
     background: "linear-gradient(90deg, #6366f1 0%, #6c5ce7 100%)",
-    boxShadow: "0 12px 24px rgba(99, 102, 241, 0.28), 0 4px 10px rgba(0,0,0,0.06)",
+    boxShadow: "0 8px 16px rgba(99, 102, 241, 0.22), 0 3px 8px rgba(0,0,0,0.06)",
   };
   const secondary: React.CSSProperties = {
     color: "#101214",
     background: "#ffffff",
     border: "1px solid #e9ecf5",
-    boxShadow: "0 10px 22px rgba(0,0,0,0.04)",
+    boxShadow: "0 6px 16px rgba(0,0,0,0.06)",
   };
   return (
     <button

@@ -57,28 +57,29 @@ const ConfirmMnemonic: React.FC<ConfirmMnemonicProps> = ({
 
     return (
         <div className="did-container" style={{ position: "relative" }}>
-            {/* Unified back arrow position */}
+            {/* Back arrow */}
             <div style={{ position: "absolute", top: 6, left: 6, zIndex: 2 }}>
                 <MobileHeader title="" showBack />
             </div>
 
-            {/* Unified page heading */}
-            <div className="page-content" style={{ textAlign: "center", margin: "6px auto 8px" }}>
+            {/* titles only (icon removed) */}
+            <div className="page-header">
                 <div className="page-title">{t("confirmMnemonic.title")}</div>
                 <div className="page-subtitle">{t("confirmMnemonic.tips")}</div>
             </div>
 
-            <div
-                className="selected-box"
-                style={{
-                    minHeight: 120,
-                    border: "1px dashed var(--border)",
-                    background: "var(--card-bg)",
-                    borderRadius: 16,
-                    padding: 12,
-                }}
-            >
-                <div className="selected-grid">
+            {/* Selected words area in a soft card */}
+            <div className="page-content" style={{
+                background: "var(--card-bg)",
+                border: "1px solid var(--border)",
+                borderRadius: 18,
+                padding: 12,
+                marginTop: 8,
+            }}>
+                <div
+                    className="selected-grid"
+                    style={{ minHeight: 68 }}
+                >
                     {confirmedMnemonic.map((w, i) => (
                         <button
                             key={`${w}-${i}`}
@@ -97,31 +98,43 @@ const ConfirmMnemonic: React.FC<ConfirmMnemonicProps> = ({
                 </div>
             </div>
 
-            <p style={{ marginTop: 8 }}>{t("confirmMnemonic.instruction")}</p>
-            <div className="mnemonic-grid">
-                {pool.map((w, idx) => (
-                    <button
-                        key={`${w}-${idx}`}
-                        onClick={() => handlePick(idx)}
-                        className="mnemonic-word"
-                        style={{ cursor: "pointer", whiteSpace: "nowrap" }}
-                    >
-                        {w}
-                    </button>
-                ))}
+            {/* Instruction */}
+            <div className="page-content" style={{ marginTop: 8 }}>
+                <p className="page-subtitle" style={{ margin: 0, textAlign: "left" }}>{t("confirmMnemonic.instruction")}</p>
+            </div>
+
+            {/* Word pool inside soft card */}
+            <div className="page-content" style={{
+                background: "var(--card-bg)",
+                border: "1px solid var(--border)",
+                borderRadius: 18,
+                padding: 12,
+            }}>
+                <div className="mnemonic-grid">
+                    {pool.map((w, idx) => (
+                        <button
+                            key={`${w}-${idx}`}
+                            onClick={() => handlePick(idx)}
+                            className="mnemonic-word"
+                            style={{ cursor: "pointer", whiteSpace: "nowrap" }}
+                        >
+                            {w}
+                        </button>
+                    ))}
+                </div>
             </div>
 
             {wrongIndex !== -1 && (
-                <p className="error">{t("confirmMnemonic.error_wrong_order")}</p>
+                <p className="error page-content">{t("confirmMnemonic.error_wrong_order")}</p>
             )}
 
-            <div className="actions">
+            <div className="actions page-content">
                 <GradientButton onClick={onConfirm} disabled={!isOrderCorrect}>
                     {t("common.actions.create_did")}
                 </GradientButton>
             </div>
 
-            {error && <p className="error">{error}</p>}
+            {error && <p className="error page-content">{error}</p>}
         </div>
     );
 };

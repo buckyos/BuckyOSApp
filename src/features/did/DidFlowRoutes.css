@@ -6,16 +6,27 @@
   text-align: left;
   flex: 1;
   min-height: 0; /* allow internal scroll without body scrollbars */
-  overflow: auto;
+  /* Avoid in-page scrollbars for a cleaner mobile-like layout */
+  overflow: hidden;
+  position: relative; /* allow bottom-fixed actions */
   -ms-overflow-style: none; /* IE, Edge */
   scrollbar-width: none; /* Firefox */
-  padding: 12px 16px 28px; /* bottom padding to keep button shadow visible */
+  /* Reserve space for fixed bottom actions + shadow */
+  padding: 12px 16px 96px;
 }
 
 .page-content {
   width: 100%;
   max-width: 520px; /* unify visual width across pages */
   margin: 0 auto;
+}
+
+/* Unified page header wrapper for title/subtitle */
+.page-header {
+  width: 100%;
+  max-width: 520px;
+  margin: 12px auto 6px;
+  text-align: center;
 }
 
 .page-title {
@@ -142,6 +153,14 @@ button:disabled {
 
 /* bottom actions */
 .actions {
-  margin-top: auto;
-  padding-top: 12px;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 24px; /* unified gap to window bottom */
+  padding: 0 16px; /* match container horizontal padding */
+  margin: 0 auto;
+  max-width: 520px; /* align with page-content width */
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }

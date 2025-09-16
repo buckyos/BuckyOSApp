@@ -1,7 +1,6 @@
 import React from "react";
 import type { DidInfo } from "../../features/did/useDidFlow";
 import { useI18n } from "../../i18n";
-import MobileHeader from "../../components/ui/MobileHeader";
 import GradientButton from "../../components/ui/GradientButton";
 
 interface SuccessProps {
@@ -13,8 +12,10 @@ const Success: React.FC<SuccessProps> = ({ didInfo, onDone }) => {
     const { t } = useI18n();
     return (
         <div className="did-container">
-            <MobileHeader title={t("success.title")} />
-            <p>{t("success.desc")}</p>
+            <div className="page-header">
+                <div className="page-title">{t("success.title")}</div>
+                <div className="page-subtitle">{t("success.desc")}</div>
+            </div>
             {didInfo && (
                 <div className="did-info">
                     <p>
