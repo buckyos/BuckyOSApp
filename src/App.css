@@ -1,186 +1,230 @@
 .logo.vite:hover {
-  filter: drop-shadow(0 0 2em #747bff);
+    filter: drop-shadow(0 0 2em #747bff);
 }
 
 .logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafb);
+    filter: drop-shadow(0 0 2em #61dafb);
 }
+
 :root {
-  font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
-  font-size: 16px;
-  line-height: 24px;
-  font-weight: 400;
-  color: #0f0f0f;
-  background: linear-gradient(160deg, #e8f7f3 0%, #f6f3ff 100%);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  -webkit-text-size-adjust: 100%;
+    font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 400;
+    color: #0f0f0f;
+    background: linear-gradient(160deg, #e8f7f3 0%, #f6f3ff 100%);
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-text-size-adjust: 100%;
 
-  /* Theme variables */
-  --app-bg: #ffffff;
-  --app-text: #0f172a;
-  --muted-text: #5b6473;
-  --card-bg: #f7f8fb;
-  --border: #e6e8f0;
-  --input-border: #e6e8f0;
-  --chip-bg: #202733;
-  --header-btn-bg: #ffffff;
-  --header-btn-border: #e6e8f0;
-  --header-icon: #202733;
+    /* Theme variables */
+    --app-bg: #ffffff;
+    --app-text: #0f172a;
+    --muted-text: #5b6473;
+    --card-bg: #f7f8fb;
+    --border: #e6e8f0;
+    --input-border: #e6e8f0;
+    --chip-bg: #202733;
+    --header-btn-bg: #ffffff;
+    --header-btn-border: #e6e8f0;
+    --header-icon: #202733;
 }
 
-html, body, #root { height: 100%; margin: 0; overflow: hidden; }
-*, *::before, *::after { box-sizing: border-box; }
+html,
+body,
+#root {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
 
 .container {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
 }
 
 .logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: 0.75s;
+    height: 6em;
+    padding: 1.5em;
+    will-change: filter;
+    transition: 0.75s;
 }
 
 .logo.tauri:hover {
-  filter: drop-shadow(0 0 2em #24c8db);
+    filter: drop-shadow(0 0 2em #24c8db);
 }
 
 .row {
-  display: flex;
-  justify-content: center;
+    display: flex;
+    justify-content: center;
 }
 
 a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
+    font-weight: 500;
+    color: #646cff;
+    text-decoration: inherit;
 }
 
 a:hover {
-  color: #535bf2;
+    color: #535bf2;
 }
 
-h1 { margin: 0; }
+h1 {
+    margin: 0;
+}
 
 input,
 button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  color: #0f0f0f;
-  background-color: #ffffff;
-  transition: border-color 0.25s;
-  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    border: 1px solid transparent;
+    padding: 0.6em 1.2em;
+    font-size: 1em;
+    font-weight: 500;
+    font-family: inherit;
+    color: #0f0f0f;
+    background-color: #ffffff;
+    transition: border-color 0.25s;
+    box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
 }
 
 button {
-  cursor: pointer;
+    cursor: pointer;
 }
 
 button:hover {
-  border-color: #396cd8;
+    border-color: #396cd8;
 }
+
 button:active {
-  border-color: #396cd8;
-  background-color: #e8e8e8;
+    border-color: #396cd8;
+    background-color: #e8e8e8;
 }
 
 input,
 button {
-  outline: none;
+    outline: none;
 }
 
 #greet-input {
-  margin-right: 5px;
+    margin-right: 5px;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    color: #f6f6f6;
-    background: #121826;
-    --app-bg: #0b1220;      /* base surface */
-    --app-text: #e5e7eb;    /* primary text */
-    --muted-text: #aeb6c2;  /* secondary text */
-    --card-bg: #111a2d;     /* cards/inputs slightly lighter for contrast */
-    --border: #3a4252;      /* stronger outline for dark */
-    --input-border: #5b6a86; /* even lighter just for inputs */
-    --chip-bg: #334155;     /* pills */
-    --header-btn-bg: #111a2d;
-    --header-btn-border: #3a4252;
-    --header-icon: #ffffff;
-  }
+    :root {
+        color: #f6f6f6;
+        background: #121826;
+        --app-bg: #0b1220;
+        /* base surface */
+        --app-text: #e5e7eb;
+        /* primary text */
+        --muted-text: #aeb6c2;
+        /* secondary text */
+        --card-bg: #111a2d;
+        /* cards/inputs slightly lighter for contrast */
+        --border: #3a4252;
+        /* stronger outline for dark */
+        --input-border: #5b6a86;
+        /* even lighter just for inputs */
+        --chip-bg: #334155;
+        /* pills */
+        --header-btn-bg: #111a2d;
+        --header-btn-border: #3a4252;
+        --header-icon: #ffffff;
+    }
 
-  a:hover { color: #24c8db; }
+    a:hover {
+        color: #24c8db;
+    }
 
-  input, button { color: #ffffff; background-color: #0f0f0f98; }
-  button:active { background-color: #0f0f0f69; }
+    input,
+    button {
+        color: #ffffff;
+        background-color: #0f0f0f98;
+    }
+
+    button:active {
+        background-color: #0f0f0f69;
+    }
 }
 
 /* Manual theme override via data attribute */
 [data-theme='dark'] {
-  color: #f6f6f6;
-  background: #121826;
-  --app-bg: #0b1220;
-  --app-text: #e5e7eb;
-  --muted-text: #aeb6c2;
-  --card-bg: #111a2d;
-  --border: #3a4252;
-  --input-border: #5b6a86;
-  --chip-bg: #334155;
-  --header-btn-bg: #111a2d;
-  --header-btn-border: #3a4252;
-  --header-icon: #ffffff;
+    color: #f6f6f6;
+    background: #121826;
+    --app-bg: #0b1220;
+    --app-text: #e5e7eb;
+    --muted-text: #aeb6c2;
+    --card-bg: #111a2d;
+    --border: #3a4252;
+    --input-border: #5b6a86;
+    --chip-bg: #334155;
+    --header-btn-bg: #111a2d;
+    --header-btn-border: #3a4252;
+    --header-icon: #ffffff;
 }
 
 /* Ensure controls are legible when manual dark is active */
 [data-theme='dark'] input,
 [data-theme='dark'] button {
-  color: var(--app-text);
+    color: var(--app-text);
 }
+
 [data-theme='dark'] button:active {
-  background-color: #0f172a;
+    background-color: #0f172a;
 }
 
 /* Phone-like content card */
 .App {
-  width: 100%;
-  height: 100%;
-  background: var(--app-bg);
-  border-radius: 0;
-  box-shadow: none;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  color: var(--app-text);
+    width: 100%;
+    height: 100%;
+    background: var(--app-bg);
+    border-radius: 0;
+    box-shadow: none;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    color: var(--app-text);
 }
 
 /* Top controls (language) */
-.container > div:first-child { margin-bottom: 0; }
+.container>div:first-child {
+    margin-bottom: 0;
+}
 
 /* Ensure lucide icons in the theme toggle render crisply */
-.theme-toggle-btn svg { width: 24px; height: 24px; display: block; }
+.theme-toggle-btn svg {
+    width: 24px;
+    height: 24px;
+    display: block;
+}
 
 /* Soft header controls (language/theme) */
 .soft-btn {
-  background: #f6f7fb;
-  border: none;
-  box-shadow: none;
-  transition: background 0.15s ease;
+    background: #f6f7fb;
+    border: none;
+    box-shadow: none;
+    transition: background 0.15s ease;
 }
-.soft-btn:hover { background: #eef0f6; }
+
+.soft-btn:hover {
+    background: #eef0f6;
+}
 
 [data-theme='dark'] .soft-btn {
-  background: rgba(255, 255, 255, 0.06);
-  border: none;
+    background: rgba(255, 255, 255, 0.06);
+    border: none;
 }
-[data-theme='dark'] .soft-btn:hover { background: rgba(255, 255, 255, 0.12); }
+
+[data-theme='dark'] .soft-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
