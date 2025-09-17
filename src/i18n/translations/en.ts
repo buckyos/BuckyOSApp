@@ -10,8 +10,11 @@ export default {
             start: "Start",
             next: "Next",
             done: "Done",
+            save: "Save",
             backed_up: "I've Backed It Up",
             create_did: "Create DID",
+            cancel: "Cancel",
+            delete: "Delete",
         },
         error: {
             passwords_mismatch: "Passwords do not match.",
@@ -22,6 +25,11 @@ export default {
             create_did_failed: "Failed to create DID: {{message}}",
         },
         creating: "Creating DID...",
+    },
+    tabs: {
+        home: "Home",
+        apps: "Apps",
+        setting: "Setting",
     },
     welcome: {
         title: "Create Decentralized Identity (DID)",
@@ -62,5 +70,13 @@ export default {
         nickname: "Nickname:",
         btc: "BTC Address:",
         eth: "ETH Address:",
+    },
+    settings: {
+        title: "Settings",
+        language: "Language",
+        delete_account: "Delete Account",
+        delete_title: "Delete Account",
+        delete_confirm: "Delete current account and return to Welcome? This cannot be undone.",
+        languages_title: "Languages",
     },
 };

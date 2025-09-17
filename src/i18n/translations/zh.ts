@@ -10,8 +10,11 @@ export default {
             start: "开始",
             next: "下一步",
             done: "完成",
+            save: "保存",
             backed_up: "我已完成备份",
             create_did: "创建DID",
+            cancel: "取消",
+            delete: "删除",
         },
         error: {
             passwords_mismatch: "两次输入的密码不一致。",
@@ -21,6 +24,11 @@ export default {
             create_did_failed: "创建DID失败：{{message}}",
         },
         creating: "正在创建 DID...",
+    },
+    tabs: {
+        home: "主页",
+        apps: "应用",
+        setting: "设置",
     },
     welcome: {
         title: "创建去中心化身份（DID）",
@@ -61,5 +69,13 @@ export default {
         nickname: "昵称：",
         btc: "BTC地址：",
         eth: "ETH地址：",
+    },
+    settings: {
+        title: "设置",
+        language: "语言",
+        delete_account: "删除账户",
+        delete_title: "删除账户",
+        delete_confirm: "确定删除当前账户并返回欢迎页？此操作不可恢复。",
+        languages_title: "多语言",
     },
 };

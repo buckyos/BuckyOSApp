@@ -1,0 +1,44 @@
+/* Settings list that looks like native cells */
+.settings-list {
+  display: flex;
+  flex-direction: column;
+  background: var(--app-bg);
+}
+
+.settings-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  text-align: left;
+  /* Reset button defaults from global styles */
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 16px 4px !important;
+  color: var(--app-text) !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+
+.settings-item .label {
+  font-size: 16px;
+}
+
+.settings-item .right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted-text);
+}
+
+.settings-item svg {
+  color: var(--muted-text);
+}
+
+.settings-item.danger {
+  color: #ef4444 !important;
+}
+

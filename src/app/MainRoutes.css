@@ -1,0 +1,37 @@
+/* Simple bottom tab bar consistent with existing soft UI */
+.content {
+  flex: 1;
+  overflow: auto;
+}
+
+.tabbar {
+  display: flex;
+  gap: 12px;
+  padding: 10px 12px calc(env(safe-area-inset-bottom, 0) + 10px);
+  border-top: 1px solid var(--border);
+  background: var(--app-bg);
+}
+
+.tabbar .tab {
+  flex: 1;
+  text-align: center;
+  padding: 10px 12px;
+  border-radius: 12px;
+  color: var(--app-text);
+  background: #f6f7fb;
+  text-decoration: none;
+  border: 1px solid #e9ecf5;
+}
+
+[data-theme='dark'] .tabbar .tab {
+  background: rgba(255,255,255,0.06);
+  border-color: var(--border);
+}
+
+.tabbar .tab.active {
+  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+  background: linear-gradient(90deg, #6366f1 0%, #6c5ce7 100%);
+  color: #fff;
+  border-color: transparent;
+}
+

@@ -13,7 +13,9 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             greet,
             did::generate_mnemonic,
-            did::create_did
+            did::create_did,
+            did::wallet_exists,
+            did::delete_wallet
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

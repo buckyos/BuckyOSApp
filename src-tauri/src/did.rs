@@ -10,7 +10,8 @@ use serde::{Deserialize, Serialize};
 use sha2::Sha256;
 use sha3::{Digest, Keccak256};
 use tauri::AppHandle;
-use tauri_plugin_store::{StoreBuilder, StoreExt};
+use tauri_plugin_store::StoreExt;
+// use tauri_plugin_store::{with_store, StoreCollection};
 
 // Using a fixed network for simplicity, can be made configurable later.
 const NETWORK: Network = Network::Bitcoin;
@@ -178,6 +179,32 @@ pub fn create_did(
         btc_address,
         eth_address,
     })
+}
+
+/// Check whether a wallet has been created and stored.
+#[tauri::command]
+pub fn wallet_exists(app_handle: AppHandle) -> Result<bool, String> {
+    let store = app_handle
+        .store("wallet.store")
+        .map_err(|e| e.to_string())?;
+    // If loading fails (e.g., file not created yet), just return false.
+    store.reload().map_err(|e| e.to_string())?;
+    Ok(match store.get("wallet") {
+        Some(v) => !v.is_null(),
+        None => false,
+    })
+}
+
+/// Delete the stored wallet (account). After deletion, the onboarding should be shown again.
+#[tauri::command]
+pub fn delete_wallet(app_handle: AppHandle) -> Result<(), String> {
+    let store = app_handle
+        .store("wallet.store")
+        .map_err(|e| e.to_string())?;
+    // Clear the specific key to avoid nuking unrelated preferences later.
+    store.delete("wallet");
+    store.save().map_err(|e| e.to_string())?;
+    Ok(())
 }
 
 #[cfg(test)]
