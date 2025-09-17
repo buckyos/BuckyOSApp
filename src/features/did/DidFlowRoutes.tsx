@@ -8,6 +8,7 @@ import Success from "../../pages/did/Success";
 import LoadingOverlay from "../../components/ui/LoadingOverlay";
 import { useDidFlow } from "./useDidFlow";
 import "./DidFlowRoutes.css";
+import SnIntro from "../../pages/did/SnIntro";
 
 const DidFlowRoutes: React.FC = () => {
     const {
@@ -35,6 +36,7 @@ const DidFlowRoutes: React.FC = () => {
             <LoadingOverlay visible={loading} textKey="common.creating" />
             <Routes>
                 <Route path="/" element={<Welcome onStart={goToCreateDid} />} />
+                <Route path="/sn" element={<SnIntro />} />
                 <Route
                     path="/create"
                     element={

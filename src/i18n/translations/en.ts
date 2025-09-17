@@ -79,4 +79,12 @@ export default {
         delete_confirm: "Delete current account and return to Welcome? This cannot be undone.",
         languages_title: "Languages",
     },
+    sn: {
+        invite_label: "SN Invite Code",
+        invite_placeholder: "Enter invite code",
+        register_option: "Register an SN account while creating DID",
+        what_is: "What is SN?",
+        title: "What is SN?",
+        content: "SN是XXXX",
+    },
 };

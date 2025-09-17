@@ -2,6 +2,7 @@ import React from "react";
 import { useI18n } from "../../i18n";
 import MobileHeader from "../../components/ui/MobileHeader";
 import GradientButton from "../../components/ui/GradientButton";
+import { Link } from "react-router-dom";
 
 interface CreateDidProps {
     nickname: string;
@@ -27,6 +28,10 @@ const CreateDid: React.FC<CreateDidProps> = ({
     const { t } = useI18n();
     const [showPwd, setShowPwd] = React.useState(false);
     const [showPwd2, setShowPwd2] = React.useState(false);
+    const [snInvite, setSnInvite] = React.useState("");
+    const [registerSN, setRegisterSN] = React.useState(false);
+    const passwordsValid = password.length >= 8 && confirmPassword.length >= 8 && password === confirmPassword;
+    const canProceed = registerSN && !!nickname && passwordsValid && snInvite.trim().length > 0;
     return (
         <div className="did-container" style={{ position: "relative", overflow: "hidden" }}>
             {/* Header: arrow only, positioned closer to top-left */}
@@ -146,11 +151,35 @@ const CreateDid: React.FC<CreateDidProps> = ({
                         {error}
                     </p>
                 )}
+
+                {/* SN invite and register option */}
+                <div style={{ marginTop: 14 }}>
+                    <label style={{ fontSize: 14, color: "var(--app-text)" }}>{t("sn.invite_label")}</label>
+                    <input
+                        type="text"
+                        placeholder={t("sn.invite_placeholder")}
+                        value={snInvite}
+                        onChange={(e) => setSnInvite(e.target.value)}
+                        style={{ marginTop: 6 }}
+                    />
+                </div>
+
+                <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    <input
+                        id="registerSN"
+                        type="checkbox"
+                        checked={registerSN}
+                        onChange={(e) => setRegisterSN(e.target.checked)}
+                        style={{ width: 18, height: 18, boxShadow: "none" }}
+                    />
+                    <label htmlFor="registerSN" style={{ userSelect: "none" }}>{t("sn.register_option")}</label>
+                    <Link to="/sn" style={{ marginLeft: 8, color: "#6366f1" }}>{t("sn.what_is")}</Link>
+                </div>
             </div>
 
             {/* Bottom actions pinned to page bottom and unified width */}
             <div className="actions page-content">
-                <GradientButton onClick={onNext} disabled={!nickname || !password || !confirmPassword}>
+                <GradientButton onClick={onNext} disabled={!canProceed}>
                     {t("common.actions.create_did")}
                 </GradientButton>
             </div>

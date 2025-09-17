@@ -78,4 +78,12 @@ export default {
         delete_confirm: "确定删除当前账户并返回欢迎页？此操作不可恢复。",
         languages_title: "多语言",
     },
+    sn: {
+        invite_label: "SN 邀请码",
+        invite_placeholder: "请输入邀请码",
+        register_option: "创建 DID 的同时注册 SN 账号",
+        what_is: "什么是SN？",
+        title: "什么是 SN？",
+        content: "SN是XXXX",
+    },
 };
