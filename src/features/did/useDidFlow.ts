@@ -67,7 +67,7 @@ export function useDidFlow() {
             setError(t("common.error.passwords_mismatch"));
             return;
         }
-        if (password.length < 8) {
+        if (password.length < 6) {
             setError(t("common.error.password_too_short"));
             return;
         }

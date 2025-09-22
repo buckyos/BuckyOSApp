@@ -30,7 +30,7 @@ const CreateDid: React.FC<CreateDidProps> = ({
     const [showPwd2, setShowPwd2] = React.useState(false);
     const [snInvite, setSnInvite] = React.useState("");
     const [registerSN, setRegisterSN] = React.useState(false);
-    const passwordsValid = password.length >= 8 && confirmPassword.length >= 8 && password === confirmPassword;
+    const passwordsValid = password.length >= 6 && confirmPassword.length >= 6 && password === confirmPassword;
     const canProceed = registerSN && !!nickname && passwordsValid && snInvite.trim().length > 0;
     return (
         <div className="did-container" style={{ position: "relative", overflow: "hidden" }}>

@@ -18,7 +18,7 @@ export default {
         },
         error: {
             passwords_mismatch: "两次输入的密码不一致。",
-            password_too_short: "密码长度至少需8个字符。",
+            password_too_short: "密码长度至少需6个字符。",
             mnemonic_mismatch: "助记词不一致，请检查您的备份。",
             generate_mnemonic_failed: "生成助记词失败：{{message}}",
             create_did_failed: "创建DID失败：{{message}}",
@@ -45,7 +45,7 @@ export default {
         nickname_label: "用户名",
         nickname_placeholder: "输入昵称",
         password_label: "密码",
-        password_placeholder: "输入密码（至少8个字符）",
+        password_placeholder: "输入密码（至少6个字符）",
         confirm_label: "确认密码",
         confirm_password_placeholder: "确认密码",
     },

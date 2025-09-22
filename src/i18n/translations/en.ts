@@ -18,7 +18,7 @@ export default {
         },
         error: {
             passwords_mismatch: "Passwords do not match.",
-            password_too_short: "Password must be at least 8 characters long.",
+            password_too_short: "Password must be at least 6 characters long.",
             mnemonic_mismatch:
                 "Mnemonic phrases do not match. Please check your backup.",
             generate_mnemonic_failed: "Failed to generate mnemonic: {{message}}",
@@ -46,7 +46,7 @@ export default {
         nickname_label: "Username",
         nickname_placeholder: "Enter Nickname",
         password_label: "Password",
-        password_placeholder: "Enter Password (min 8 characters)",
+        password_placeholder: "Enter Password (min 6 characters)",
         confirm_label: "Confirm Password",
         confirm_password_placeholder: "Confirm Password",
     },
