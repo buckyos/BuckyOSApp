@@ -5,6 +5,10 @@ export default {
             zh: "中文",
             switch_label: "Language",
         },
+        account: {
+            current: "Current Account",
+            unnamed: "Unnamed",
+        },
         back: "Back",
         actions: {
             start: "Start",

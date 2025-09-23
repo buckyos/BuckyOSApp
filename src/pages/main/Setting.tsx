@@ -1,7 +1,6 @@
 import React from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useNavigate } from "react-router-dom";
-import MobileHeader from "../../components/ui/MobileHeader";
 import InputDialog from "../../components/ui/InputDialog";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import "./Setting.css";
@@ -111,9 +110,8 @@ const Setting: React.FC = () => {
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      <MobileHeader title={t("settings.title")} />
-      <div style={{ padding: 12 }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", padding: "0 16px 16px" }}>
+      <div>
         <div className="settings-list">
           <button className="settings-item" onClick={() => navigate("/main/setting/language")}> 
             <span className="label">{t("settings.language")}</span>
