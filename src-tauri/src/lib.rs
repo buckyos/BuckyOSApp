@@ -15,7 +15,9 @@ pub fn run() {
             did::generate_mnemonic,
             did::create_did,
             did::wallet_exists,
-            did::delete_wallet
+            did::delete_wallet,
+            did::reveal_mnemonic,
+            did::current_wallet_nickname
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

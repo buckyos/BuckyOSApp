@@ -107,7 +107,7 @@ const CreateDid: React.FC<CreateDidProps> = ({
                 </div>
 
                 {/* Confirm Password */}
-                <label style={{ fontSize: 14, color: "var(--app-text)", marginTop: 6 }}>{t("create.confirm_label", "确认密码")}</label>
+                <label style={{ fontSize: 14, color: "var(--app-text)", marginTop: 6 }}>{t("create.confirm_label")}</label>
                 <div style={{ position: "relative", marginTop: 6 }}>
                     <div style={{ position: "absolute", left: 14, top: 0, bottom: 0, display: "flex", alignItems: "center", color: "var(--muted-text)" }}>
                         {/* lock icon */}

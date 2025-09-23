@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "buckyosapp",
+        "title": "BuckyOS",
         "width": 400,
         "height": 800,
         "resizable": false

@@ -6,23 +6,24 @@ import GradientButton from "../../components/ui/GradientButton";
 interface ShowMnemonicProps {
     mnemonic: string[];
     onNext: () => void;
+    onBack?: () => void;
 }
 
-const ShowMnemonic: React.FC<ShowMnemonicProps> = ({ mnemonic, onNext }) => {
+const ShowMnemonic: React.FC<ShowMnemonicProps> = ({ mnemonic, onNext, onBack }) => {
     const { t } = useI18n();
     return (
         <div className="did-container" style={{ position: "relative" }}>
             {/* back with label, lighter footprint */}
             <div style={{ position: "absolute", top: 6, left: 6, zIndex: 2 }}>
-                <MobileHeader title="" showBack />
+                <MobileHeader title="" showBack onBack={onBack} />
             </div>
 
             {/* background circle textures removed for a cleaner look */}
 
             {/* titles only (icon removed to save vertical space) */}
             <div className="page-header">
-                <div className="page-title">{t("showMnemonic.title", "您的助记词")}</div>
-                <div className="page-subtitle">{t("showMnemonic.subtitle", "请按准确顺序抄写这些单词")}</div>
+                <div className="page-title">{t("showMnemonic.title")}</div>
+                <div className="page-subtitle">{t("showMnemonic.subtitle")}</div>
             </div>
 
             {/* mnemonic grid wrapped in soft container */}

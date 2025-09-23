@@ -9,6 +9,8 @@ interface ConfirmMnemonicProps {
     error: string;
     confirmedMnemonic: string[];
     mnemonic: string[];
+    confirmLabel?: string;
+    onBack?: () => void;
 }
 
 const shuffle = (arr: string[]) => {
@@ -26,6 +28,8 @@ const ConfirmMnemonic: React.FC<ConfirmMnemonicProps> = ({
     error,
     confirmedMnemonic,
     mnemonic,
+    confirmLabel,
+    onBack,
 }) => {
     const { t } = useI18n();
     const [pool, setPool] = React.useState<string[]>([]);
@@ -55,11 +59,13 @@ const ConfirmMnemonic: React.FC<ConfirmMnemonicProps> = ({
     const isOrderCorrect =
         confirmedMnemonic.length === mnemonic.length && wrongIndex === -1;
 
+    const buttonLabel = confirmLabel ?? t("common.actions.create_did");
+
     return (
         <div className="did-container" style={{ position: "relative" }}>
             {/* Back arrow */}
             <div style={{ position: "absolute", top: 6, left: 6, zIndex: 2 }}>
-                <MobileHeader title="" showBack />
+                <MobileHeader title="" showBack onBack={onBack} />
             </div>
 
             {/* titles only (icon removed) */}
@@ -130,7 +136,7 @@ const ConfirmMnemonic: React.FC<ConfirmMnemonicProps> = ({
 
             <div className="actions page-content">
                 <GradientButton onClick={onConfirm} disabled={!isOrderCorrect}>
-                    {t("common.actions.create_did")}
+                    {buttonLabel}
                 </GradientButton>
             </div>
 

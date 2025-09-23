@@ -126,6 +126,22 @@ fn encrypt_mnemonic(password: &str, mnemonic: &Mnemonic, nickname: &str) -> Resu
     })
 }
 
+fn decrypt_mnemonic(password: &str, wallet: &WalletFile) -> Result<String> {
+    let salt = hex::decode(&wallet.kdf_salt_hex)?;
+    let nonce_bytes = hex::decode(&wallet.cipher_nonce_hex)?;
+    let cipher_bytes = hex::decode(&wallet.cipher_hex)?;
+
+    let key = kdf(password, &salt, wallet.kdf_iter);
+    let cipher = Aes256Gcm::new_from_slice(&key).expect("aes key");
+    let nonce = Nonce::from_slice(&nonce_bytes);
+
+    let plaintext = cipher
+        .decrypt(nonce, cipher_bytes.as_ref())
+        .map_err(|_| anyhow!("invalid password"))?;
+    let phrase = String::from_utf8(plaintext)?;
+    Ok(phrase)
+}
+
 #[tauri::command]
 pub fn generate_mnemonic() -> Result<Vec<String>, String> {
     let mut entropy = [0u8; 16]; // 128 bits for 12 words
@@ -197,14 +213,64 @@ pub fn wallet_exists(app_handle: AppHandle) -> Result<bool, String> {
 
 /// Delete the stored wallet (account). After deletion, the onboarding should be shown again.
 #[tauri::command]
-pub fn delete_wallet(app_handle: AppHandle) -> Result<(), String> {
+pub fn delete_wallet(app_handle: AppHandle, password: String) -> Result<(), String> {
     let store = app_handle
         .store("wallet.store")
         .map_err(|e| e.to_string())?;
-    // Clear the specific key to avoid nuking unrelated preferences later.
+    store.reload().map_err(|e| e.to_string())?;
+
+    let wallet_value = store
+        .get("wallet")
+        .ok_or_else(|| "wallet_not_found".to_string())?;
+
+    let wallet: WalletFile = serde_json::from_value(wallet_value).map_err(|e| e.to_string())?;
+
+    // Ensure password is correct before deleting any local data
+    decrypt_mnemonic(&password, &wallet).map_err(|e| e.to_string())?;
+
     store.delete("wallet");
     store.save().map_err(|e| e.to_string())?;
     Ok(())
+}
+
+#[tauri::command]
+pub fn reveal_mnemonic(app_handle: AppHandle, password: String) -> Result<Vec<String>, String> {
+    let store = app_handle
+        .store("wallet.store")
+        .map_err(|e| e.to_string())?;
+    store.reload().map_err(|e| e.to_string())?;
+
+    let wallet_value = store
+        .get("wallet")
+        .ok_or_else(|| "wallet_not_found".to_string())?;
+
+    let wallet: WalletFile = serde_json::from_value(wallet_value).map_err(|e| e.to_string())?;
+
+    let phrase = decrypt_mnemonic(&password, &wallet).map_err(|e| e.to_string())?;
+    let mnemonic = Mnemonic::parse_in(Language::English, &phrase).map_err(|e| e.to_string())?;
+    Ok(
+        mnemonic
+            .to_string()
+            .split_whitespace()
+            .map(|w| w.to_string())
+            .collect(),
+    )
+}
+
+#[tauri::command]
+pub fn current_wallet_nickname(app_handle: AppHandle) -> Result<Option<String>, String> {
+    let store = app_handle
+        .store("wallet.store")
+        .map_err(|e| e.to_string())?;
+    store.reload().map_err(|e| e.to_string())?;
+
+    match store.get("wallet") {
+        Some(value) => {
+            let wallet: WalletFile = serde_json::from_value(value).map_err(|e| e.to_string())?;
+            Ok(Some(wallet.nickname))
+        }
+        None => Ok(None),
+    }
 }
 
 #[cfg(test)]

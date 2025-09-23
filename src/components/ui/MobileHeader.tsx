@@ -4,10 +4,18 @@ import { useNavigate } from "react-router-dom";
 interface MobileHeaderProps {
     title: string;
     showBack?: boolean;
+    onBack?: () => void;
 }
 
-const MobileHeader: React.FC<MobileHeaderProps> = ({ title, showBack = false }) => {
+const MobileHeader: React.FC<MobileHeaderProps> = ({ title, showBack = false, onBack }) => {
     const navigate = useNavigate();
+    const handleBack = React.useCallback(() => {
+        if (onBack) {
+            onBack();
+        } else {
+            navigate(-1);
+        }
+    }, [navigate, onBack]);
     return (
         <div
             style={{
@@ -21,7 +29,7 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({ title, showBack = false }) 
             {showBack && (
                 <button
                     aria-label="Back"
-                    onClick={() => navigate(-1)}
+                    onClick={handleBack}
                     style={{
                         display: "flex",
                         alignItems: "center",

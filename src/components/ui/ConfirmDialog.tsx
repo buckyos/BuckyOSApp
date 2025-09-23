@@ -51,12 +51,21 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
       >
         <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>{title}</div>
         {message && (
-          <div style={{ fontSize: 14, color: "var(--muted-text)", marginBottom: 16 }}>{message}</div>
+          <div
+            style={{ fontSize: 14, color: "var(--muted-text)", marginBottom: 16, whiteSpace: "pre-wrap" }}
+          >
+            {message}
+          </div>
         )}
         <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
           <button
             className="soft-btn"
-            style={{ borderRadius: 12, padding: "10px 14px" }}
+            style={{
+              borderRadius: 12,
+              padding: "10px 14px",
+              background: "#a9b1bbff",
+              color: "#fff",
+            }}
             onClick={onCancel}
           >
             {cancelText}
@@ -81,4 +90,3 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
 };
 
 export default ConfirmDialog;
-

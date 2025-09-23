@@ -1,37 +1,68 @@
-/* Simple bottom tab bar consistent with existing soft UI */
+/* Minimal bottom tab bar with icon + label layout */
 .content {
   flex: 1;
   overflow: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .tabbar {
   display: flex;
-  gap: 12px;
-  padding: 10px 12px calc(env(safe-area-inset-bottom, 0) + 10px);
+  justify-content: space-between;
+  margin: 0 -16px;
+  padding: 10px 24px calc(env(safe-area-inset-bottom, 0) + 12px);
   border-top: 1px solid var(--border);
   background: var(--app-bg);
+  box-shadow: 0 -4px 18px rgba(15, 23, 42, 0.06);
 }
 
 .tabbar .tab {
   flex: 1;
-  text-align: center;
-  padding: 10px 12px;
-  border-radius: 12px;
-  color: var(--app-text);
-  background: #f6f7fb;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 4px;
   text-decoration: none;
-  border: 1px solid #e9ecf5;
+  color: var(--muted-text);
+  font-size: 0.75rem;
+  font-weight: 500;
+  transition: color 0.2s ease, transform 0.2s ease;
 }
 
-[data-theme='dark'] .tabbar .tab {
-  background: rgba(255,255,255,0.06);
-  border-color: var(--border);
+.tabbar .tab:hover {
+  color: #335dff;
+}
+
+.tabbar .tab-icon {
+  width: 22px;
+  height: 22px;
+  stroke: currentColor;
+}
+
+.tabbar .tab-label {
+  line-height: 1;
+}
+
+.tabbar .tab:focus-visible {
+  outline: 2px solid rgba(51, 93, 255, 0.3);
+  outline-offset: 6px;
+  border-radius: 14px;
 }
 
 .tabbar .tab.active {
-  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
-  background: linear-gradient(90deg, #6366f1 0%, #6c5ce7 100%);
-  color: #fff;
-  border-color: transparent;
+  color: #2f6bff;
+  font-weight: 600;
 }
 
+[data-theme='dark'] .tabbar {
+  box-shadow: 0 -2px 12px rgba(8, 11, 22, 0.45);
+}
+
+[data-theme='dark'] .tabbar .tab:hover {
+  color: #6f9dff;
+}
+
+[data-theme='dark'] .tabbar .tab.active {
+  color: #7ca6ff;
+}
