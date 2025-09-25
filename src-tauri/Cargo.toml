@@ -15,12 +15,12 @@ name = "buckyosapp_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-tauri-build = { version = "2", features = [] }
+tauri-build = { version = "2.4.1", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
-tauri-plugin-store = "2.0.0-beta.5"
-tauri-plugin-opener = "2"
+tauri = { version = "2.4.1", features = [] }
+tauri-plugin-store = "2.4.0"
+tauri-plugin-opener = "2.5.0"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 anyhow = "1.0"
@@ -38,4 +38,3 @@ name-lib = { git = "https://github.com/buckyos/buckyos-base.git", package = "nam
 # this feature is used for production builds or when `devPath` points to the filesystem
 # DO NOT REMOVE!!
 custom-protocol = ["tauri/custom-protocol"]
-
