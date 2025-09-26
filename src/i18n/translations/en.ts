@@ -8,6 +8,13 @@ export default {
         account: {
             current: "Current Account",
             unnamed: "Unnamed",
+            switch: "Switch Account",
+        },
+        btc_type: {
+            legacy: "Legacy (P2PKH)",
+            nested_segwit: "Nested SegWit (P2SH)",
+            native_segwit: "Native SegWit (bech32)",
+            taproot: "Taproot",
         },
         back: "Back",
         actions: {
@@ -34,6 +41,17 @@ export default {
         home: "Home",
         apps: "Apps",
         setting: "Setting",
+    },
+    home: {
+        title: "Identities",
+        subtitle: "Manage your decentralized identities and linked wallets.",
+        refresh: "Refresh",
+        loading: "Loading identities...",
+        empty: "No identity found yet. Create one to get started.",
+        active_badge: "Active",
+        btc_section: "Bitcoin Wallets",
+        eth_section: "Ethereum Wallets",
+        address_index: "Account #{{index}}",
     },
     welcome: {
         title: "Create Decentralized Identity (DID)",

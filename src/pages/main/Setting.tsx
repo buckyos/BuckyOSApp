@@ -1,15 +1,16 @@
 import React from "react";
-import { invoke } from "@tauri-apps/api/core";
 import { useNavigate } from "react-router-dom";
 import InputDialog from "../../components/ui/InputDialog";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import "./Setting.css";
 import { useI18n } from "../../i18n";
+import { useDidContext } from "../../features/did/DidContext";
+import { deleteDid, revealMnemonic } from "../../features/did/api";
 
 const Setting: React.FC = () => {
   const navigate = useNavigate();
   const { t, locale } = useI18n();
-  const [nickname, setNickname] = React.useState<string | null>(null);
+  const { activeDid, refresh } = useDidContext();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false);
   const [deleteOpen, setDeleteOpen] = React.useState(false);
   const [deletePassword, setDeletePassword] = React.useState("");
@@ -28,10 +29,16 @@ const Setting: React.FC = () => {
     setDeleteError("");
     setDeleteLoading(true);
     try {
-      await invoke("delete_wallet", { password: deletePassword });
+      if (!activeDid) {
+        setDeleteError(t("settings.delete_error_missing"));
+        setDeleteLoading(false);
+        return;
+      }
+      await deleteDid(deletePassword, activeDid.id);
       setDeleteLoading(false);
       setDeleteOpen(false);
       setDeletePassword("");
+      await refresh();
       navigate("/", { replace: true });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -54,7 +61,12 @@ const Setting: React.FC = () => {
     setBackupError("");
     setBackupLoading(true);
     try {
-      const words = await invoke<string[]>("reveal_mnemonic", { password: backupPassword });
+      if (!activeDid) {
+        setBackupError(t("settings.backup_error_missing"));
+        setBackupLoading(false);
+        return;
+      }
+      const words = await revealMnemonic(backupPassword, activeDid.id);
       setBackupLoading(false);
       setBackupOpen(false);
       setBackupPassword("");
@@ -72,28 +84,11 @@ const Setting: React.FC = () => {
     }
   };
 
-  React.useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const currentNickname = await invoke<string | null>("current_wallet_nickname");
-        if (!cancelled) {
-          setNickname(currentNickname);
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const deleteWarning = nickname
-    ? t("settings.delete_warning_named", { nickname })
+  const deleteWarning = activeDid?.nickname
+    ? t("settings.delete_warning_named", { nickname: activeDid.nickname })
     : t("settings.delete_warning");
-  const deletePasswordMessage = nickname
-    ? t("settings.delete_password_message_named", { nickname })
+  const deletePasswordMessage = activeDid?.nickname
+    ? t("settings.delete_password_message_named", { nickname: activeDid.nickname })
     : t("settings.delete_password_message");
 
   const openBackupDialog = () => {

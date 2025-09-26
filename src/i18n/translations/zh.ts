@@ -8,6 +8,13 @@ export default {
         account: {
             current: "当前账户",
             unnamed: "未命名",
+            switch: "切换账户",
+        },
+        btc_type: {
+            legacy: "传统地址 (P2PKH)",
+            nested_segwit: "嵌套隔离见证 (P2SH)",
+            native_segwit: "原生隔离见证 (bech32)",
+            taproot: "Taproot",
         },
         back: "返回",
         actions: {
@@ -33,6 +40,17 @@ export default {
         home: "主页",
         apps: "应用",
         setting: "设置",
+    },
+    home: {
+        title: "身份列表",
+        subtitle: "查看并管理已经创建的去中心化身份及其钱包。",
+        refresh: "刷新",
+        loading: "正在加载身份...",
+        empty: "暂未创建任何身份，请先完成创建流程。",
+        active_badge: "当前",
+        btc_section: "比特币钱包",
+        eth_section: "以太坊钱包",
+        address_index: "账号 #{{index}}",
     },
     welcome: {
         title: "创建去中心化身份（DID）",

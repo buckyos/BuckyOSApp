@@ -2,12 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/core";
 import { useI18n } from "../../i18n";
-
-export interface DidInfo {
-    nickname: string;
-    btc_address: string;
-    eth_address: string;
-}
+import type { DidInfo } from "./types";
 
 export function useDidFlow() {
     const navigate = useNavigate();

@@ -21,12 +21,16 @@ const Success: React.FC<SuccessProps> = ({ didInfo, onDone }) => {
                     <p>
                         <strong>{t("success.nickname")}</strong> {didInfo.nickname}
                     </p>
-                    <p>
-                        <strong>{t("success.btc")}</strong> {didInfo.btc_address}
-                    </p>
-                    <p>
-                        <strong>{t("success.eth")}</strong> {didInfo.eth_address}
-                    </p>
+                    {didInfo.btc_addresses.map((item) => (
+                        <p key={`btc-${item.address_type}-${item.index}`}>
+                            <strong>{t("success.btc")}</strong> [{item.address_type}] #{item.index} {item.address}
+                        </p>
+                    ))}
+                    {didInfo.eth_addresses.map((item) => (
+                        <p key={`eth-${item.index}`}>
+                            <strong>{t("success.eth")}</strong> #{item.index} {item.address}
+                        </p>
+                    ))}
                 </div>
             )}
             <div className="actions">

@@ -1,0 +1,161 @@
+.home-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 0 16px 16px;
+  height: 100%;
+  overflow: auto;
+}
+
+.home-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
+.home-header h1 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--app-text);
+}
+
+.home-header p {
+  margin: 4px 0 0;
+  color: var(--muted-text);
+  font-size: 0.9rem;
+}
+
+.home-refresh {
+  border-radius: 12px;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  color: var(--app-text);
+  font-weight: 500;
+}
+
+.home-refresh:disabled {
+  opacity: 0.6;
+}
+
+.home-placeholder {
+  margin-top: 48px;
+  text-align: center;
+  color: var(--muted-text);
+  font-size: 0.95rem;
+}
+
+.home-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: 40px;
+}
+
+.did-card {
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+.did-card-active {
+  border-color: rgba(99, 102, 241, 0.5);
+  box-shadow: 0 18px 32px rgba(99, 102, 241, 0.18);
+}
+
+.did-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.did-card-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--app-text);
+}
+
+.did-id {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 0.75rem;
+  color: var(--muted-text);
+  word-break: break-all;
+}
+
+.did-badge {
+  align-self: flex-start;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: rgba(99, 102, 241, 0.12);
+  color: #3740ff;
+}
+
+.did-section h3 {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--app-text);
+}
+
+.did-addresses {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.did-address-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.did-address-group-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--muted-text);
+}
+
+.did-address-group ul,
+.did-section ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.did-address-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.did-address-index {
+  font-size: 0.75rem;
+  color: var(--muted-text);
+}
+
+.did-address-value {
+  font-family: "Fira Mono", "SFMono-Regular", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.85rem;
+  color: var(--app-text);
+  word-break: break-all;
+}
+
+[data-theme='dark'] .did-badge {
+  background: rgba(124, 166, 255, 0.18);
+  color: #8faeff;
+}

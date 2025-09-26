@@ -1,112 +1,125 @@
 import React from "react";
+import "./Home.css";
+import { useDidContext } from "../../features/did/DidContext";
+import { useI18n } from "../../i18n";
+import type { BtcAddress, DidInfo } from "../../features/did/types";
 
-const metrics = [
-  {
-    key: "cpu",
-    label: "CPU",
-    value: 62,
-    unit: "%",
-    gradient: "linear-gradient(135deg, #6366f1 0%, #7c3aed 100%)",
-  },
-  {
-    key: "memory",
-    label: "Memory",
-    value: 48,
-    unit: "%",
-    gradient: "linear-gradient(135deg, #0ea5e9 0%, #22d3ee 100%)",
-  },
-  {
-    key: "storage",
-    label: "Storage",
-    value: 73,
-    unit: "%",
-    gradient: "linear-gradient(135deg, #f59e0b 0%, #f97316 100%)",
-  },
-  {
-    key: "network",
-    label: "Network",
-    value: 128,
-    unit: "Mbps",
-    gradient: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
-  },
-];
+function groupBtcByType(addresses: BtcAddress[]): Array<{ type: BtcAddress["address_type"]; entries: BtcAddress[] }> {
+  const map = new Map<BtcAddress["address_type"], BtcAddress[]>();
+  addresses.forEach((addr) => {
+    const list = map.get(addr.address_type);
+    if (list) {
+      list.push(addr);
+    } else {
+      map.set(addr.address_type, [addr]);
+    }
+  });
+  return Array.from(map.entries()).map(([type, entries]) => ({ type, entries }));
+}
+
+function displayNickname(did: DidInfo, fallback: string): string {
+  const trimmed = did.nickname.trim();
+  return trimmed.length > 0 ? trimmed : fallback;
+}
 
 const Home: React.FC = () => {
+  const { dids, activeDid, loading, refresh } = useDidContext();
+  const { t } = useI18n();
+  const [refreshing, setRefreshing] = React.useState(false);
+
+  const handleRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refresh();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refresh]);
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", padding: "0 16px 16px" }}>
-      <section
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
-          gap: 16,
-          marginTop: 8,
-        }}
-      >
-        {metrics.map(({ key, label, value, unit, gradient }) => (
-          <article
-            key={key}
-            style={{
-              background: "var(--card-bg)",
-              border: "1px solid var(--border)",
-              borderRadius: 16,
-              padding: 16,
-              display: "flex",
-              flexDirection: "column",
-              gap: 14,
-              boxShadow: "0 10px 24px rgba(15, 23, 42, 0.08)",
-            }}
-          >
-            <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ fontSize: 15, color: "var(--muted-text)", fontWeight: 500 }}>{label}</span>
-              <span style={{ fontSize: 26, fontWeight: 600, color: "var(--app-text)" }}>
-                {value}
-                <span style={{ fontSize: 14, marginLeft: 4, color: "var(--muted-text)" }}>{unit}</span>
-              </span>
-            </header>
-            <div
-              style={{
-                position: "relative",
-                height: 110,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <div
-                style={{
-                  width: 96,
-                  height: 96,
-                  borderRadius: "50%",
-                  background: gradient,
-                  position: "relative",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  boxShadow: "0 12px 28px rgba(76, 29, 149, 0.15)",
-                }}
+    <div className="home-wrapper">
+      <header className="home-header">
+        <div>
+          <h1>{t("home.title")}</h1>
+          <p>{t("home.subtitle")}</p>
+        </div>
+        <button
+          type="button"
+          className="home-refresh"
+          onClick={handleRefresh}
+          disabled={refreshing}
+        >
+          {refreshing ? `${t("home.refresh")}...` : t("home.refresh")}
+        </button>
+      </header>
+
+      {loading && dids.length === 0 ? (
+        <div className="home-placeholder">{t("home.loading")}</div>
+      ) : dids.length === 0 ? (
+        <div className="home-placeholder">{t("home.empty")}</div>
+      ) : (
+        <div className="home-list">
+          {dids.map((did) => {
+            const btcGroups = groupBtcByType(did.btc_addresses);
+            const isActive = activeDid?.id === did.id;
+            return (
+              <article
+                key={did.id}
+                className={`did-card${isActive ? " did-card-active" : ""}`}
               >
-                <div
-                  style={{
-                    width: 76,
-                    height: 76,
-                    borderRadius: "50%",
-                    background: "var(--app-bg)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 20,
-                    fontWeight: 600,
-                    color: "var(--app-text)",
-                  }}
-                >
-                  {value}
-                  <span style={{ fontSize: 11, marginLeft: 4 }}>{unit}</span>
+                <div className="did-card-header">
+                  <div>
+                    <h2>{displayNickname(did, t("common.account.unnamed"))}</h2>
+                    <span className="did-id">{did.id}</span>
+                  </div>
+                  {isActive && <span className="did-badge">{t("home.active_badge")}</span>}
                 </div>
-              </div>
-            </div>
-          </article>
-        ))}
-      </section>
+
+                {btcGroups.length > 0 && (
+                  <section className="did-section">
+                    <h3>{t("home.btc_section")}</h3>
+                    <div className="did-addresses">
+                      {btcGroups.map((group) => (
+                        <div key={group.type} className="did-address-group">
+                          <span className="did-address-group-label">
+                            {t(`common.btc_type.${group.type}`)}
+                          </span>
+                          <ul>
+                            {group.entries.map((entry) => (
+                              <li key={`${group.type}-${entry.index}`}>
+                                <span className="did-address-index">
+                                  {t("home.address_index", { index: entry.index })}
+                                </span>
+                                <span className="did-address-value">{entry.address}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {did.eth_addresses.length > 0 && (
+                  <section className="did-section">
+                    <h3>{t("home.eth_section")}</h3>
+                    <ul className="did-addresses">
+                      {did.eth_addresses.map((entry) => (
+                        <li key={`eth-${entry.index}`} className="did-address-row">
+                          <span className="did-address-index">
+                            {t("home.address_index", { index: entry.index })}
+                          </span>
+                          <span className="did-address-value">{entry.address}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                )}
+              </article>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };

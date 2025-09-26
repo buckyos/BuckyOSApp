@@ -15,6 +15,9 @@ pub fn run() {
             did::generate_mnemonic,
             did::create_did,
             did::wallet_exists,
+            did::list_dids,
+            did::active_did,
+            did::set_active_did,
             did::delete_wallet,
             did::reveal_mnemonic,
             did::current_wallet_nickname

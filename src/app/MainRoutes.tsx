@@ -1,6 +1,5 @@
 import React from "react";
 import { NavLink, Route, Routes, useLocation, useNavigate } from "react-router-dom";
-import { invoke } from "@tauri-apps/api/core";
 import { Home as HomeIcon, PanelsTopLeft, Settings } from "lucide-react";
 import Home from "../pages/main/Home";
 import Apps from "../pages/main/Apps";
@@ -9,6 +8,7 @@ import LanguageSelect from "../pages/main/LanguageSelect";
 import BackupIdentity from "../pages/main/BackupIdentity";
 import "./MainRoutes.css";
 import { useI18n } from "../i18n";
+import { useDidContext } from "../features/did/DidContext";
 
 function TabBar() {
   const { t } = useI18n();
@@ -41,7 +41,7 @@ function TabBar() {
 const MainRoutes: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useI18n();
-  const [nickname, setNickname] = React.useState<string | null>(null);
+  const { activeDid, dids, setActiveDid, loading } = useDidContext();
   const routerLocation = useLocation();
   const normalizedPath = React.useMemo(() => {
     const path = routerLocation.pathname;
@@ -61,25 +61,8 @@ const MainRoutes: React.FC = () => {
     }
   }, [navigate]);
 
-  React.useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const currentNickname = await invoke<string | null>("current_wallet_nickname");
-        if (!cancelled) {
-          setNickname(currentNickname);
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const displayName = nickname && nickname.trim().length > 0
-    ? nickname
+  const displayName = activeDid && activeDid.nickname.trim().length > 0
+    ? activeDid.nickname
     : t("common.account.unnamed");
 
   const accountLabel = t("common.account.current");
@@ -94,6 +77,27 @@ const MainRoutes: React.FC = () => {
             <span className="account-label">{accountLabel}</span>
             <span className="account-name">{displayName}</span>
           </div>
+          {dids.length > 1 && (
+            <select
+              className="account-switcher"
+              value={activeDid?.id ?? ""}
+              onChange={(event) => {
+                const value = event.target.value;
+                if (!value) return;
+                setActiveDid(value).catch((err) => {
+                  console.error("Failed to switch DID", err);
+                });
+              }}
+              disabled={loading}
+              aria-label={t("common.account.switch")}
+            >
+              {dids.map((did) => (
+                <option key={did.id} value={did.id}>
+                  {did.nickname.trim().length > 0 ? did.nickname : t("common.account.unnamed")}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
         <div className="content-body">
           <Routes>
