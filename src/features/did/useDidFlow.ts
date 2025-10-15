@@ -109,3 +109,5 @@ export function useDidFlow() {
     };
 }
 
+export type { DidInfo } from "./types";
+

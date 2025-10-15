@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use tauri::{AppHandle, Wry};
 use tauri_plugin_store::{Store, StoreExt};
 use ulid::Ulid;
@@ -77,11 +78,19 @@ impl Default for ChainAddress {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct BuckyDidInfo {
+    pub index: u32,
+    pub did: String,
+    pub public_key: Value,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct DidInfo {
     pub id: String,
     pub nickname: String,
     pub btc_addresses: Vec<BtcAddress>,
     pub eth_addresses: Vec<ChainAddress>,
+    pub buckyos_identity: Option<BuckyDidInfo>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -151,6 +160,8 @@ pub struct DidRecord {
     pub nickname: String,
     pub seed: EncryptedSeed,
     pub accounts: AccountBook,
+    #[serde(default)]
+    pub buckyos_identity: Option<BuckyDidInfo>,
 }
 
 impl DidRecord {
@@ -172,6 +183,7 @@ impl DidRecord {
             nickname: self.nickname.clone(),
             btc_addresses,
             eth_addresses,
+            buckyos_identity: self.buckyos_identity.clone(),
         }
     }
 }

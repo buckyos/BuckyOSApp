@@ -6,8 +6,9 @@ use super::crypto::{decrypt_mnemonic, encrypt_mnemonic};
 use super::derive::{derive_btc_address, derive_eth_address, SeedCtx};
 use super::store::{
     load_vault, new_did_id, open_store, save_vault, AccountBook, AccountSeries, BtcAddress,
-    ChainAddress, DidInfo, DidRecord, DEFAULT_BTC_ADDRESS_TYPE,
+    BuckyDidInfo, ChainAddress, DidInfo, DidRecord, DEFAULT_BTC_ADDRESS_TYPE,
 };
+use name_lib::{generate_ed25519_key_pair_from_mnemonic, get_device_did_from_ed25519_jwk};
 
 #[tauri::command]
 pub fn generate_mnemonic() -> Result<Vec<String>, String> {
@@ -60,6 +61,15 @@ pub fn create_did(
 
     let encrypted_seed = encrypt_mnemonic(&password, &mnemonic).map_err(|e| e.to_string())?;
 
+    let (_pem, public_jwk) =
+        generate_ed25519_key_pair_from_mnemonic(mnemonic_phrase.as_str(), None, 0)
+            .map_err(|e| e.to_string())?;
+    let buckyos_identity = Some(BuckyDidInfo {
+        index: 0,
+        did: get_device_did_from_ed25519_jwk(&public_jwk).map_err(|e| e.to_string())?,
+        public_key: public_jwk,
+    });
+
     let store = open_store(&app_handle)?;
     let mut vault = load_vault(&store)?;
 
@@ -76,6 +86,7 @@ pub fn create_did(
         nickname,
         seed: encrypted_seed,
         accounts,
+        buckyos_identity,
     };
 
     vault.active_did = Some(record.id.clone());
@@ -268,10 +279,21 @@ mod tests {
             DEFAULT_BTC_ADDRESS_TYPE
         );
         assert_eq!(did_info.eth_addresses[0].index, 0);
+        let identity = did_info
+            .buckyos_identity
+            .as_ref()
+            .expect("buckyos identity present");
+        assert_eq!(identity.index, 0);
+        assert!(
+            identity.did.starts_with("did:dev:"),
+            "unexpected DID: {}",
+            identity.did
+        );
 
         let dids = list_dids(app_handle.clone()).unwrap();
         assert_eq!(dids.len(), 1);
         assert_eq!(dids[0].id, did_info.id);
+        assert!(dids[0].buckyos_identity.is_some());
 
         let active = active_did(app_handle.clone()).unwrap().unwrap();
         assert_eq!(active.id, did_info.id);

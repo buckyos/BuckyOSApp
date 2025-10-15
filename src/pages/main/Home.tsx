@@ -115,6 +115,29 @@ const Home: React.FC = () => {
                     </ul>
                   </section>
                 )}
+                {did.buckyos_identity && (
+                  <section className="did-section">
+                    <h3>{t("home.bucky_section")}</h3>
+                    <ul className="did-addresses">
+                      <li className="did-address-row">
+                        <span className="did-address-index">
+                          {t("home.address_index", { index: did.buckyos_identity.index })}
+                        </span>
+                        <span className="did-address-value">{did.buckyos_identity.did}</span>
+                      </li>
+                      {typeof did.buckyos_identity.public_key === "object" &&
+                        did.buckyos_identity.public_key !== null &&
+                        "x" in did.buckyos_identity.public_key && (
+                          <li className="did-address-row">
+                            <span className="did-address-index">{t("home.bucky_key_label")}</span>
+                            <span className="did-address-value">
+                              {(did.buckyos_identity.public_key as { x?: unknown }).x as string}
+                            </span>
+                          </li>
+                        )}
+                    </ul>
+                  </section>
+                )}
               </article>
             );
           })}

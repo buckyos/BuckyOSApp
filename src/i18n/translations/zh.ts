@@ -51,6 +51,8 @@ export default {
         btc_section: "比特币钱包",
         eth_section: "以太坊钱包",
         address_index: "账号 #{{index}}",
+        bucky_section: "BuckyOS 身份",
+        bucky_key_label: "公钥",
     },
     welcome: {
         title: "创建去中心化身份（DID）",
@@ -89,6 +91,7 @@ export default {
         title: "创建成功！",
         desc: "您的DID已创建并安全保存。",
         nickname: "昵称：",
+        did: "BuckyOS DID：",
         btc: "BTC地址：",
         eth: "ETH地址：",
     },

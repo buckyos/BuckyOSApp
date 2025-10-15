@@ -52,6 +52,8 @@ export default {
         btc_section: "Bitcoin Wallets",
         eth_section: "Ethereum Wallets",
         address_index: "Account #{{index}}",
+        bucky_section: "BuckyOS Identity",
+        bucky_key_label: "Public Key",
     },
     welcome: {
         title: "Create Decentralized Identity (DID)",
@@ -90,6 +92,7 @@ export default {
         title: "Creation Successful!",
         desc: "Your DID has been created and stored securely.",
         nickname: "Nickname:",
+        did: "BuckyOS DID:",
         btc: "BTC Address:",
         eth: "ETH Address:",
     },
