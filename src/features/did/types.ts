@@ -9,7 +9,7 @@ export interface BtcAddress extends ChainAddress {
     address_type: BtcAddressType;
 }
 
-export interface BuckyDidIdentity {
+export interface BuckyWallet {
     index: number;
     did: string;
     public_key: Record<string, unknown>;
@@ -20,5 +20,10 @@ export interface DidInfo {
     nickname: string;
     btc_addresses: BtcAddress[];
     eth_addresses: ChainAddress[];
-    buckyos_identity?: BuckyDidIdentity | null;
+    bucky_wallets: BuckyWallet[];
 }
+
+export type WalletExtensionRequest =
+    | { kind: "btc"; address_type: BtcAddressType; count?: number }
+    | { kind: "eth"; count?: number }
+    | { kind: "bucky"; count?: number };

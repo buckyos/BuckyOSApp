@@ -5,7 +5,8 @@ use bitcoin::key::Secp256k1;
 use bitcoin::{Address, PublicKey};
 use sha3::{Digest, Keccak256};
 
-use super::store::{BtcAddressType, NETWORK};
+use super::domain::BtcAddressType;
+use super::store::NETWORK;
 
 pub struct SeedCtx {
     secp: Secp256k1<bitcoin::secp256k1::All>,

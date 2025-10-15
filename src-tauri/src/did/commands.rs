@@ -1,14 +1,37 @@
 use bip39::{Language, Mnemonic};
 use rand::{rngs::OsRng, RngCore};
+use serde::Deserialize;
 use tauri::AppHandle;
 
 use super::crypto::{decrypt_mnemonic, encrypt_mnemonic};
-use super::derive::{derive_btc_address, derive_eth_address, SeedCtx};
-use super::store::{
-    load_vault, new_did_id, open_store, save_vault, AccountBook, AccountSeries, BtcAddress,
-    BuckyDidInfo, ChainAddress, DidInfo, DidRecord, DEFAULT_BTC_ADDRESS_TYPE,
-};
-use name_lib::{generate_ed25519_key_pair_from_mnemonic, get_device_did_from_ed25519_jwk};
+use super::domain::{address_series_from_sorted, BtcAddressType, DidInfo};
+use super::identity::{derive_wallets_from_mnemonic, DidDerivationPlan, WalletPlan};
+use super::store::{load_vault, new_did_id, open_store, save_vault, StoredDid};
+
+#[cfg(test)]
+use super::derive::{derive_eth_address, SeedCtx};
+
+#[derive(Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum WalletExtensionKind {
+    Btc {
+        address_type: BtcAddressType,
+        #[serde(default = "default_count")]
+        count: u32,
+    },
+    Eth {
+        #[serde(default = "default_count")]
+        count: u32,
+    },
+    Bucky {
+        #[serde(default = "default_count")]
+        count: u32,
+    },
+}
+
+fn default_count() -> u32 {
+    1
+}
 
 #[tauri::command]
 pub fn generate_mnemonic() -> Result<Vec<String>, String> {
@@ -34,41 +57,10 @@ pub fn create_did(
     let mnemonic =
         Mnemonic::parse_in(Language::English, &mnemonic_phrase).map_err(|e| e.to_string())?;
 
-    let ctx = SeedCtx::new(&mnemonic, "").map_err(|e| e.to_string())?;
-
-    let btc_address = derive_btc_address(&ctx, DEFAULT_BTC_ADDRESS_TYPE, 0)
-        .map_err(|e| e.to_string())?
-        .to_string();
-
-    let eth_address = derive_eth_address(&ctx, 0).map_err(|e| e.to_string())?;
-
-    let btc_entry = BtcAddress {
-        address_type: DEFAULT_BTC_ADDRESS_TYPE,
-        index: 0,
-        address: btc_address,
-    };
-    let eth_entry = ChainAddress {
-        index: 0,
-        address: eth_address,
-    };
-
-    let mut accounts = AccountBook::default();
-    accounts.btc.insert(
-        DEFAULT_BTC_ADDRESS_TYPE,
-        AccountSeries::with_entry(btc_entry.clone()),
-    );
-    accounts.eth = AccountSeries::with_entry(eth_entry.clone());
+    let plan = DidDerivationPlan::default();
+    let wallets = derive_wallets_from_mnemonic(&mnemonic, "", &plan)?;
 
     let encrypted_seed = encrypt_mnemonic(&password, &mnemonic).map_err(|e| e.to_string())?;
-
-    let (_pem, public_jwk) =
-        generate_ed25519_key_pair_from_mnemonic(mnemonic_phrase.as_str(), None, 0)
-            .map_err(|e| e.to_string())?;
-    let buckyos_identity = Some(BuckyDidInfo {
-        index: 0,
-        did: get_device_did_from_ed25519_jwk(&public_jwk).map_err(|e| e.to_string())?,
-        public_key: public_jwk,
-    });
 
     let store = open_store(&app_handle)?;
     let mut vault = load_vault(&store)?;
@@ -81,12 +73,11 @@ pub fn create_did(
         return Err("nickname_already_exists".to_string());
     }
 
-    let record = DidRecord {
+    let record = StoredDid {
         id: new_did_id(),
         nickname,
         seed: encrypted_seed,
-        accounts,
-        buckyos_identity,
+        wallets,
     };
 
     vault.active_did = Some(record.id.clone());
@@ -95,6 +86,94 @@ pub fn create_did(
     save_vault(&store, &vault)?;
 
     Ok(record.to_info())
+}
+
+#[tauri::command]
+pub fn extend_wallets(
+    app_handle: AppHandle,
+    password: String,
+    did_id: String,
+    request: WalletExtensionKind,
+) -> Result<DidInfo, String> {
+    let count = match &request {
+        WalletExtensionKind::Btc { count, .. }
+        | WalletExtensionKind::Eth { count }
+        | WalletExtensionKind::Bucky { count } => *count,
+    };
+    if count == 0 {
+        return Err("count_must_be_positive".to_string());
+    }
+
+    let store = open_store(&app_handle)?;
+    let mut vault = load_vault(&store)?;
+
+    let info = {
+        let record = vault
+            .dids
+            .iter_mut()
+            .find(|did| did.id == did_id)
+            .ok_or_else(|| "wallet_not_found".to_string())?;
+
+        let phrase = decrypt_mnemonic(&password, &record.seed).map_err(|e| e.to_string())?;
+        let mnemonic = Mnemonic::parse_in(Language::English, &phrase).map_err(|e| e.to_string())?;
+
+        match request {
+            WalletExtensionKind::Btc {
+                address_type,
+                count,
+            } => {
+                let start = record
+                    .wallets
+                    .btc
+                    .get(&address_type)
+                    .map(|series| series.next_index())
+                    .unwrap_or(0);
+                let indices: Vec<u32> = (start..start.saturating_add(count)).collect();
+                let plan = DidDerivationPlan::with_wallet(WalletPlan::btc(address_type, indices));
+                let new_wallets = derive_wallets_from_mnemonic(&mnemonic, "", &plan)?;
+                if let Some(series) = new_wallets.btc.get(&address_type) {
+                    if !series.entries.is_empty() {
+                        let mut combined = record
+                            .wallets
+                            .btc
+                            .remove(&address_type)
+                            .unwrap_or_default()
+                            .entries;
+                        combined.extend(series.entries.clone());
+                        let updated = address_series_from_sorted(combined, |entry| entry.index);
+                        record.wallets.btc.insert(address_type, updated);
+                    }
+                }
+            }
+            WalletExtensionKind::Eth { count } => {
+                let start = record.wallets.eth.next_index();
+                let indices: Vec<u32> = (start..start.saturating_add(count)).collect();
+                let plan = DidDerivationPlan::with_wallet(WalletPlan::eth(indices));
+                let new_wallets = derive_wallets_from_mnemonic(&mnemonic, "", &plan)?;
+                if !new_wallets.eth.entries.is_empty() {
+                    let mut combined = record.wallets.eth.entries.clone();
+                    combined.extend(new_wallets.eth.entries.clone());
+                    record.wallets.eth = address_series_from_sorted(combined, |entry| entry.index);
+                }
+            }
+            WalletExtensionKind::Bucky { count } => {
+                let start = record.wallets.bucky.next_index();
+                let indices: Vec<u32> = (start..start.saturating_add(count)).collect();
+                let plan = DidDerivationPlan::with_wallet(WalletPlan::bucky(indices));
+                let new_wallets = derive_wallets_from_mnemonic(&mnemonic, "", &plan)?;
+                if !new_wallets.bucky.entries.is_empty() {
+                    let mut combined = record.wallets.bucky.entries.clone();
+                    combined.extend(new_wallets.bucky.entries.clone());
+                    record.wallets.bucky =
+                        address_series_from_sorted(combined, |entry| entry.index);
+                }
+            }
+        }
+        record.to_info()
+    };
+
+    save_vault(&store, &vault)?;
+    Ok(info)
 }
 
 #[tauri::command]
@@ -108,7 +187,7 @@ pub fn wallet_exists(app_handle: AppHandle) -> Result<bool, String> {
 pub fn list_dids(app_handle: AppHandle) -> Result<Vec<DidInfo>, String> {
     let store = open_store(&app_handle)?;
     let vault = load_vault(&store)?;
-    Ok(vault.dids.iter().map(DidRecord::to_info).collect())
+    Ok(vault.dids.iter().map(StoredDid::to_info).collect())
 }
 
 #[tauri::command]
@@ -121,7 +200,7 @@ pub fn active_did(app_handle: AppHandle) -> Result<Option<DidInfo>, String> {
             .dids
             .iter()
             .find(|did| did.id == id)
-            .map(DidRecord::to_info)
+            .map(StoredDid::to_info)
     }))
 }
 
@@ -224,6 +303,7 @@ pub fn current_wallet_nickname(app_handle: AppHandle) -> Result<Option<String>, 
 
 #[cfg(test)]
 mod tests {
+    use super::domain::DEFAULT_BTC_ADDRESS_TYPE;
     use super::*;
     use tauri::test::mock_app;
 
@@ -279,10 +359,8 @@ mod tests {
             DEFAULT_BTC_ADDRESS_TYPE
         );
         assert_eq!(did_info.eth_addresses[0].index, 0);
-        let identity = did_info
-            .buckyos_identity
-            .as_ref()
-            .expect("buckyos identity present");
+        assert_eq!(did_info.bucky_wallets.len(), 1);
+        let identity = &did_info.bucky_wallets[0];
         assert_eq!(identity.index, 0);
         assert!(
             identity.did.starts_with("did:dev:"),
@@ -293,7 +371,7 @@ mod tests {
         let dids = list_dids(app_handle.clone()).unwrap();
         assert_eq!(dids.len(), 1);
         assert_eq!(dids[0].id, did_info.id);
-        assert!(dids[0].buckyos_identity.is_some());
+        assert_eq!(dids[0].bucky_wallets.len(), 1);
 
         let active = active_did(app_handle.clone()).unwrap().unwrap();
         assert_eq!(active.id, did_info.id);
@@ -309,5 +387,71 @@ mod tests {
         delete_wallet(app_handle.clone(), password, Some(did_info.id)).unwrap();
         let dids_after = list_dids(app_handle).unwrap();
         assert!(dids_after.is_empty());
+    }
+
+    #[test]
+    fn test_extend_wallets() {
+        let app = mock_app()
+            .plugin(tauri_plugin_store::Builder::default().build())
+            .build();
+        let app_handle = app.handle();
+
+        let nickname = "extend_user".to_string();
+        let password = "password123".to_string();
+        let mnemonic_words = vec![
+            "abandon", "abandon", "abandon", "abandon", "abandon", "abandon", "abandon", "abandon",
+            "abandon", "abandon", "abandon", "about",
+        ]
+        .into_iter()
+        .map(String::from)
+        .collect();
+
+        let did_info = create_did(
+            app_handle.clone(),
+            nickname.clone(),
+            password.clone(),
+            mnemonic_words,
+        )
+        .unwrap();
+
+        let extended_btc = extend_wallets(
+            app_handle.clone(),
+            password.clone(),
+            did_info.id.clone(),
+            WalletExtensionKind::Btc {
+                address_type: DEFAULT_BTC_ADDRESS_TYPE,
+                count: 2,
+            },
+        )
+        .unwrap();
+        assert_eq!(extended_btc.btc_addresses.len(), 3);
+
+        let extended_eth = extend_wallets(
+            app_handle.clone(),
+            password.clone(),
+            did_info.id.clone(),
+            WalletExtensionKind::Eth { count: 1 },
+        )
+        .unwrap();
+        assert_eq!(extended_eth.eth_addresses.len(), 2);
+
+        let extended_bucky = extend_wallets(
+            app_handle.clone(),
+            password.clone(),
+            did_info.id.clone(),
+            WalletExtensionKind::Bucky { count: 1 },
+        )
+        .unwrap();
+        assert_eq!(extended_bucky.bucky_wallets.len(), 2);
+
+        let listed = list_dids(app_handle.clone()).unwrap();
+        assert_eq!(listed.len(), 1);
+        assert_eq!(listed[0].btc_addresses.len(), 3);
+        assert_eq!(listed[0].eth_addresses.len(), 2);
+        assert_eq!(listed[0].bucky_wallets.len(), 2);
+
+        delete_wallet(app_handle.clone(), password, Some(did_info.id)).unwrap();
+        let after_delete = list_dids(app_handle).unwrap();
+        assert!(after_delete.is_empty());
     }
 }

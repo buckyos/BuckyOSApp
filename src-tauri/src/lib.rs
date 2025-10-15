@@ -20,6 +20,7 @@ pub fn run() {
             did::set_active_did,
             did::delete_wallet,
             did::reveal_mnemonic,
+            did::extend_wallets,
             did::current_wallet_nickname
         ])
         .run(tauri::generate_context!())
