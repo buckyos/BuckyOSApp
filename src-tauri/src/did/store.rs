@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
+use std::io::ErrorKind;
 use tauri::{AppHandle, Wry};
-use tauri_plugin_store::{Store, StoreExt};
+use tauri_plugin_store::{Error as StoreError, Store, StoreExt};
 use ulid::Ulid;
 
 use super::domain::{BtcAddress, BuckyIdentity, ChainAddress, DidInfo, WalletCollection};
@@ -83,13 +84,10 @@ pub fn open_store(app_handle: &AppHandle) -> Result<AppStore, String> {
 pub fn load_vault(store: &AppStore) -> Result<VaultStore, String> {
     match store.reload() {
         Ok(_) => {}
-        Err(err) => {
-            let msg = err.to_string();
-            if msg.contains("No such file or directory") || msg.contains("os error 2") {
-                return Ok(VaultStore::default());
-            }
-            return Err(msg);
+        Err(StoreError::Io(io_err)) if io_err.kind() == ErrorKind::NotFound => {
+            return Ok(VaultStore::default());
         }
+        Err(err) => return Err(err.to_string()),
     }
 
     match store.get(STORE_KEY) {

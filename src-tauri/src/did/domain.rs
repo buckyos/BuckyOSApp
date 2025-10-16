@@ -74,6 +74,37 @@ impl<T> AddressSeries<T> {
     pub fn next_index(&self) -> u32 {
         self.next_index
     }
+
+    pub fn push_with_index(&mut self, index: u32, entry: T) {
+        if self.entries.is_empty() && self.next_index == 0 {
+            self.next_index = index;
+        }
+
+        debug_assert!(
+            index >= self.next_index,
+            "non-monotonic address index detected: {index} < {}",
+            self.next_index
+        );
+
+        if index > self.next_index {
+            self.next_index = index;
+        }
+
+        self.entries.push(entry);
+        self.next_index = index
+            .checked_add(1)
+            .expect("address index overflow when pushing");
+    }
+
+    pub fn extend_from<F>(&mut self, entries: Vec<T>, index_lookup: F)
+    where
+        F: Fn(&T) -> u32,
+    {
+        for entry in entries {
+            let index = index_lookup(&entry);
+            self.push_with_index(index, entry);
+        }
+    }
 }
 
 impl<T> Default for AddressSeries<T> {
@@ -92,6 +123,28 @@ pub struct WalletCollection {
     pub bucky: AddressSeries<BuckyIdentity>,
 }
 
+impl WalletCollection {
+    pub fn merge(&mut self, other: WalletCollection) {
+        for (addr_type, series) in other.btc {
+            let target = self
+                .btc
+                .entry(addr_type)
+                .or_insert_with(AddressSeries::default);
+            target.extend_from(series.entries, |entry| entry.index);
+        }
+
+        self.eth.extend_from(other.eth.entries, |entry| entry.index);
+        self.bucky
+            .extend_from(other.bucky.entries, |entry| entry.index);
+    }
+
+    pub fn btc_series_mut(&mut self, addr_type: BtcAddressType) -> &mut AddressSeries<BtcAddress> {
+        self.btc
+            .entry(addr_type)
+            .or_insert_with(AddressSeries::default)
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct DidInfo {
     pub id: String,
@@ -99,16 +152,4 @@ pub struct DidInfo {
     pub btc_addresses: Vec<BtcAddress>,
     pub eth_addresses: Vec<ChainAddress>,
     pub bucky_wallets: Vec<BuckyIdentity>,
-}
-
-pub fn address_series_from_sorted<T, F>(entries: Vec<T>, index_lookup: F) -> AddressSeries<T>
-where
-    F: Fn(&T) -> u32,
-{
-    let next_index = entries
-        .iter()
-        .map(|entry| index_lookup(entry).saturating_add(1))
-        .max()
-        .unwrap_or(0);
-    AddressSeries::new(entries, next_index)
 }

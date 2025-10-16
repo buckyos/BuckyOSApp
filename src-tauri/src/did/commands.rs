@@ -4,8 +4,8 @@ use serde::Deserialize;
 use tauri::AppHandle;
 
 use super::crypto::{decrypt_mnemonic, encrypt_mnemonic};
-use super::domain::{address_series_from_sorted, BtcAddressType, DidInfo};
-use super::identity::{derive_wallets_from_mnemonic, DidDerivationPlan, WalletPlan};
+use super::domain::{BtcAddressType, DidInfo, DEFAULT_BTC_ADDRESS_TYPE};
+use super::identity::{derive_wallets_with_requests, DidDerivationPlan, WalletRequest};
 use super::store::{load_vault, new_did_id, open_store, save_vault, StoredDid};
 
 #[cfg(test)]
@@ -57,8 +57,8 @@ pub fn create_did(
     let mnemonic =
         Mnemonic::parse_in(Language::English, &mnemonic_phrase).map_err(|e| e.to_string())?;
 
-    let plan = DidDerivationPlan::default();
-    let wallets = derive_wallets_from_mnemonic(&mnemonic, "", &plan)?;
+    let requests = DidDerivationPlan::default_requests();
+    let wallets = derive_wallets_with_requests(&mnemonic, "", &requests, None)?;
 
     let encrypted_seed = encrypt_mnemonic(&password, &mnemonic).map_err(|e| e.to_string())?;
 
@@ -117,59 +117,23 @@ pub fn extend_wallets(
         let phrase = decrypt_mnemonic(&password, &record.seed).map_err(|e| e.to_string())?;
         let mnemonic = Mnemonic::parse_in(Language::English, &phrase).map_err(|e| e.to_string())?;
 
-        match request {
+        let requests = match request {
             WalletExtensionKind::Btc {
                 address_type,
                 count,
-            } => {
-                let start = record
-                    .wallets
-                    .btc
-                    .get(&address_type)
-                    .map(|series| series.next_index())
-                    .unwrap_or(0);
-                let indices: Vec<u32> = (start..start.saturating_add(count)).collect();
-                let plan = DidDerivationPlan::with_wallet(WalletPlan::btc(address_type, indices));
-                let new_wallets = derive_wallets_from_mnemonic(&mnemonic, "", &plan)?;
-                if let Some(series) = new_wallets.btc.get(&address_type) {
-                    if !series.entries.is_empty() {
-                        let mut combined = record
-                            .wallets
-                            .btc
-                            .remove(&address_type)
-                            .unwrap_or_default()
-                            .entries;
-                        combined.extend(series.entries.clone());
-                        let updated = address_series_from_sorted(combined, |entry| entry.index);
-                        record.wallets.btc.insert(address_type, updated);
-                    }
-                }
-            }
-            WalletExtensionKind::Eth { count } => {
-                let start = record.wallets.eth.next_index();
-                let indices: Vec<u32> = (start..start.saturating_add(count)).collect();
-                let plan = DidDerivationPlan::with_wallet(WalletPlan::eth(indices));
-                let new_wallets = derive_wallets_from_mnemonic(&mnemonic, "", &plan)?;
-                if !new_wallets.eth.entries.is_empty() {
-                    let mut combined = record.wallets.eth.entries.clone();
-                    combined.extend(new_wallets.eth.entries.clone());
-                    record.wallets.eth = address_series_from_sorted(combined, |entry| entry.index);
-                }
-            }
-            WalletExtensionKind::Bucky { count } => {
-                let start = record.wallets.bucky.next_index();
-                let indices: Vec<u32> = (start..start.saturating_add(count)).collect();
-                let plan = DidDerivationPlan::with_wallet(WalletPlan::bucky(indices));
-                let new_wallets = derive_wallets_from_mnemonic(&mnemonic, "", &plan)?;
-                if !new_wallets.bucky.entries.is_empty() {
-                    let mut combined = record.wallets.bucky.entries.clone();
-                    combined.extend(new_wallets.bucky.entries.clone());
-                    record.wallets.bucky =
-                        address_series_from_sorted(combined, |entry| entry.index);
-                }
-            }
+            } => vec![WalletRequest::btc(address_type, count)],
+            WalletExtensionKind::Eth { count } => vec![WalletRequest::eth(count)],
+            WalletExtensionKind::Bucky { count } => vec![WalletRequest::bucky(count)],
+        };
+
+        if requests.is_empty() {
+            record.to_info()
+        } else {
+            let new_wallets =
+                derive_wallets_with_requests(&mnemonic, "", &requests, Some(&record.wallets))?;
+            record.wallets.merge(new_wallets);
+            record.to_info()
         }
-        record.to_info()
     };
 
     save_vault(&store, &vault)?;

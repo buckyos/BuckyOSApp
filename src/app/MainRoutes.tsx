@@ -67,38 +67,41 @@ const MainRoutes: React.FC = () => {
 
   const accountLabel = t("common.account.current");
   const avatarInitial = displayName.trim().charAt(0).toUpperCase() || "?";
+  const hideAccountHeader = normalizedPath.startsWith("/main/setting/backup");
 
   return (
     <div className={showTabBar ? "App app-tabbed" : "App"}>
       <div className="content">
-        <div className="account-header">
-          <div className="account-avatar" aria-hidden="true">{avatarInitial}</div>
-          <div className="account-info">
-            <span className="account-label">{accountLabel}</span>
-            <span className="account-name">{displayName}</span>
+        {!hideAccountHeader && (
+          <div className="account-header">
+            <div className="account-avatar" aria-hidden="true">{avatarInitial}</div>
+            <div className="account-info">
+              <span className="account-label">{accountLabel}</span>
+              <span className="account-name">{displayName}</span>
+            </div>
+            {dids.length > 1 && (
+              <select
+                className="account-switcher"
+                value={activeDid?.id ?? ""}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  if (!value) return;
+                  setActiveDid(value).catch((err) => {
+                    console.error("Failed to switch DID", err);
+                  });
+                }}
+                disabled={loading}
+                aria-label={t("common.account.switch")}
+              >
+                {dids.map((did) => (
+                  <option key={did.id} value={did.id}>
+                    {did.nickname.trim().length > 0 ? did.nickname : t("common.account.unnamed")}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
-          {dids.length > 1 && (
-            <select
-              className="account-switcher"
-              value={activeDid?.id ?? ""}
-              onChange={(event) => {
-                const value = event.target.value;
-                if (!value) return;
-                setActiveDid(value).catch((err) => {
-                  console.error("Failed to switch DID", err);
-                });
-              }}
-              disabled={loading}
-              aria-label={t("common.account.switch")}
-            >
-              {dids.map((did) => (
-                <option key={did.id} value={did.id}>
-                  {did.nickname.trim().length > 0 ? did.nickname : t("common.account.unnamed")}
-                </option>
-              ))}
-            </select>
-          )}
-        </div>
+        )}
         <div className="content-body">
           <Routes>
             <Route path="/home" element={<Home />} />

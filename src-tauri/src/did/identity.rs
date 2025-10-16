@@ -1,11 +1,10 @@
 use bip39::Mnemonic;
 use name_lib::{generate_ed25519_key_pair_from_mnemonic, get_device_did_from_ed25519_jwk};
-use std::collections::HashMap;
 
 use super::derive::{derive_btc_address, derive_eth_address, SeedCtx};
 use super::domain::{
-    address_series_from_sorted, BtcAddress, BtcAddressType, BuckyIdentity, ChainAddress,
-    WalletCollection, DEFAULT_BTC_ADDRESS_TYPE,
+    BtcAddress, BtcAddressType, BuckyIdentity, ChainAddress, WalletCollection,
+    DEFAULT_BTC_ADDRESS_TYPE,
 };
 
 #[derive(Clone, Debug)]
@@ -21,61 +20,115 @@ pub struct WalletPlan {
     pub indices: Vec<u32>,
 }
 
-impl WalletPlan {
-    pub fn btc(address_type: BtcAddressType, indices: Vec<u32>) -> Self {
-        Self {
-            kind: WalletKind::Btc { address_type },
-            indices,
-        }
-    }
-
-    pub fn eth(indices: Vec<u32>) -> Self {
-        Self {
-            kind: WalletKind::Eth,
-            indices,
-        }
-    }
-
-    pub fn bucky(indices: Vec<u32>) -> Self {
-        Self {
-            kind: WalletKind::Bucky,
-            indices,
-        }
-    }
-}
-
 #[derive(Clone, Debug)]
 pub struct DidDerivationPlan {
     pub wallets: Vec<WalletPlan>,
 }
 
 impl DidDerivationPlan {
-    pub fn new() -> Self {
-        Self {
-            wallets: Vec::new(),
-        }
+    pub fn is_empty(&self) -> bool {
+        self.wallets.is_empty()
     }
 
-    pub fn with_wallet(wallet: WalletPlan) -> Self {
-        Self {
-            wallets: vec![wallet],
+    pub fn from_requests(requests: &[WalletRequest], existing: Option<&WalletCollection>) -> Self {
+        let mut wallets = Vec::new();
+
+        for request in requests {
+            match request {
+                WalletRequest::Btc {
+                    address_type,
+                    count,
+                } => {
+                    if *count == 0 {
+                        continue;
+                    }
+                    let start = existing
+                        .and_then(|collection| collection.btc.get(address_type))
+                        .map(|series| series.next_index())
+                        .unwrap_or(0);
+                    let indices: Vec<u32> = (start..start.saturating_add(*count)).collect();
+                    if !indices.is_empty() {
+                        wallets.push(WalletPlan {
+                            kind: WalletKind::Btc {
+                                address_type: *address_type,
+                            },
+                            indices,
+                        });
+                    }
+                }
+                WalletRequest::Eth { count } => {
+                    if *count == 0 {
+                        continue;
+                    }
+                    let start = existing
+                        .map(|collection| collection.eth.next_index())
+                        .unwrap_or(0);
+                    let indices: Vec<u32> = (start..start.saturating_add(*count)).collect();
+                    if !indices.is_empty() {
+                        wallets.push(WalletPlan {
+                            kind: WalletKind::Eth,
+                            indices,
+                        });
+                    }
+                }
+                WalletRequest::Bucky { count } => {
+                    if *count == 0 {
+                        continue;
+                    }
+                    let start = existing
+                        .map(|collection| collection.bucky.next_index())
+                        .unwrap_or(0);
+                    let indices: Vec<u32> = (start..start.saturating_add(*count)).collect();
+                    if !indices.is_empty() {
+                        wallets.push(WalletPlan {
+                            kind: WalletKind::Bucky,
+                            indices,
+                        });
+                    }
+                }
+            }
         }
+
+        Self { wallets }
     }
 
-    pub fn push_wallet(&mut self, wallet: WalletPlan) {
-        self.wallets.push(wallet);
+    pub fn default_requests() -> Vec<WalletRequest> {
+        vec![
+            WalletRequest::btc(DEFAULT_BTC_ADDRESS_TYPE, 1),
+            WalletRequest::eth(1),
+            WalletRequest::bucky(1),
+        ]
     }
 }
 
-impl Default for DidDerivationPlan {
-    fn default() -> Self {
-        Self {
-            wallets: vec![
-                WalletPlan::btc(DEFAULT_BTC_ADDRESS_TYPE, vec![0]),
-                WalletPlan::eth(vec![0]),
-                WalletPlan::bucky(vec![0]),
-            ],
+#[derive(Clone, Debug)]
+pub enum WalletRequest {
+    Btc {
+        address_type: BtcAddressType,
+        count: u32,
+    },
+    Eth {
+        count: u32,
+    },
+    Bucky {
+        count: u32,
+    },
+}
+
+impl WalletRequest {
+    pub fn btc(address_type: BtcAddressType, count: u32) -> Self {
+        Self::Btc {
+            address_type,
+            count,
         }
+    }
+
+    pub fn eth(count: u32) -> Self {
+        Self::Eth { count }
+    }
+
+    pub fn bucky(count: u32) -> Self {
+        Self::Bucky { count }
     }
 }
 
@@ -92,8 +145,22 @@ pub fn derive_did_from_mnemonic(
     plan: &DidDerivationPlan,
 ) -> Result<DerivedDid, String> {
     let ctx = SeedCtx::new(mnemonic, passphrase).map_err(|e| e.to_string())?;
-
     let mut result = DerivedDid::default();
+
+    let need_bucky = plan
+        .wallets
+        .iter()
+        .any(|wallet| matches!(wallet.kind, WalletKind::Bucky));
+    let mnemonic_phrase = if need_bucky {
+        Some(mnemonic.to_string())
+    } else {
+        None
+    };
+    let passphrase_opt = if passphrase.is_empty() {
+        None
+    } else {
+        Some(passphrase)
+    };
 
     for wallet in &plan.wallets {
         match &wallet.kind {
@@ -119,15 +186,12 @@ pub fn derive_did_from_mnemonic(
                 }
             }
             WalletKind::Bucky => {
-                let mnemonic_phrase = mnemonic.to_string();
-                let passphrase_opt = if passphrase.is_empty() {
-                    None
-                } else {
-                    Some(passphrase)
-                };
+                let phrase = mnemonic_phrase
+                    .as_ref()
+                    .expect("mnemonic phrase required for bucky derivation");
                 for index in &wallet.indices {
                     let (_pem, public_jwk) = generate_ed25519_key_pair_from_mnemonic(
-                        mnemonic_phrase.as_str(),
+                        phrase.as_str(),
                         passphrase_opt,
                         *index,
                     )
@@ -157,37 +221,30 @@ impl DerivedDid {
     pub fn into_wallets(self) -> WalletCollection {
         let mut wallets = WalletCollection::default();
 
-        let mut btc_groups: HashMap<BtcAddressType, Vec<BtcAddress>> = HashMap::new();
         for entry in self.btc {
-            btc_groups
-                .entry(entry.address_type)
-                .or_default()
-                .push(entry);
+            let index = entry.index;
+            wallets
+                .btc_series_mut(entry.address_type)
+                .push_with_index(index, entry);
         }
 
-        for (addr_type, mut entries) in btc_groups {
-            entries.sort_by_key(|entry| entry.index);
-            let series = address_series_from_sorted(entries, |entry| entry.index);
-            wallets.btc.insert(addr_type, series);
-        }
-
-        let mut eth_entries = self.eth;
-        eth_entries.sort_by_key(|entry| entry.index);
-        wallets.eth = address_series_from_sorted(eth_entries, |entry| entry.index);
-
-        let mut bucky_entries = self.bucky;
-        bucky_entries.sort_by_key(|entry| entry.index);
-        wallets.bucky = address_series_from_sorted(bucky_entries, |entry| entry.index);
+        wallets.eth.extend_from(self.eth, |entry| entry.index);
+        wallets.bucky.extend_from(self.bucky, |entry| entry.index);
 
         wallets
     }
 }
 
-pub fn derive_wallets_from_mnemonic(
+pub fn derive_wallets_with_requests(
     mnemonic: &Mnemonic,
     passphrase: &str,
-    plan: &DidDerivationPlan,
+    requests: &[WalletRequest],
+    existing: Option<&WalletCollection>,
 ) -> Result<WalletCollection, String> {
-    let derived = derive_did_from_mnemonic(mnemonic, passphrase, plan)?;
+    let plan = DidDerivationPlan::from_requests(requests, existing);
+    if plan.is_empty() {
+        return Ok(WalletCollection::default());
+    }
+    let derived = derive_did_from_mnemonic(mnemonic, passphrase, &plan)?;
     Ok(derived.into_wallets())
 }
