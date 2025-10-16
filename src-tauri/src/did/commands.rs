@@ -7,6 +7,7 @@ use super::crypto::{decrypt_mnemonic, encrypt_mnemonic};
 use super::domain::{BtcAddressType, DidInfo, DEFAULT_BTC_ADDRESS_TYPE};
 use super::identity::{derive_wallets_with_requests, DidDerivationPlan, WalletRequest};
 use super::store::{load_vault, new_did_id, open_store, save_vault, StoredDid};
+use secrecy::{ExposeSecret, SecretString};
 
 #[cfg(test)]
 use super::derive::{derive_eth_address, SeedCtx};
@@ -114,8 +115,11 @@ pub fn extend_wallets(
             .find(|did| did.id == did_id)
             .ok_or_else(|| "wallet_not_found".to_string())?;
 
-        let phrase = decrypt_mnemonic(&password, &record.seed).map_err(|e| e.to_string())?;
-        let mnemonic = Mnemonic::parse_in(Language::English, &phrase).map_err(|e| e.to_string())?;
+        let decrypted = decrypt_mnemonic(&password, &record.seed).map_err(|e| e.to_string())?;
+        let secret_phrase = SecretString::new(decrypted);
+        let mnemonic = Mnemonic::parse_in(Language::English, secret_phrase.expose_secret())
+            .map_err(|e| e.to_string())?;
+        drop(secret_phrase);
 
         let requests = match request {
             WalletExtensionKind::Btc {
@@ -241,8 +245,12 @@ pub fn reveal_mnemonic(
         .find(|did| did.id == target_id)
         .ok_or_else(|| "wallet_not_found".to_string())?;
 
-    let phrase = decrypt_mnemonic(&password, &record.seed).map_err(|e| e.to_string())?;
-    let mnemonic = Mnemonic::parse_in(Language::English, &phrase).map_err(|e| e.to_string())?;
+    let decrypted = decrypt_mnemonic(&password, &record.seed).map_err(|e| e.to_string())?;
+    let secret_phrase = SecretString::new(decrypted);
+    let mnemonic = Mnemonic::parse_in(Language::English, secret_phrase.expose_secret())
+        .map_err(|e| e.to_string())?;
+    drop(secret_phrase);
+
     Ok(mnemonic
         .to_string()
         .split_whitespace()
