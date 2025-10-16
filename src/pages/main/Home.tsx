@@ -23,9 +23,17 @@ function displayNickname(did: DidInfo, fallback: string): string {
 }
 
 const Home: React.FC = () => {
-  const { dids, activeDid, loading, refresh } = useDidContext();
+  const { dids, activeDid, loading, refresh, addWallet } = useDidContext();
   const { t } = useI18n();
   const [refreshing, setRefreshing] = React.useState(false);
+  const [dialogOpen, setDialogOpen] = React.useState(false);
+  const [password, setPassword] = React.useState("");
+  const [selectedDid, setSelectedDid] = React.useState<string | null>(null);
+  const [selectedKind, setSelectedKind] = React.useState<WalletExtensionRequest["kind"]>("bucky");
+  const [count, setCount] = React.useState(1);
+  const [btcType, setBtcType] = React.useState<BtcAddressType>("native_segwit");
+  const [submitting, setSubmitting] = React.useState(false);
+  const [error, setError] = React.useState("");
 
   const handleRefresh = React.useCallback(async () => {
     setRefreshing(true);
@@ -35,6 +43,53 @@ const Home: React.FC = () => {
       setRefreshing(false);
     }
   }, [refresh]);
+
+  const openDialog = React.useCallback((didId: string) => {
+    setSelectedDid(didId);
+    setPassword("");
+    setSelectedKind("bucky");
+    setCount(1);
+    setBtcType("native_segwit");
+    setError("");
+    setDialogOpen(true);
+  }, []);
+
+  const closeDialog = React.useCallback(() => {
+    if (submitting) return;
+    setDialogOpen(false);
+  }, [submitting]);
+
+  const handleConfirm = React.useCallback(async () => {
+    if (!selectedDid) return;
+    if (!password.trim()) {
+      setError(t("home.error_password_required"));
+      return;
+    }
+    if (count <= 0) {
+      setError(t("home.error_count_positive"));
+      return;
+    }
+    setSubmitting(true);
+    setError("");
+    let request: WalletExtensionRequest;
+    if (selectedKind === "btc") {
+      request = { kind: "btc", address_type: btcType, count };
+    } else if (selectedKind === "eth") {
+      request = { kind: "eth", count };
+    } else {
+      request = { kind: "bucky", count };
+    }
+    try {
+      await addWallet(password, selectedDid, request);
+      setDialogOpen(false);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      setError(message);
+    } finally {
+      setSubmitting(false);
+      setPassword("");
+    }
+  }, [selectedDid, password, selectedKind, btcType, count, addWallet, t]);
 
   return (
     <div className="home-wrapper">

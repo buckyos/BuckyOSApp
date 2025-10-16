@@ -14,6 +14,7 @@ interface InputDialogProps {
   onCancel: () => void;
   loading?: boolean;
   error?: string;
+  children?: React.ReactNode;
 }
 
 const InputDialog: React.FC<InputDialogProps> = ({
@@ -30,6 +31,7 @@ const InputDialog: React.FC<InputDialogProps> = ({
   onCancel,
   loading = false,
   error,
+  children,
 }) => {
   const inputRef = React.useRef<HTMLInputElement | null>(null);
 
@@ -105,6 +107,7 @@ const InputDialog: React.FC<InputDialogProps> = ({
           }}
           disabled={loading}
         />
+        {children}
         {error && (
           <div style={{ color: "#ef4444", fontSize: 13 }}>{error}</div>
         )}

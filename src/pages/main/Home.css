@@ -159,3 +159,28 @@
   background: rgba(124, 166, 255, 0.18);
   color: #8faeff;
 }
+
+.did-card-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.wallet-extension-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.wallet-extension-form label {
+  font-size: 0.85rem;
+  color: var(--muted-text);
+}
+
+.wallet-extension-form select,
+.wallet-extension-form input[type="number"] {
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid var(--input-border);
+  background: var(--card-bg);
+  color: var(--app-text);
+}
