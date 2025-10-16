@@ -46,7 +46,7 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
           border: "1px solid var(--border)",
           borderRadius: 16,
           padding: 16,
-          boxShadow: "0 18px 36px rgba(0,0,0,0.16)",
+          boxShadow: "none",
         }}
       >
         <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>{title}</div>
@@ -65,6 +65,7 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
               padding: "10px 14px",
               background: "#a9b1bbff",
               color: "#fff",
+              boxShadow: "none",
             }}
             onClick={onCancel}
           >
@@ -77,7 +78,7 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
               background: "linear-gradient(90deg, #ef4444 0%, #f97316 100%)",
               color: "#fff",
               border: "none",
-              boxShadow: "0 6px 16px rgba(239, 68, 68, 0.25)",
+              boxShadow: "none",
             }}
             onClick={onConfirm}
           >

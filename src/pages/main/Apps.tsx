@@ -36,7 +36,7 @@ const Apps: React.FC = () => {
             display: "flex",
             gap: 16,
             alignItems: "center",
-            boxShadow: "0 14px 32px rgba(15, 23, 42, 0.08)",
+            boxShadow: "none",
           }}
         >
           <div
@@ -51,7 +51,7 @@ const Apps: React.FC = () => {
               color: "#fff",
               fontSize: 22,
               fontWeight: 600,
-              boxShadow: "0 12px 28px rgba(67, 56, 202, 0.18)",
+              boxShadow: "none",
             }}
             aria-hidden="true"
           >

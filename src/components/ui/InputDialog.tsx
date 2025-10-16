@@ -80,7 +80,7 @@ const InputDialog: React.FC<InputDialogProps> = ({
           border: "1px solid var(--border)",
           borderRadius: 16,
           padding: 18,
-          boxShadow: "0 18px 36px rgba(0,0,0,0.16)",
+          boxShadow: "none",
           display: "flex",
           flexDirection: "column",
           gap: 14,
@@ -137,7 +137,7 @@ const InputDialog: React.FC<InputDialogProps> = ({
                 : "linear-gradient(90deg, #6366f1 0%, #6c5ce7 100%)",
               color: "#fff",
               border: "none",
-              boxShadow: "0 6px 16px rgba(99, 102, 241, 0.22)",
+              boxShadow: "none",
               opacity: loading ? 0.85 : 1,
               cursor: loading ? "progress" : "pointer",
             }}

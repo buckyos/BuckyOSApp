@@ -87,7 +87,7 @@ input[type="password"]::placeholder {
 input[type="text"]:focus,
 input[type="password"]:focus {
     border-color: #8f96ff;
-    box-shadow: 0 0 0 2px rgba(143, 150, 255, 0.25);
+    box-shadow: none;
 }
 
 /* Slightly stronger borders in dark theme for readability */
