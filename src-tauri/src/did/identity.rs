@@ -2,10 +2,7 @@ use bip39::Mnemonic;
 use name_lib::{generate_ed25519_key_pair_from_mnemonic, get_device_did_from_ed25519_jwk};
 
 use super::derive::{derive_btc_address, derive_eth_address, SeedCtx};
-use super::domain::{
-    BtcAddress, BtcAddressType, BuckyIdentity, ChainAddress, WalletCollection,
-    DEFAULT_BTC_ADDRESS_TYPE,
-};
+use super::domain::{BtcAddress, BtcAddressType, BuckyIdentity, ChainAddress, WalletCollection};
 
 #[derive(Clone, Debug)]
 pub enum WalletKind {
@@ -93,11 +90,7 @@ impl DidDerivationPlan {
     }
 
     pub fn default_requests() -> Vec<WalletRequest> {
-        vec![
-            WalletRequest::btc(DEFAULT_BTC_ADDRESS_TYPE, 1),
-            WalletRequest::eth(1),
-            WalletRequest::bucky(1),
-        ]
+        vec![WalletRequest::bucky(1)]
     }
 }
 

@@ -323,14 +323,8 @@ mod tests {
         .unwrap();
 
         assert_eq!(did_info.nickname, nickname);
-        assert_eq!(did_info.btc_addresses.len(), 1);
-        assert_eq!(did_info.eth_addresses.len(), 1);
-        assert_eq!(did_info.btc_addresses[0].index, 0);
-        assert_eq!(
-            did_info.btc_addresses[0].address_type,
-            DEFAULT_BTC_ADDRESS_TYPE
-        );
-        assert_eq!(did_info.eth_addresses[0].index, 0);
+        assert!(did_info.btc_addresses.is_empty());
+        assert!(did_info.eth_addresses.is_empty());
         assert_eq!(did_info.bucky_wallets.len(), 1);
         let identity = &did_info.bucky_wallets[0];
         assert_eq!(identity.index, 0);
@@ -396,7 +390,7 @@ mod tests {
             },
         )
         .unwrap();
-        assert_eq!(extended_btc.btc_addresses.len(), 3);
+        assert_eq!(extended_btc.btc_addresses.len(), 2);
 
         let extended_eth = extend_wallets(
             app_handle.clone(),
@@ -405,7 +399,7 @@ mod tests {
             WalletExtensionKind::Eth { count: 1 },
         )
         .unwrap();
-        assert_eq!(extended_eth.eth_addresses.len(), 2);
+        assert_eq!(extended_eth.eth_addresses.len(), 1);
 
         let extended_bucky = extend_wallets(
             app_handle.clone(),
@@ -418,8 +412,8 @@ mod tests {
 
         let listed = list_dids(app_handle.clone()).unwrap();
         assert_eq!(listed.len(), 1);
-        assert_eq!(listed[0].btc_addresses.len(), 3);
-        assert_eq!(listed[0].eth_addresses.len(), 2);
+        assert_eq!(listed[0].btc_addresses.len(), 2);
+        assert_eq!(listed[0].eth_addresses.len(), 1);
         assert_eq!(listed[0].bucky_wallets.len(), 2);
 
         delete_wallet(app_handle.clone(), password, Some(did_info.id)).unwrap();
