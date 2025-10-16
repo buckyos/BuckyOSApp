@@ -14,6 +14,7 @@ pub fn run() {
             greet,
             did::generate_mnemonic,
             did::create_did,
+            did::import_did,
             did::wallet_exists,
             did::list_dids,
             did::active_did,

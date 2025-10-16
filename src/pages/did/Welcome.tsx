@@ -6,9 +6,10 @@ import { getTheme, toggleTheme, initTheme } from "../../theme";
 
 interface WelcomeProps {
     onStart: () => void;
+    onImport: () => void;
 }
 
-const Welcome: React.FC<WelcomeProps> = ({ onStart }) => {
+const Welcome: React.FC<WelcomeProps> = ({ onStart, onImport }) => {
     const { t, locale, setLocale } = useI18n();
     const isZh = locale === "zh";
     React.useEffect(() => {
@@ -107,7 +108,7 @@ const Welcome: React.FC<WelcomeProps> = ({ onStart }) => {
                 <GradientButton onClick={onStart} variant="primary">
                     {t("common.actions.create_did")}
                 </GradientButton>
-                <GradientButton variant="secondary" onClick={() => alert("Coming soon")}>
+                <GradientButton variant="secondary" onClick={onImport}>
                     {t("welcome.import_did")}
                 </GradientButton>
             </div>

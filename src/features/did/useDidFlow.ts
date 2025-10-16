@@ -52,9 +52,51 @@ export function useDidFlow() {
         }
     };
 
+    const handleImportDid = async ({
+        nickname: importNickname,
+        password: importPassword,
+        mnemonicWords,
+    }: {
+        nickname: string;
+        password: string;
+        mnemonicWords: string[];
+    }) => {
+        setError("");
+        try {
+            setLoading(true);
+            const info: DidInfo = await invoke("import_did", {
+                nickname: importNickname,
+                password: importPassword,
+                mnemonicWords,
+            });
+            setDidInfo(info);
+            navigate("/success");
+        } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            let translated = message;
+            if (message === "nickname_already_exists") {
+                translated = t("import.error.nickname_exists");
+            } else if (message === "mnemonic_required") {
+                translated = t("import.error.mnemonic_required");
+            } else if (message === "identity_already_exists") {
+                translated = t("import.error.identity_exists");
+            } else {
+                translated = t("common.error.import_did_failed", { message });
+            }
+            setError(translated);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const goToCreateDid = () => {
         setError("");
         navigate("/create");
+    };
+
+    const goToImportDid = () => {
+        setError("");
+        navigate("/import");
     };
 
     const goToShowMnemonic = () => {
@@ -73,6 +115,11 @@ export function useDidFlow() {
     const goToConfirmMnemonic = () => {
         setError("");
         navigate("/confirm-mnemonic");
+    };
+
+    const goToWelcome = () => {
+        setError("");
+        navigate("/");
     };
 
     const resetFlow = () => {
@@ -105,6 +152,9 @@ export function useDidFlow() {
         goToShowMnemonic,
         goToConfirmMnemonic,
         handleCreateDid,
+        handleImportDid,
+        goToImportDid,
+        goToWelcome,
         resetFlow,
     };
 }

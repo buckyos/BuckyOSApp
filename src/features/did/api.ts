@@ -28,3 +28,11 @@ export async function extendWallets(
 ): Promise<DidInfo> {
     return invoke("extend_wallets", { password, didId, request });
 }
+
+export async function importDid(
+    nickname: string,
+    password: string,
+    mnemonicWords: string[]
+): Promise<DidInfo> {
+    return invoke("import_did", { nickname, password, mnemonicWords });
+}

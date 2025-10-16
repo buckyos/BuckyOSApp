@@ -9,6 +9,7 @@ import LoadingOverlay from "../../components/ui/LoadingOverlay";
 import { useDidFlow } from "./useDidFlow";
 import "./DidFlowRoutes.css";
 import SnIntro from "../../pages/did/SnIntro";
+import ImportDid from "../../pages/did/ImportDid";
 
 const DidFlowRoutes: React.FC = () => {
     const {
@@ -25,9 +26,12 @@ const DidFlowRoutes: React.FC = () => {
         error,
         loading,
         goToCreateDid,
+        goToImportDid,
         goToShowMnemonic,
         goToConfirmMnemonic,
         handleCreateDid,
+        handleImportDid,
+        goToWelcome,
         resetFlow,
     } = useDidFlow();
 
@@ -35,8 +39,19 @@ const DidFlowRoutes: React.FC = () => {
         <div className="App">
             <LoadingOverlay visible={loading} textKey="common.creating" />
             <Routes>
-                <Route path="/" element={<Welcome onStart={goToCreateDid} />} />
+                <Route path="/" element={<Welcome onStart={goToCreateDid} onImport={goToImportDid} />} />
                 <Route path="/sn" element={<SnIntro />} />
+                <Route
+                    path="/import"
+                    element={
+                        <ImportDid
+                            loading={loading}
+                            error={error}
+                            onImport={handleImportDid}
+                            onBack={goToWelcome}
+                        />
+                    }
+                />
                 <Route
                     path="/create"
                     element={

@@ -90,6 +90,67 @@ pub fn create_did(
 }
 
 #[tauri::command]
+pub fn import_did(
+    app_handle: AppHandle,
+    nickname: String,
+    password: String,
+    mnemonic_words: Vec<String>,
+) -> Result<DidInfo, String> {
+    if mnemonic_words.is_empty() {
+        return Err("mnemonic_required".to_string());
+    }
+
+    let decrypted = mnemonic_words.join(" ");
+    let secret_phrase = SecretString::new(decrypted);
+    let mnemonic = Mnemonic::parse_in(Language::English, secret_phrase.expose_secret())
+        .map_err(|e| e.to_string())?;
+    drop(secret_phrase);
+
+    let requests = DidDerivationPlan::default_requests();
+    let wallets = derive_wallets_with_requests(&mnemonic, "", &requests, None)?;
+
+    let encrypted_seed = encrypt_mnemonic(&password, &mnemonic).map_err(|e| e.to_string())?;
+
+    let store = open_store(&app_handle)?;
+    let mut vault = load_vault(&store)?;
+
+    if vault
+        .dids
+        .iter()
+        .any(|did| did.nickname.eq_ignore_ascii_case(&nickname))
+    {
+        return Err("nickname_already_exists".to_string());
+    }
+
+    if let Some(new_identity) = wallets.bucky.entries.first() {
+        if vault.dids.iter().any(|existing| {
+            existing
+                .wallets
+                .bucky
+                .entries
+                .iter()
+                .any(|entry| entry.did == new_identity.did)
+        }) {
+            return Err("identity_already_exists".to_string());
+        }
+    }
+
+    let record = StoredDid {
+        id: new_did_id(),
+        nickname,
+        seed: encrypted_seed,
+        wallets,
+    };
+
+    vault.active_did = Some(record.id.clone());
+    vault.dids.push(record.clone());
+
+    save_vault(&store, &vault)?;
+
+    Ok(record.to_info())
+}
+
+#[tauri::command]
 pub fn extend_wallets(
     app_handle: AppHandle,
     password: String,
