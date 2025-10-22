@@ -6,6 +6,7 @@ import "./Setting.css";
 import { useI18n } from "../../i18n";
 import { useDidContext } from "../../features/did/DidContext";
 import { deleteDid, revealMnemonic } from "../../features/did/api";
+import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 
 const Setting: React.FC = () => {
   const navigate = useNavigate();
@@ -20,6 +21,10 @@ const Setting: React.FC = () => {
   const [backupPassword, setBackupPassword] = React.useState("");
   const [backupError, setBackupError] = React.useState("");
   const [backupLoading, setBackupLoading] = React.useState(false);
+  const [openUrlOpen, setOpenUrlOpen] = React.useState(false);
+  const [openUrlValue, setOpenUrlValue] = React.useState("");
+  const [openUrlError, setOpenUrlError] = React.useState("");
+  const [openUrlLoading, setOpenUrlLoading] = React.useState(false);
 
   const handleDelete = async () => {
     if (!deletePassword.trim()) {
@@ -104,6 +109,31 @@ const Setting: React.FC = () => {
     setBackupError("");
   };
 
+  const handleOpenUrl = async () => {
+    const raw = openUrlValue.trim();
+    if (!raw) {
+      setOpenUrlError(t("settings.openurl_invalid"));
+      return;
+    }
+    let url = raw;
+    if (!/^https?:\/\//i.test(url)) {
+      url = `https://${url}`;
+    }
+    try {
+      setOpenUrlError("");
+      setOpenUrlLoading(true);
+      const label = `webview_${Date.now()}`;
+      new WebviewWindow(label, { url });
+      setOpenUrlLoading(false);
+      setOpenUrlOpen(false);
+      setOpenUrlValue("");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      setOpenUrlError(t("settings.openurl_error_generic", { message }));
+      setOpenUrlLoading(false);
+    }
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", padding: "0 16px 16px" }}>
       <div>
@@ -116,6 +146,13 @@ const Setting: React.FC = () => {
                 <polyline points="9 18 15 12 9 6" />
               </svg>
             </span>
+          </button>
+
+          <button className="settings-item" onClick={() => { setOpenUrlValue(""); setOpenUrlError(""); setOpenUrlOpen(true); }}>
+            <span className="label">{t("settings.openurl")}</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
           </button>
 
           <button className="settings-item" onClick={openBackupDialog}>
@@ -185,6 +222,21 @@ const Setting: React.FC = () => {
         onCancel={closeBackupDialog}
         loading={backupLoading}
         error={backupError}
+      />
+      <InputDialog
+        open={openUrlOpen}
+        title={t("settings.openurl_title")}
+        message={t("settings.openurl_subtitle", { _: "" })}
+        value={openUrlValue}
+        onChange={setOpenUrlValue}
+        inputType="text"
+        placeholder={t("settings.openurl_placeholder")}
+        confirmText={openUrlLoading ? t("settings.openurl_loading") : t("settings.openurl_submit")}
+        cancelText={t("common.actions.cancel", { _: "Cancel" })}
+        onConfirm={handleOpenUrl}
+        onCancel={() => { if (openUrlLoading) return; setOpenUrlOpen(false); setOpenUrlValue(""); setOpenUrlError(""); }}
+        loading={openUrlLoading}
+        error={openUrlError}
       />
     </div>
   );

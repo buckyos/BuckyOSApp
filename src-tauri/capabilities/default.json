@@ -3,10 +3,13 @@
   "identifier": "default",
   "description": "Capability for the main window",
   "windows": [
-    "main"
+    "main",
+    "webview_*"
   ],
   "permissions": [
     "core:default",
+    "core:webview:allow-create-webview",
+    "core:webview:allow-create-webview-window",
     "opener:default",
     "store:default"
   ]
