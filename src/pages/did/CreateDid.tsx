@@ -3,6 +3,7 @@ import { useI18n } from "../../i18n";
 import MobileHeader from "../../components/ui/MobileHeader";
 import GradientButton from "../../components/ui/GradientButton";
 import { Link } from "react-router-dom";
+import { listDids } from "../../features/did/api";
 
 interface CreateDidProps {
     nickname: string;
@@ -30,8 +31,32 @@ const CreateDid: React.FC<CreateDidProps> = ({
     const [showPwd2, setShowPwd2] = React.useState(false);
     const [snInvite, setSnInvite] = React.useState("");
     const [registerSN, setRegisterSN] = React.useState(false);
+    const [nicknameTaken, setNicknameTaken] = React.useState(false);
+    const [checkingName, setCheckingName] = React.useState(false);
     const passwordsValid = password.length >= 6 && confirmPassword.length >= 6 && password === confirmPassword;
-    const canProceed = registerSN && !!nickname && passwordsValid && snInvite.trim().length > 0;
+    const canProceed = registerSN && !!nickname && !nicknameTaken && passwordsValid && snInvite.trim().length > 0;
+
+    React.useEffect(() => {
+        let alive = true;
+        const name = nickname.trim();
+        if (!name) {
+            setNicknameTaken(false);
+            return;
+        }
+        setCheckingName(true);
+        (async () => {
+            try {
+                const dids = await listDids();
+                const exists = dids.some((d) => (d.nickname || "").toLowerCase() === name.toLowerCase());
+                if (alive) setNicknameTaken(exists);
+            } catch (_) {
+                if (alive) setNicknameTaken(false);
+            } finally {
+                if (alive) setCheckingName(false);
+            }
+        })();
+        return () => { alive = false; };
+    }, [nickname]);
     return (
         <div className="did-container" style={{ position: "relative", overflow: "hidden" }}>
             {/* Header: arrow only, positioned closer to top-left */}
@@ -48,7 +73,7 @@ const CreateDid: React.FC<CreateDidProps> = ({
             {/* Nickname */}
             <div className="page-content">
                 <label style={{ fontSize: 14, color: "var(--app-text)", marginTop: 6 }}>{t("create.nickname_label")}</label>
-                <div style={{ position: "relative", marginTop: 6, marginBottom: 12 }}>
+                <div style={{ position: "relative", marginTop: 6, marginBottom: 6 }}>
                     <div style={{ position: "absolute", left: 14, top: 0, bottom: 0, display: "flex", alignItems: "center", color: "var(--muted-text)" }}>
                         {/* user icon */}
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -64,6 +89,11 @@ const CreateDid: React.FC<CreateDidProps> = ({
                         style={{ paddingLeft: 40 }}
                     />
                 </div>
+                {nicknameTaken && (
+                    <p className="error" style={{ marginTop: 4 }}>
+                        {t("create.error.nickname_exists")}
+                    </p>
+                )}
 
                 {/* Password */}
                 <label style={{ fontSize: 14, color: "var(--app-text)", marginTop: 6 }}>{t("create.password_label")}</label>

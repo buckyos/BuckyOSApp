@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/core";
 import { useI18n } from "../../i18n";
+import { listDids } from "./api";
 import type { DidInfo } from "./types";
 
 export function useDidFlow() {
@@ -46,7 +47,13 @@ export function useDidFlow() {
             navigate("/success");
         } catch (err) {
             const message = err instanceof Error ? err.message : String(err);
-            setError(t("common.error.create_did_failed", { message }));
+            let translated = message;
+            if (message === "nickname_already_exists") {
+                translated = t("create.error.nickname_exists");
+            } else {
+                translated = t("common.error.create_did_failed", { message });
+            }
+            setError(translated);
         } finally {
             setLoading(false);
         }
@@ -99,7 +106,7 @@ export function useDidFlow() {
         navigate("/import");
     };
 
-    const goToShowMnemonic = () => {
+    const goToShowMnemonic = async () => {
         if (password !== confirmPassword) {
             setError(t("common.error.passwords_mismatch"));
             return;
@@ -107,6 +114,20 @@ export function useDidFlow() {
         if (password.length < 6) {
             setError(t("common.error.password_too_short"));
             return;
+        }
+        // Check nickname uniqueness early on the create page
+        const name = nickname.trim();
+        if (name) {
+            try {
+                const dids = await listDids();
+                const exists = dids.some((d) => (d.nickname || "").toLowerCase() === name.toLowerCase());
+                if (exists) {
+                    setError(t("create.error.nickname_exists"));
+                    return;
+                }
+            } catch (_) {
+                // ignore network/tauri errors here; allow flow to proceed
+            }
         }
         setError("");
         handleGenerateMnemonic();

@@ -5,6 +5,7 @@ import Home from "../pages/main/Home";
 import Apps from "../pages/main/Apps";
 import Setting from "../pages/main/Setting";
 import LanguageSelect from "../pages/main/LanguageSelect";
+import IdentityList from "../pages/main/IdentityList";
 import BackupIdentity from "../pages/main/BackupIdentity";
 import "./MainRoutes.css";
 import { useI18n } from "../i18n";
@@ -67,7 +68,10 @@ const MainRoutes: React.FC = () => {
 
   const accountLabel = t("common.account.current");
   const avatarInitial = displayName.trim().charAt(0).toUpperCase() || "?";
-  const hideAccountHeader = normalizedPath.startsWith("/main/setting/backup");
+  const hideAccountHeader =
+    normalizedPath.startsWith("/main/setting/backup") ||
+    normalizedPath.startsWith("/main/setting/identities") ||
+    normalizedPath.startsWith("/main/setting/language");
 
   return (
     <div className={showTabBar ? "App app-tabbed" : "App"}>
@@ -79,27 +83,7 @@ const MainRoutes: React.FC = () => {
               <span className="account-label">{accountLabel}</span>
               <span className="account-name">{displayName}</span>
             </div>
-            {dids.length > 1 && (
-              <select
-                className="account-switcher"
-                value={activeDid?.id ?? ""}
-                onChange={(event) => {
-                  const value = event.target.value;
-                  if (!value) return;
-                  setActiveDid(value).catch((err) => {
-                    console.error("Failed to switch DID", err);
-                  });
-                }}
-                disabled={loading}
-                aria-label={t("common.account.switch")}
-              >
-                {dids.map((did) => (
-                  <option key={did.id} value={did.id}>
-                    {did.nickname.trim().length > 0 ? did.nickname : t("common.account.unnamed")}
-                  </option>
-                ))}
-              </select>
-            )}
+            {/* Identity switching dropdown removed. Use IdentityList page instead. */}
           </div>
         )}
         <div className="content-body">
@@ -107,6 +91,7 @@ const MainRoutes: React.FC = () => {
             <Route path="/home" element={<Home />} />
             <Route path="/apps" element={<Apps />} />
             <Route path="/setting" element={<Setting />} />
+            <Route path="/setting/identities" element={<IdentityList />} />
             <Route path="/setting/backup" element={<BackupIdentity />} />
             <Route path="/setting/language" element={<LanguageSelect />} />
           </Routes>

@@ -90,6 +90,9 @@ export default {
         password_placeholder: "Enter Password (min 6 characters)",
         confirm_label: "Confirm Password",
         confirm_password_placeholder: "Confirm Password",
+        error: {
+            nickname_exists: "This nickname already exists.",
+        },
     },
     showMnemonic: {
         title: "Backup Your Mnemonic",
@@ -116,6 +119,7 @@ export default {
     settings: {
         title: "Settings",
         language: "Language",
+        switch_identity: "Switch Identity",
         backup_identity: "Backup Identity",
         delete_account: "Delete Account",
         delete_title: "Delete Account",
@@ -145,6 +149,20 @@ export default {
         backup_error_missing: "No identity found to back up.",
         backup_error_generic: "Unable to unlock mnemonic: {{message}}",
         backup_confirm: "Done",
+    },
+    identities: {
+        title: "Switch Identity",
+        current_badge: "Current",
+        prompt_password_title: "Enter Password",
+        prompt_password_message: "Enter password for {{nickname}} to switch",
+        password_placeholder: "Enter password",
+        password_required: "Password is required.",
+        confirm: "Switch",
+        loading: "Switching...",
+        error_invalid: "Incorrect password. Please try again.",
+        error_missing: "Identity not found.",
+        error_generic: "Unable to switch: {{message}}",
+        add_identity: "Add Identity",
     },
     sn: {
         invite_label: "SN Invite Code",

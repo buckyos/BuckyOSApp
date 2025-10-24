@@ -89,6 +89,9 @@ export default {
         password_placeholder: "输入密码（至少6个字符）",
         confirm_label: "确认密码",
         confirm_password_placeholder: "确认密码",
+        error: {
+            nickname_exists: "该昵称已存在。",
+        },
     },
     showMnemonic: {
         title: "备份助记词",
@@ -115,6 +118,7 @@ export default {
     settings: {
         title: "设置",
         language: "语言",
+        switch_identity: "切换身份",
         backup_identity: "备份身份",
         delete_account: "删除账户",
         delete_title: "删除账户",
@@ -143,6 +147,20 @@ export default {
         backup_error_missing: "未找到可备份的身份。",
         backup_error_generic: "无法解锁助记词：{{message}}",
         backup_confirm: "完成",
+    },
+    identities: {
+        title: "切换身份",
+        current_badge: "当前",
+        prompt_password_title: "输入密码",
+        prompt_password_message: "请输入 {{nickname}} 的密码以切换",
+        password_placeholder: "请输入密码",
+        password_required: "请输入密码。",
+        confirm: "切换",
+        loading: "正在切换...",
+        error_invalid: "密码不正确，请重试。",
+        error_missing: "未找到该身份。",
+        error_generic: "无法切换：{{message}}",
+        add_identity: "添加身份",
     },
     sn: {
         invite_label: "SN 邀请码",
