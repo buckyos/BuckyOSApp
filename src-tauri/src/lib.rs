@@ -22,7 +22,8 @@ pub fn run() {
             did::delete_wallet,
             did::reveal_mnemonic,
             did::extend_wallets,
-            did::current_wallet_nickname
+            did::current_wallet_nickname,
+            did::generate_zone_boot_config_jwt
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

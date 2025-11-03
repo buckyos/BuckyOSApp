@@ -36,6 +36,7 @@ ulid = "1.1"
 name-lib = { git = "https://github.com/buckyos/buckyos-base.git", package = "name-lib"}
 secrecy = "0.8"
 zeroize = "1.7"
+jsonwebtoken = { version = "9", default-features = false, features = ["use_pem"] }
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem
