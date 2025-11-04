@@ -8,6 +8,8 @@ use super::domain::{BtcAddressType, DidInfo, DEFAULT_BTC_ADDRESS_TYPE};
 use super::identity::{derive_wallets_with_requests, DidDerivationPlan, WalletRequest};
 use super::store::{load_vault, new_did_id, open_store, save_vault, StoredDid};
 use secrecy::{ExposeSecret, SecretString};
+use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 #[cfg(test)]
 use super::derive::{derive_eth_address, SeedCtx};
@@ -332,6 +334,76 @@ pub fn current_wallet_nickname(app_handle: AppHandle) -> Result<Option<String>, 
             .map(|did| did.nickname.clone())),
         None => Ok(None),
     }
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+struct ZoneBootClaims {
+    oods: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    sn: Option<String>,
+    exp: usize,
+    iat: usize,
+}
+
+#[tauri::command]
+pub fn generate_zone_boot_config_jwt(
+    app_handle: AppHandle,
+    password: String,
+    did_id: Option<String>,
+    sn: Option<String>,
+    #[allow(unused_variables)] ood_name: Option<String>,
+) -> Result<String, String> {
+    // resolve target DID (active by default)
+    let store = open_store(&app_handle)?;
+    let vault = load_vault(&store)?;
+    let target_id = did_id
+        .or(vault.active_did.clone())
+        .ok_or_else(|| "wallet_not_found".to_string())?;
+    let record = vault
+        .dids
+        .iter()
+        .find(|d| d.id == target_id)
+        .ok_or_else(|| "wallet_not_found".to_string())?;
+
+    // unlock mnemonic to validate password and derive private key
+    let decrypted = decrypt_mnemonic(&password, &record.seed).map_err(|e| e.to_string())?;
+    let secret_phrase = SecretString::new(decrypted);
+    let mnemonic = Mnemonic::parse_in(Language::English, secret_phrase.expose_secret())
+        .map_err(|e| e.to_string())?;
+    drop(secret_phrase);
+
+    // derive ed25519 owner private key from mnemonic index 0 (Bucky identity)
+    let phrase = mnemonic.to_string();
+    let passphrase_opt: Option<&str> = None;
+    let index = 0u32;
+    let (private_pem, _public_jwk) = name_lib::generate_ed25519_key_pair_from_mnemonic(
+        &phrase,
+        passphrase_opt,
+        index,
+    )
+    .map_err(|e| e.to_string())?;
+
+    let pem_key = EncodingKey::from_ed_pem(private_pem.as_bytes())
+        .map_err(|e| format!("invalid ed25519 private key: {}", e))?;
+
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|e| e.to_string())?
+        .as_secs() as usize;
+
+    let ood = ood_name.unwrap_or_else(|| "ood1".to_string());
+    let claims = ZoneBootClaims {
+        oods: vec![ood],
+        sn: sn.filter(|s| !s.is_empty()),
+        // 10 years validity
+        exp: now + 3600 * 24 * 365 * 10,
+        iat: now,
+    };
+
+    let token = encode(&Header { alg: Algorithm::EdDSA, ..Default::default() }, &claims, &pem_key)
+        .map_err(|e| e.to_string())?;
+
+    Ok(token)
 }
 
 #[cfg(test)]

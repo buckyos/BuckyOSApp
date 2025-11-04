@@ -7,10 +7,12 @@ import { useI18n } from "../../i18n";
 import { useDidContext } from "../../features/did/DidContext";
 import { deleteDid, revealMnemonic } from "../../features/did/api";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
+import { getTheme, toggleTheme } from "../../theme";
 
 const Setting: React.FC = () => {
   const navigate = useNavigate();
   const { t, locale } = useI18n();
+  const [theme, setTheme] = React.useState<string>(getTheme());
   const { activeDid, refresh } = useDidContext();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false);
   const [deleteOpen, setDeleteOpen] = React.useState(false);
@@ -138,6 +140,15 @@ const Setting: React.FC = () => {
     <div style={{ display: "flex", flexDirection: "column", height: "100%", padding: "0 16px 16px" }}>
       <div>
         <div className="settings-list">
+          <button className="settings-item" onClick={() => setTheme(toggleTheme())}> 
+            <span className="label">{t("settings.theme")}</span>
+            <span className="right">
+              <span>{theme === 'dark' ? t("settings.theme_dark") : t("settings.theme_light")}</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </span>
+          </button>
           <button className="settings-item" onClick={() => navigate("/main/setting/language")}> 
             <span className="label">{t("settings.language")}</span>
             <span className="right">

@@ -2,7 +2,6 @@ import React from "react";
 import { useI18n } from "../../i18n";
 import MobileHeader from "../../components/ui/MobileHeader";
 import GradientButton from "../../components/ui/GradientButton";
-import { Link } from "react-router-dom";
 import { listDids } from "../../features/did/api";
 
 interface CreateDidProps {
@@ -29,12 +28,12 @@ const CreateDid: React.FC<CreateDidProps> = ({
     const { t } = useI18n();
     const [showPwd, setShowPwd] = React.useState(false);
     const [showPwd2, setShowPwd2] = React.useState(false);
-    const [snInvite, setSnInvite] = React.useState("");
-    const [registerSN, setRegisterSN] = React.useState(false);
+    // Removed SN invite and register option from Create DID
     const [nicknameTaken, setNicknameTaken] = React.useState(false);
     const [checkingName, setCheckingName] = React.useState(false);
     const passwordsValid = password.length >= 6 && confirmPassword.length >= 6 && password === confirmPassword;
-    const canProceed = registerSN && !!nickname && !nicknameTaken && passwordsValid && snInvite.trim().length > 0;
+    // Allow proceeding with DID creation; SN registration will be handled on Home
+    const canProceed = !!nickname && !nicknameTaken && passwordsValid;
 
     React.useEffect(() => {
         let alive = true;
@@ -182,29 +181,7 @@ const CreateDid: React.FC<CreateDidProps> = ({
                     </p>
                 )}
 
-                {/* SN invite and register option */}
-                <div style={{ marginTop: 14 }}>
-                    <label style={{ fontSize: 14, color: "var(--app-text)" }}>{t("sn.invite_label")}</label>
-                    <input
-                        type="text"
-                        placeholder={t("sn.invite_placeholder")}
-                        value={snInvite}
-                        onChange={(e) => setSnInvite(e.target.value)}
-                        style={{ marginTop: 6 }}
-                    />
-                </div>
-
-                <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                    <input
-                        id="registerSN"
-                        type="checkbox"
-                        checked={registerSN}
-                        onChange={(e) => setRegisterSN(e.target.checked)}
-                        style={{ width: 18, height: 18, boxShadow: "none" }}
-                    />
-                    <label htmlFor="registerSN" style={{ userSelect: "none" }}>{t("sn.register_option")}</label>
-                    <Link to="/sn" style={{ marginLeft: 8, color: "#6366f1" }}>{t("sn.what_is")}</Link>
-                </div>
+                {/* SN invite and register option removed; SN will be handled in SN page */}
             </div>
 
             {/* Bottom actions pinned to page bottom and unified width */}

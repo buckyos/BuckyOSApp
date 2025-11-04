@@ -3,8 +3,9 @@
   flex-direction: column;
   gap: 16px;
   padding: 0 16px 16px;
-  height: 100%;
-  overflow: auto;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden; /* no scrollbars on SN page */
 }
 
 .home-header {
@@ -246,4 +247,14 @@
   border: 1px solid var(--input-border);
   background: var(--card-bg);
   color: var(--app-text);
+}
+
+/* Bottom actions inside Home page, above tab bar */
+.sn-page-actions {
+  margin-top: auto;
+  padding-top: 8px;
+}
+
+.sn-page-actions > * {
+  width: 100%;
 }

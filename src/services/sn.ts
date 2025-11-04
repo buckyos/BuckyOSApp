@@ -1,7 +1,7 @@
 import { buckyos } from "buckyos";
 
 // SN kRPC client via buckyos-websdk
-let SN_API_URL = "https://sn.buckyos.ai/kapi/sn";
+let SN_API_URL = "http://sn.buckyos.ai/kapi/sn";
 
 export function setSnApiUrl(url: string) {
   SN_API_URL = url;
@@ -17,6 +17,8 @@ async function snCall<T = any>(method: string, params: JsonValue): Promise<T> {
 
 export async function checkBuckyUsername(username: string): Promise<boolean> {
   const data = await snCall<{ valid?: boolean; code?: number }>("check_username", { username });
+  console.debug("[SN] check_username: done", { data });
+
   if (typeof data?.valid === "boolean") return data.valid;
   if (typeof data?.code === "number") return data.code === 0;
   return false;
@@ -24,8 +26,9 @@ export async function checkBuckyUsername(username: string): Promise<boolean> {
 
 export async function checkSnActiveCode(activeCode: string): Promise<boolean> {
   const data = await snCall<{ valid?: boolean; code?: number }>("check_active_code", { active_code: activeCode });
+  console.debug("[SN] check_active_code: done", { activeCode, data });
+
   if (typeof data?.valid === "boolean") return data.valid;
-  if (typeof data?.code === "number") return data.code === 0;
   return false;
 }
 
@@ -47,19 +50,29 @@ export async function registerSnUser(args: {
   return { ok: (data?.code ?? -1) === 0, raw: data };
 }
 
-export async function getUserByPublicKey(publicKeyJwk: string, deviceName = "ood1"): Promise<{ ok: boolean; raw: any }> {
-  // logging for SN query process
-  const start = Date.now();
-
-  console.debug("[SN] get_by_pk: start", { deviceName, pk: publicKeyJwk });
+export async function getUserByPublicKey(publicKeyJwk: string): Promise<{ ok: boolean; raw: any }> {
+  console.debug("[SN] get_by_pk: start", { public_key: publicKeyJwk });
   try {
-    const data = await snCall<{ code?: number }>("get_by_pk", { public_key: publicKeyJwk, device_name: deviceName });
-    const code = (data as any)?.code;
-    console.debug("[SN] get_by_pk: done", { code, durationMs: Date.now() - start });
-    return { ok: (code ?? -1) === 0, raw: data };
+    const data = await snCall<{ code?: number }>("get_by_pk", { public_key: publicKeyJwk });
+    const found = (data as any)?.found;
+    /*
+    data:{
+      device_info:null,
+      device_name:"ood1",
+      device_sn_ip:null,
+      found:false,
+      public_key:publicKeyJwk,
+      reason:"user not found",
+      sn_ips:[],
+      user_name:null,
+      zone_config:null,
+    }
+    */
+    console.debug("[SN] get_by_pk: done", { data });
+    return { ok: (found ?? false), raw: data };
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
-    console.error("[SN] get_by_pk: error", { message, durationMs: Date.now() - start });
+    console.error("[SN] get_by_pk: error", { message });
     throw e;
   }
 }

@@ -359,16 +359,23 @@ const Home: React.FC = () => {
                 <div style={{ color: "#ef4444", fontSize: 12, marginTop: 4 }}>{inviteCheckError}</div>
               )}
             </div>
-            <div style={{ marginTop: 8 }}>
-              <GradientButton onClick={() => { setBindPwd(""); setBindErr(""); setBindPwdOpen(true); }} disabled={!canBind || checkingUser || checkingInvite}>
-                {t("sn.bind_confirm")}
-              </GradientButton>
-            </div>
+            {/* Bottom action moved to page footer to avoid overlapping tab bar */}
           </div>
           )}
         </section>
       ) : (
         <div className="home-placeholder">{t("sn.no_did_hint")}</div>
+      )}
+
+      {(!snChecking && !snQueryFailed && !snRegistered) && (
+        <div className="sn-page-actions">
+          <GradientButton
+            onClick={() => { setBindPwd(""); setBindErr(""); setBindPwdOpen(true); }}
+            disabled={!canBind || checkingUser || checkingInvite}
+          >
+            {t("sn.bind_confirm")}
+          </GradientButton>
+        </div>
       )}
 
       <InputDialog

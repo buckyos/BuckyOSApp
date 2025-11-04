@@ -44,7 +44,7 @@ export function useDidFlow() {
                 mnemonicWords: mnemonic,
             });
             setDidInfo(info);
-            navigate("/success");
+            navigate("/main/home");
         } catch (err) {
             const message = err instanceof Error ? err.message : String(err);
             let translated = message;
@@ -77,7 +77,7 @@ export function useDidFlow() {
                 mnemonicWords,
             });
             setDidInfo(info);
-            navigate("/success");
+            navigate("/main/home");
         } catch (err) {
             const message = err instanceof Error ? err.message : String(err);
             let translated = message;
