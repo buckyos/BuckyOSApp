@@ -27,6 +27,61 @@
   font-size: 0.9rem;
 }
 
+/* SN info card */
+.sn-info-card {
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  background: color-mix(in oklab, var(--card-bg), #6366f1 7%);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+[data-theme='dark'] .sn-info-card {
+  border-color: rgba(124, 166, 255, 0.35);
+  background: color-mix(in oklab, var(--card-bg), #7ca6ff 10%);
+}
+
+.sn-info-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: var(--app-text);
+}
+
+.sn-info-desc {
+  margin-top: 6px;
+  color: var(--muted-text);
+  font-size: 0.9rem;
+}
+
+.sn-info-link {
+  margin-top: 6px;
+  font-size: 0.9rem;
+  color: #6366f1;
+}
+
+[data-theme='dark'] .sn-info-link { color: #8faeff; }
+
+.sn-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sn-form input[type="text"] {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--input-border);
+  background: var(--card-bg);
+  color: var(--app-text);
+}
+
+.sn-help {
+  font-size: 12px;
+  color: var(--muted-text);
+}
+
 .home-refresh {
   border-radius: 12px;
   padding: 8px 14px;
@@ -43,6 +98,14 @@
 .home-placeholder {
   margin-top: 48px;
   text-align: center;
+  color: var(--muted-text);
+  font-size: 0.95rem;
+}
+
+/* SN section lightweight status text */
+.sn-status {
+  margin-top: 8px;
+  text-align: left;
   color: var(--muted-text);
   font-size: 0.95rem;
 }

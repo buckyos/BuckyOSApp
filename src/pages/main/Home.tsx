@@ -1,207 +1,391 @@
 import React from "react";
 import "./Home.css";
 import { useDidContext } from "../../features/did/DidContext";
+import InputDialog from "../../components/ui/InputDialog";
+import GradientButton from "../../components/ui/GradientButton";
 import { useI18n } from "../../i18n";
-import type { BtcAddress, DidInfo } from "../../features/did/types";
-
-function groupBtcByType(addresses: BtcAddress[]): Array<{ type: BtcAddress["address_type"]; entries: BtcAddress[] }> {
-  const map = new Map<BtcAddress["address_type"], BtcAddress[]>();
-  addresses.forEach((addr) => {
-    const list = map.get(addr.address_type);
-    if (list) {
-      list.push(addr);
-    } else {
-      map.set(addr.address_type, [addr]);
-    }
-  });
-  return Array.from(map.entries()).map(([type, entries]) => ({ type, entries }));
-}
-
-function displayNickname(did: DidInfo, fallback: string): string {
-  const trimmed = did.nickname.trim();
-  return trimmed.length > 0 ? trimmed : fallback;
-}
+import { invoke } from "@tauri-apps/api/core";
+import { checkBuckyUsername, checkSnActiveCode, getUserByPublicKey, registerSnUser } from "../../services/sn";
 
 const Home: React.FC = () => {
-  const { dids, activeDid, loading, refresh, addWallet } = useDidContext();
+  const { activeDid } = useDidContext();
   const { t } = useI18n();
-  const [refreshing, setRefreshing] = React.useState(false);
-  const [dialogOpen, setDialogOpen] = React.useState(false);
-  const [password, setPassword] = React.useState("");
-  const [selectedDid, setSelectedDid] = React.useState<string | null>(null);
-  const [selectedKind, setSelectedKind] = React.useState<WalletExtensionRequest["kind"]>("bucky");
-  const [count, setCount] = React.useState(1);
-  const [btcType, setBtcType] = React.useState<BtcAddressType>("native_segwit");
-  const [submitting, setSubmitting] = React.useState(false);
-  const [error, setError] = React.useState("");
 
-  const handleRefresh = React.useCallback(async () => {
-    setRefreshing(true);
+  // SN registration/checking
+  const [snChecking, setSnChecking] = React.useState(false);
+  const [snError, setSnError] = React.useState<string>("");
+  const [snRegistered, setSnRegistered] = React.useState(false);
+  const [snInfo, setSnInfo] = React.useState<any>(null);
+  const [snUsername, setSnUsername] = React.useState<string>("");
+  const [snInvite, setSnInvite] = React.useState<string>("");
+  const [snUserValid, setSnUserValid] = React.useState<boolean | null>(null);
+  const [snInviteValid, setSnInviteValid] = React.useState<boolean | null>(null);
+  const [checkingUser, setCheckingUser] = React.useState(false);
+  const [checkingInvite, setCheckingInvite] = React.useState(false);
+  const [bindPwdOpen, setBindPwdOpen] = React.useState(false);
+  const [bindPwd, setBindPwd] = React.useState("");
+  const [bindLoading, setBindLoading] = React.useState(false);
+  const [bindErr, setBindErr] = React.useState("");
+  const [userCheckError, setUserCheckError] = React.useState<string>("");
+  const [inviteCheckError, setInviteCheckError] = React.useState<string>("");
+  const [snQueryFailed, setSnQueryFailed] = React.useState(false);
+  const formVisible = !snChecking && !snQueryFailed && !snRegistered;
+  const prevFormVisibleRef = React.useRef<boolean>(false);
+  const lastUserCheckedRef = React.useRef<string>("");
+  const lastInviteCheckedRef = React.useRef<string>("");
+
+  const refetchSn = React.useCallback(async () => {
+    if (!activeDid || !activeDid.bucky_wallets || activeDid.bucky_wallets.length === 0) return;
+    const jwk = activeDid.bucky_wallets[0]?.public_key as any;
     try {
-      await refresh();
+      setSnChecking(true);
+      setSnError("");
+      setSnQueryFailed(false);
+      const { ok, raw } = await getUserByPublicKey(JSON.stringify(jwk), "ood1");
+      if (ok) {
+        setSnRegistered(true);
+        setSnInfo(raw);
+      } else {
+        setSnRegistered(false);
+        setSnInfo(null);
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setSnError(t("sn.error.query_failed", { message: msg }));
+      setSnRegistered(false);
+      setSnQueryFailed(true);
     } finally {
-      setRefreshing(false);
+      setSnChecking(false);
     }
-  }, [refresh]);
+  }, [activeDid?.id, t]);
 
-  const openDialog = React.useCallback((didId: string) => {
-    setSelectedDid(didId);
-    setPassword("");
-    setSelectedKind("bucky");
-    setCount(1);
-    setBtcType("native_segwit");
-    setError("");
-    setDialogOpen(true);
-  }, []);
-
-  const closeDialog = React.useCallback(() => {
-    if (submitting) return;
-    setDialogOpen(false);
-  }, [submitting]);
-
-  const handleConfirm = React.useCallback(async () => {
-    if (!selectedDid) return;
-    if (!password.trim()) {
-      setError(t("home.error_password_required"));
-      return;
-    }
-    if (count <= 0) {
-      setError(t("home.error_count_positive"));
-      return;
-    }
-    setSubmitting(true);
-    setError("");
-    let request: WalletExtensionRequest;
-    if (selectedKind === "btc") {
-      request = { kind: "btc", address_type: btcType, count };
-    } else if (selectedKind === "eth") {
-      request = { kind: "eth", count };
+  // Reset SN UI when active DID changes
+  React.useEffect(() => {
+    setSnError("");
+    setSnRegistered(false);
+    setSnQueryFailed(false);
+    setSnInfo(null);
+    setSnInvite("");
+    setSnInviteValid(null);
+    if (activeDid) {
+      setSnUsername((activeDid.nickname || "").trim());
     } else {
-      request = { kind: "bucky", count };
+      setSnUsername("");
     }
+  }, [activeDid?.id]);
+
+  // After default username is set from DID, check availability once
+  React.useEffect(() => {
+    if (!activeDid) return;
+    const defaultName = (activeDid.nickname || "").trim();
+    if (!defaultName) {
+      setSnUserValid(null);
+      return;
+    }
+    let cancelled = false;
+    const run = async () => {
+      try {
+        setCheckingUser(true);
+        setUserCheckError("");
+        const valid = await checkBuckyUsername(defaultName);
+        if (cancelled) return;
+        // Only apply if the input is still the default name
+        if (snUsername.trim() === defaultName) {
+          setSnUserValid(valid);
+        }
+      } catch (_) {
+        if (!cancelled) {
+          setSnUserValid(null);
+          setUserCheckError(t("sn.error.check_username_failed"));
+        }
+      } finally {
+        if (!cancelled) setCheckingUser(false);
+      }
+    };
+    run();
+    return () => { cancelled = true; };
+  }, [activeDid?.id]);
+
+  // Query SN registration on first load and when active DID changes
+  React.useEffect(() => {
+    const run = async () => { await refetchSn(); };
+    run();
+  }, [activeDid?.id, refetchSn]);
+
+  // removed blur-based validation in favor of debounced checks
+
+  // Debounced validation: username changes → 2s later check availability
+  React.useEffect(() => {
+    if (!formVisible) return;
+    const name = snUsername.trim();
+    if (!name) {
+      setSnUserValid(null);
+      return;
+    }
+    if (name === lastUserCheckedRef.current) return;
+    setUserCheckError("");
+    setCheckingUser(true);
+    const timer = setTimeout(async () => {
+      try {
+        const valid = await checkBuckyUsername(name);
+        setSnUserValid(valid);
+        lastUserCheckedRef.current = name;
+      } catch (_) {
+        setSnUserValid(null);
+        setUserCheckError(t("sn.error.check_username_failed"));
+      } finally {
+        setCheckingUser(false);
+      }
+    }, 2000);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [snUsername, formVisible]);
+
+  // Debounced validation: invite code changes → 2s later check validity
+  React.useEffect(() => {
+    if (!formVisible) return;
+    const code = snInvite.trim();
+    if (!code) {
+      setSnInviteValid(null);
+      return;
+    }
+    if (code === lastInviteCheckedRef.current) return;
+    setInviteCheckError("");
+    setCheckingInvite(true);
+    const timer = setTimeout(async () => {
+      try {
+        const valid = await checkSnActiveCode(code);
+        setSnInviteValid(valid);
+        lastInviteCheckedRef.current = code;
+      } catch (_) {
+        setSnInviteValid(null);
+        setInviteCheckError(t("sn.error.check_invite_failed"));
+      } finally {
+        setCheckingInvite(false);
+      }
+    }, 2000);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [snInvite, formVisible]);
+
+  // When the form becomes visible for the first time, auto-check username availability
+  React.useEffect(() => {
+    const prev = prevFormVisibleRef.current;
+    prevFormVisibleRef.current = formVisible;
+    if (!prev && formVisible) {
+      const name = snUsername.trim();
+      if (!name) {
+        setSnUserValid(null);
+        return;
+      }
+      (async () => {
+        try {
+          setCheckingUser(true);
+          setUserCheckError("");
+          const valid = await checkBuckyUsername(name);
+          setSnUserValid(valid);
+        } catch (_) {
+          setSnUserValid(null);
+          setUserCheckError(t("sn.error.check_username_failed"));
+        } finally {
+          setCheckingUser(false);
+        }
+      })();
+    }
+  }, [formVisible]);
+
+  const canBind = React.useMemo(() => {
+    return !snRegistered && snUserValid === true && snInviteValid === true;
+  }, [snRegistered, snUserValid, snInviteValid]);
+
+  const doBind = React.useCallback(async () => {
+    if (!activeDid) return;
+    setBindErr("");
+    setBindLoading(true);
     try {
-      await addWallet(password, selectedDid, request);
-      setDialogOpen(false);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      setError(message);
+      const didId = activeDid.id;
+      let jwt: string;
+      try {
+        jwt = await invoke("generate_zone_boot_config_jwt", {
+          password: bindPwd,
+          didId,
+          sn: snUsername.trim(),
+          oodName: "ood1",
+        });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        setBindErr(t("sn.error.zone_config_failed", { message: msg }));
+        return;
+      }
+      const jwk = JSON.stringify(activeDid.bucky_wallets[0].public_key as any);
+      try {
+        const reg = await registerSnUser({
+          userName: snUsername.trim(),
+          activeCode: snInvite.trim(),
+          publicKeyJwk: jwk,
+          zoneConfigJwt: jwt,
+        });
+        if (!reg.ok) {
+          throw new Error("register_sn_user_failed");
+        }
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (msg === "register_sn_user_failed") {
+          setBindErr(t("sn.error.register_failed"));
+        } else {
+          setBindErr(t("sn.error.register_failed_with_reason", { message: msg }));
+        }
+        return;
+      }
+      // polling
+      let tries = 0;
+      let ok = false;
+      let info: any = null;
+      while (tries < 20) {
+        tries += 1;
+        const { ok: found, raw } = await getUserByPublicKey(jwk, "ood1");
+        if (found) {
+          ok = true;
+          info = raw;
+          break;
+        }
+        await new Promise((r) => setTimeout(r, 2000));
+      }
+      if (ok) {
+        setSnRegistered(true);
+        setSnInfo(info);
+        setBindPwd("");
+        setBindPwdOpen(false);
+      } else {
+        setBindErr(t("sn.error.poll_timeout"));
+        return;
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setBindErr(t("sn.error.bind_failed", { message: msg }));
     } finally {
-      setSubmitting(false);
-      setPassword("");
+      setBindLoading(false);
     }
-  }, [selectedDid, password, selectedKind, btcType, count, addWallet, t]);
+  }, [activeDid?.id, bindPwd, snUsername, snInvite]);
 
   return (
     <div className="home-wrapper">
       <header className="home-header">
         <div>
-          <h1>{t("home.title")}</h1>
-          <p>{t("home.subtitle")}</p>
+          <h1>{t("sn.bind_title")}</h1>
+          <p>{t("sn.bind_subtitle")}</p>
         </div>
-        <button
-          type="button"
-          className="home-refresh"
-          onClick={handleRefresh}
-          disabled={refreshing}
-        >
-          {refreshing ? `${t("home.refresh")}...` : t("home.refresh")}
-        </button>
       </header>
 
-      {loading && dids.length === 0 ? (
-        <div className="home-placeholder">{t("home.loading")}</div>
-      ) : dids.length === 0 ? (
-        <div className="home-placeholder">{t("home.empty")}</div>
-      ) : (
-        <div className="home-list">
-          {dids.map((did) => {
-            const btcGroups = groupBtcByType(did.btc_addresses);
-            const isActive = activeDid?.id === did.id;
-            return (
-              <article
-                key={did.id}
-                className={`did-card${isActive ? " did-card-active" : ""}`}
-              >
-                <div className="did-card-header">
-                  <div>
-                    <h2>{displayNickname(did, t("common.account.unnamed"))}</h2>
-                    <span className="did-id">{did.id}</span>
-                  </div>
-                  {isActive && <span className="did-badge">{t("home.active_badge")}</span>}
-                </div>
-
-                {btcGroups.length > 0 && (
-                  <section className="did-section">
-                    <h3>{t("home.btc_section")}</h3>
-                    <div className="did-addresses">
-                      {btcGroups.map((group) => (
-                        <div key={group.type} className="did-address-group">
-                          <span className="did-address-group-label">
-                            {t(`common.btc_type.${group.type}`)}
-                          </span>
-                          <ul>
-                            {group.entries.map((entry) => (
-                              <li key={`${group.type}-${entry.index}`}>
-                                <span className="did-address-index">
-                                  {t("home.address_index", { index: entry.index })}
-                                </span>
-                                <span className="did-address-value">{entry.address}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-                )}
-
-                {did.eth_addresses.length > 0 && (
-                  <section className="did-section">
-                    <h3>{t("home.eth_section")}</h3>
-                    <ul className="did-addresses">
-                      {did.eth_addresses.map((entry) => (
-                        <li key={`eth-${entry.index}`} className="did-address-row">
-                          <span className="did-address-index">
-                            {t("home.address_index", { index: entry.index })}
-                          </span>
-                          <span className="did-address-value">{entry.address}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </section>
-                )}
-                {did.bucky_wallets.length > 0 && (
-                  <section className="did-section">
-                    <h3>{t("home.bucky_section")}</h3>
-                    <ul className="did-addresses">
-                      {did.bucky_wallets.map((wallet) => (
-                        <React.Fragment key={`bucky-${wallet.index}`}>
-                          <li className="did-address-row">
-                            <span className="did-address-index">
-                              {t("home.address_index", { index: wallet.index })}
-                            </span>
-                            <span className="did-address-value">{wallet.did}</span>
-                          </li>
-                          {typeof wallet.public_key === "object" &&
-                            wallet.public_key !== null &&
-                            "x" in wallet.public_key && (
-                              <li className="did-address-row">
-                                <span className="did-address-index">{t("home.bucky_key_label")}</span>
-                                <span className="did-address-value">
-                                  {(wallet.public_key as { x?: unknown }).x as string}
-                                </span>
-                              </li>
-                            )}
-                        </React.Fragment>
-                      ))}
-                    </ul>
-                  </section>
-                )}
-              </article>
-            );
-          })}
+      {/* About SN info card */}
+      <div className="sn-info-card">
+        <div className="sn-info-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 16v-4" />
+            <path d="M12 8h.01" />
+          </svg>
+          {t("sn.about_title")}
         </div>
+        <div className="sn-info-desc">{t("sn.about_desc")}</div>
+        <div className="sn-info-link"><a href="#/sn">{t("sn.learn_more")}</a></div>
+      </div>
+
+      {activeDid ? (
+        <section className="did-section" style={{ marginBottom: 12 }}>
+          {snChecking && (
+            <div className="sn-status">{t("sn.fetching")}</div>
+          )}
+          {!snChecking && snQueryFailed && (
+            <div style={{ marginTop: 8 }}>
+              <div className="error" style={{ color: "#ef4444", marginBottom: 8 }}>{t("sn.fetch_failed")}</div>
+              <button className="home-refresh" onClick={refetchSn}>{t("sn.retry")}</button>
+            </div>
+          )}
+          {!snChecking && !snQueryFailed && snRegistered && (
+            <div className="did-addresses" style={{ marginBottom: 8 }}>
+              <div className="did-address-row">
+                <span className="did-address-index">{t("sn.status_label")}</span>
+                <span className="did-address-value">{t("sn.status_registered")}</span>
+              </div>
+            </div>
+          )}
+          {!snChecking && !snQueryFailed && !snRegistered && (
+            <div className="sn-status" style={{ marginBottom: 8 }}>{t("sn.status_unregistered")}</div>
+          )}
+          {!snChecking && !snQueryFailed && !snRegistered && (
+          <div className="sn-form">
+            <div>
+              <label style={{ fontSize: 14, color: "var(--app-text)" }}>{t("sn.username_label")}</label>
+              <input
+                type="text"
+                value={snUsername}
+                onChange={(e) => setSnUsername(e.target.value)}
+                placeholder={t("sn.username_placeholder")}
+                style={{ marginTop: 6 }}
+              />
+              {checkingUser && (
+                <div style={{ color: "var(--muted-text)", fontSize: 12, marginTop: 4 }}>{t("sn.username_checking")}</div>
+              )}
+              {!checkingUser && snUserValid === true && (
+                <div style={{ color: "#10b981", fontSize: 12, marginTop: 4 }}>{t("sn.username_ok")}</div>
+              )}
+              {!checkingUser && snUserValid === false && (
+                <div style={{ color: "#ef4444", fontSize: 12, marginTop: 4 }}>{t("sn.username_taken")}</div>
+              )}
+              {userCheckError && (
+                <div style={{ color: "#ef4444", fontSize: 12, marginTop: 4 }}>{userCheckError}</div>
+              )}
+            </div>
+              <div>
+                <label style={{ fontSize: 14, color: "var(--app-text)" }}>{t("sn.invite_label")}</label>
+                <input
+                  type="text"
+                value={snInvite}
+                onChange={(e) => setSnInvite(e.target.value)}
+                placeholder={t("sn.invite_help")}
+                style={{ marginTop: 6 }}
+              />
+                {checkingInvite && (
+                  <div style={{ color: "var(--muted-text)", fontSize: 12, marginTop: 4 }}>{t("sn.invite_checking")}</div>
+                )}
+                {!checkingInvite && snInviteValid === true && (
+                  <div style={{ color: "#10b981", fontSize: 12, marginTop: 4 }}>{t("sn.invite_ok")}</div>
+                )}
+              {!checkingInvite && snInviteValid === false && (
+                <div style={{ color: "#ef4444", fontSize: 12, marginTop: 4 }}>{t("sn.invite_bad")}</div>
+              )}
+              {inviteCheckError && (
+                <div style={{ color: "#ef4444", fontSize: 12, marginTop: 4 }}>{inviteCheckError}</div>
+              )}
+            </div>
+            <div style={{ marginTop: 8 }}>
+              <GradientButton onClick={() => { setBindPwd(""); setBindErr(""); setBindPwdOpen(true); }} disabled={!canBind || checkingUser || checkingInvite}>
+                {t("sn.bind_confirm")}
+              </GradientButton>
+            </div>
+          </div>
+          )}
+        </section>
+      ) : (
+        <div className="home-placeholder">{t("sn.no_did_hint")}</div>
       )}
+
+      <InputDialog
+        open={bindPwdOpen}
+        title={t("sn.bind_password_title")}
+        message={t("sn.bind_password_message")}
+        value={bindPwd}
+        onChange={setBindPwd}
+        inputType="password"
+        placeholder={t("sn.bind_password_placeholder")}
+        confirmText={t("sn.bind_confirm")}
+        cancelText={t("common.actions.cancel")}
+        onConfirm={doBind}
+        onCancel={() => { if (!bindLoading) { setBindPwdOpen(false); setBindPwd(""); } }}
+        loading={bindLoading}
+        error={bindErr}
+      />
     </div>
   );
 };
