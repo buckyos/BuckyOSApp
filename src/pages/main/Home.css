@@ -83,6 +83,38 @@
   color: var(--muted-text);
 }
 
+/* Loading card */
+.sn-loading-card {
+  margin-top: 8px;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 140px;
+}
+
+.sn-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid rgba(99, 102, 241, 0.25);
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: snSpin 1s linear infinite;
+}
+
+.sn-loading-text {
+  margin-top: 10px;
+  color: var(--muted-text);
+}
+
+@keyframes snSpin {
+  to { transform: rotate(360deg); }
+}
+
 .home-refresh {
   border-radius: 12px;
   padding: 8px 14px;

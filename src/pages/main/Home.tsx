@@ -7,6 +7,9 @@ import { useI18n } from "../../i18n";
 import { invoke } from "@tauri-apps/api/core";
 import { checkBuckyUsername, checkSnActiveCode, getUserByPublicKey, registerSnUser } from "../../services/sn";
 
+// In-memory cache for SN status per DID to avoid repeated queries
+const snStatusCache: Record<string, { registered: boolean; info: any } | undefined> = {};
+
 const Home: React.FC = () => {
   const { activeDid } = useDidContext();
   const { t } = useI18n();
@@ -31,13 +34,22 @@ const Home: React.FC = () => {
   const [snQueryFailed, setSnQueryFailed] = React.useState(false);
   const SN_BIND_TAG = "[SN-BIND]";
   const formVisible = !snChecking && !snQueryFailed && !snRegistered;
-  const prevFormVisibleRef = React.useRef<boolean>(false);
   const lastUserCheckedRef = React.useRef<string>("");
   const lastInviteCheckedRef = React.useRef<string>("");
 
-  const refetchSn = React.useCallback(async () => {
+  const refetchSn = React.useCallback(async (force = false) => {
     if (!activeDid || !activeDid.bucky_wallets || activeDid.bucky_wallets.length === 0) return;
+    const didId = activeDid.id;
     const jwk = activeDid.bucky_wallets[0]?.public_key as any;
+    const cached = !force ? snStatusCache[didId] : undefined;
+    if (cached) {
+      setSnError("");
+      setSnQueryFailed(false);
+      setSnRegistered(cached.registered);
+      setSnInfo(cached.info);
+      setSnChecking(false);
+      return;
+    }
     try {
       setSnChecking(true);
       setSnError("");
@@ -46,9 +58,11 @@ const Home: React.FC = () => {
       if (ok) {
         setSnRegistered(true);
         setSnInfo(raw);
+        snStatusCache[didId] = { registered: true, info: raw };
       } else {
         setSnRegistered(false);
         setSnInfo(null);
+        snStatusCache[didId] = { registered: false, info: null };
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -68,6 +82,10 @@ const Home: React.FC = () => {
     setSnInfo(null);
     setSnInvite("");
     setSnInviteValid(null);
+    setSnUserValid(null);
+    setCheckingUser(false);
+    setCheckingInvite(false);
+    setSnChecking(true); // show loading on first enter or DID switch
     if (activeDid) {
       setSnUsername((activeDid.nickname || "").trim());
     } else {
@@ -75,47 +93,17 @@ const Home: React.FC = () => {
     }
   }, [activeDid?.id]);
 
-  // After default username is set from DID, check availability once
-  React.useEffect(() => {
-    if (!activeDid) return;
-    const defaultName = (activeDid.nickname || "").trim();
-    if (!defaultName) {
-      setSnUserValid(null);
-      return;
-    }
-    let cancelled = false;
-    const run = async () => {
-      try {
-        setCheckingUser(true);
-        setUserCheckError("");
-        const valid = await checkBuckyUsername(defaultName);
-        if (cancelled) return;
-        // Only apply if the input is still the default name
-        if (snUsername.trim() === defaultName) {
-          setSnUserValid(valid);
-        }
-      } catch (_) {
-        if (!cancelled) {
-          setSnUserValid(null);
-          setUserCheckError(t("sn.error.check_username_failed"));
-        }
-      } finally {
-        if (!cancelled) setCheckingUser(false);
-      }
-    };
-    run();
-    return () => { cancelled = true; };
-  }, [activeDid?.id]);
+  // Removed immediate username checks to avoid flicker; debounced check handles first render
 
   // Query SN registration on first load and when active DID changes
   React.useEffect(() => {
-    const run = async () => { await refetchSn(); };
+    const run = async () => { await refetchSn(false); };
     run();
   }, [activeDid?.id, refetchSn]);
 
   // removed blur-based validation in favor of debounced checks
 
-  // Debounced validation: username changes → 2s later check availability
+  // Debounced validation: username changes → 800ms later check availability
   React.useEffect(() => {
     if (!formVisible) return;
     const name = snUsername.trim();
@@ -125,6 +113,7 @@ const Home: React.FC = () => {
     }
     if (name === lastUserCheckedRef.current) return;
     setUserCheckError("");
+    // Show checking immediately while waiting for debounce
     setCheckingUser(true);
     const timer = setTimeout(async () => {
       try {
@@ -137,12 +126,12 @@ const Home: React.FC = () => {
       } finally {
         setCheckingUser(false);
       }
-    }, 2000);
+    }, 800);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [snUsername, formVisible]);
 
-  // Debounced validation: invite code changes → 2s later check validity
+  // Debounced validation: invite code changes → 800ms later check validity
   React.useEffect(() => {
     if (!formVisible) return;
     const code = snInvite.trim();
@@ -152,6 +141,7 @@ const Home: React.FC = () => {
     }
     if (code === lastInviteCheckedRef.current) return;
     setInviteCheckError("");
+    // Show checking immediately while waiting for debounce
     setCheckingInvite(true);
     const timer = setTimeout(async () => {
       try {
@@ -164,36 +154,12 @@ const Home: React.FC = () => {
       } finally {
         setCheckingInvite(false);
       }
-    }, 2000);
+    }, 800);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [snInvite, formVisible]);
 
-  // When the form becomes visible for the first time, auto-check username availability
-  React.useEffect(() => {
-    const prev = prevFormVisibleRef.current;
-    prevFormVisibleRef.current = formVisible;
-    if (!prev && formVisible) {
-      const name = snUsername.trim();
-      if (!name) {
-        setSnUserValid(null);
-        return;
-      }
-      (async () => {
-        try {
-          setCheckingUser(true);
-          setUserCheckError("");
-          const valid = await checkBuckyUsername(name);
-          setSnUserValid(valid);
-        } catch (_) {
-          setSnUserValid(null);
-          setUserCheckError(t("sn.error.check_username_failed"));
-        } finally {
-          setCheckingUser(false);
-        }
-      })();
-    }
-  }, [formVisible]);
+  // Removed first-visible auto-check; debounced check covers it
 
   const canBind = React.useMemo(() => {
     return !snRegistered && snUserValid === true && snInviteValid === true;
@@ -282,6 +248,10 @@ const Home: React.FC = () => {
         setSnInfo(info);
         setBindPwd("");
         setBindPwdOpen(false);
+        try {
+          const didId2 = activeDid.id;
+          snStatusCache[didId2] = { registered: true, info };
+        } catch (_) {}
       } else {
         console.error(SN_BIND_TAG, "bind timeout: SN user not visible after polling");
         setBindErr(t("sn.error.poll_timeout"));
@@ -322,13 +292,17 @@ const Home: React.FC = () => {
 
       {activeDid ? (
         <section className="did-section" style={{ marginBottom: 12 }}>
-          {snChecking && (
-            <div className="sn-status">{t("sn.fetching")}</div>
-          )}
+          {/* snChecking handled by loading card below */}
           {!snChecking && snQueryFailed && (
             <div style={{ marginTop: 8 }}>
               <div className="error" style={{ color: "#ef4444", marginBottom: 8 }}>{t("sn.fetch_failed")}</div>
-              <button className="home-refresh" onClick={refetchSn}>{t("sn.retry")}</button>
+              <button className="home-refresh" onClick={() => refetchSn(true)}>{t("sn.retry")}</button>
+            </div>
+          )}
+          {snChecking && (
+            <div className="sn-loading-card" role="status" aria-live="polite">
+              <div className="sn-spinner" aria-hidden />
+              <div className="sn-loading-text">{t("sn.fetching")}</div>
             </div>
           )}
           {!snChecking && !snQueryFailed && snRegistered && (
