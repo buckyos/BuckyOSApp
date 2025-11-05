@@ -53,8 +53,17 @@ export async function registerSnUser(args: {
 export async function getUserByPublicKey(publicKeyJwk: string): Promise<{ ok: boolean; raw: any }> {
   console.debug("[SN] get_by_pk: start", { public_key: publicKeyJwk });
   try {
-    const data = await snCall<{ code?: number }>("get_by_pk", { public_key: publicKeyJwk });
-    const found = (data as any)?.found;
+    const data = await snCall<{
+      device_info?: string | null;
+      device_name?: string | null;
+      device_sn_ip?: string | null;
+      found?: boolean | null;
+      public_key?: string | null;
+      reason?: string | null;
+      sn_ips?: string[] | null;
+      user_name?: string | null;
+      zone_config?: string | null;
+    }>("get_by_pk", { public_key: publicKeyJwk });
     /*
     data:{
       device_info:null,
@@ -69,7 +78,7 @@ export async function getUserByPublicKey(publicKeyJwk: string): Promise<{ ok: bo
     }
     */
     console.debug("[SN] get_by_pk: done", { data });
-    return { ok: (found ?? false), raw: data };
+    return { ok: (data?.user_name !== null), raw: data };
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     console.error("[SN] get_by_pk: error", { message });

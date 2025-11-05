@@ -29,6 +29,7 @@ const Home: React.FC = () => {
   const [userCheckError, setUserCheckError] = React.useState<string>("");
   const [inviteCheckError, setInviteCheckError] = React.useState<string>("");
   const [snQueryFailed, setSnQueryFailed] = React.useState(false);
+  const SN_BIND_TAG = "[SN-BIND]";
   const formVisible = !snChecking && !snQueryFailed && !snRegistered;
   const prevFormVisibleRef = React.useRef<boolean>(false);
   const lastUserCheckedRef = React.useRef<string>("");
@@ -204,35 +205,53 @@ const Home: React.FC = () => {
     setBindLoading(true);
     try {
       const didId = activeDid.id;
+      const maskedInvite = (() => {
+        const s = snInvite.trim();
+        if (!s) return "<empty>";
+        if (s.length <= 6) return `${s[0]}***${s[s.length - 1]}(${s.length})`;
+        return `${s.slice(0, 2)}***${s.slice(-2)}(${s.length})`;
+      })();
+      console.debug(SN_BIND_TAG, "start", {
+        didId,
+        username: snUsername.trim(),
+        invite: maskedInvite,
+      });
       let jwt: string;
       try {
+        console.debug(SN_BIND_TAG, "generate_zone_boot_config_jwt: invoking");
         jwt = await invoke("generate_zone_boot_config_jwt", {
           password: bindPwd,
           didId,
           sn: snUsername.trim(),
           oodName: "ood1",
         });
+        console.debug(SN_BIND_TAG, "generate_zone_boot_config_jwt: success", { jwtLen: typeof jwt === "string" ? jwt.length : -1 });
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
+        console.error(SN_BIND_TAG, "generate_zone_boot_config_jwt: error", { msg, err: e });
         setBindErr(t("sn.error.zone_config_failed", { message: msg }));
         return;
       }
       const jwk = JSON.stringify(activeDid.bucky_wallets[0].public_key as any);
       try {
+        console.debug(SN_BIND_TAG, "registerSnUser: start");
         const reg = await registerSnUser({
           userName: snUsername.trim(),
           activeCode: snInvite.trim(),
           publicKeyJwk: jwk,
           zoneConfigJwt: jwt,
         });
+        console.debug(SN_BIND_TAG, "registerSnUser: done", { ok: reg.ok, code: (reg as any)?.code });
         if (!reg.ok) {
           throw new Error("register_sn_user_failed");
         }
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         if (msg === "register_sn_user_failed") {
+          console.error(SN_BIND_TAG, "registerSnUser: failed");
           setBindErr(t("sn.error.register_failed"));
         } else {
+          console.error(SN_BIND_TAG, "registerSnUser: error", { msg, err: e });
           setBindErr(t("sn.error.register_failed_with_reason", { message: msg }));
         }
         return;
@@ -243,28 +262,38 @@ const Home: React.FC = () => {
       let info: any = null;
       while (tries < 20) {
         tries += 1;
-        const { ok: found, raw } = await getUserByPublicKey(jwk, "ood1");
-        if (found) {
-          ok = true;
-          info = raw;
-          break;
+        try {
+          console.debug(SN_BIND_TAG, "poll", { attempt: tries });
+          const { ok: found, raw } = await getUserByPublicKey(jwk, "ood1");
+          console.debug(SN_BIND_TAG, "poll result", { attempt: tries, ok: found, hasRaw: !!raw });
+          if (found) {
+            ok = true;
+            info = raw;
+            break;
+          }
+        } catch (e) {
+          console.error(SN_BIND_TAG, "poll error", { attempt: tries, err: e });
         }
         await new Promise((r) => setTimeout(r, 2000));
       }
       if (ok) {
+        console.debug(SN_BIND_TAG, "bind success");
         setSnRegistered(true);
         setSnInfo(info);
         setBindPwd("");
         setBindPwdOpen(false);
       } else {
+        console.error(SN_BIND_TAG, "bind timeout: SN user not visible after polling");
         setBindErr(t("sn.error.poll_timeout"));
         return;
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
+      console.error(SN_BIND_TAG, "bind exception", { msg, err: e });
       setBindErr(t("sn.error.bind_failed", { message: msg }));
     } finally {
       setBindLoading(false);
+      console.debug(SN_BIND_TAG, "end");
     }
   }, [activeDid?.id, bindPwd, snUsername, snInvite]);
 
@@ -370,7 +399,12 @@ const Home: React.FC = () => {
       {(!snChecking && !snQueryFailed && !snRegistered) && (
         <div className="sn-page-actions">
           <GradientButton
-            onClick={() => { setBindPwd(""); setBindErr(""); setBindPwdOpen(true); }}
+            onClick={() => {
+              console.debug(SN_BIND_TAG, "open password dialog");
+              setBindPwd("");
+              setBindErr("");
+              setBindPwdOpen(true);
+            }}
             disabled={!canBind || checkingUser || checkingInvite}
           >
             {t("sn.bind_confirm")}
