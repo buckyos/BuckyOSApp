@@ -34,6 +34,7 @@ const Home: React.FC = () => {
   const [snQueryFailed, setSnQueryFailed] = React.useState(false);
   const SN_BIND_TAG = "[SN-BIND]";
   const formVisible = !snChecking && !snQueryFailed && !snRegistered;
+  const [initializing, setInitializing] = React.useState<boolean>(true);
   const lastUserCheckedRef = React.useRef<string>("");
   const lastInviteCheckedRef = React.useRef<string>("");
 
@@ -48,6 +49,7 @@ const Home: React.FC = () => {
       setSnRegistered(cached.registered);
       setSnInfo(cached.info);
       setSnChecking(false);
+      setInitializing(false);
       return;
     }
     try {
@@ -71,6 +73,7 @@ const Home: React.FC = () => {
       setSnQueryFailed(true);
     } finally {
       setSnChecking(false);
+      setInitializing(false);
     }
   }, [activeDid?.id, t]);
 
@@ -85,7 +88,8 @@ const Home: React.FC = () => {
     setSnUserValid(null);
     setCheckingUser(false);
     setCheckingInvite(false);
-    setSnChecking(true); // show loading on first enter or DID switch
+    setSnChecking(true); // show loading
+    setInitializing(!!activeDid); // full-screen loading only when DID exists
     if (activeDid) {
       setSnUsername((activeDid.nickname || "").trim());
     } else {
@@ -269,28 +273,38 @@ const Home: React.FC = () => {
 
   return (
     <div className="home-wrapper">
-      <header className="home-header">
-        <div>
-          <h1>{t("sn.bind_title")}</h1>
-          <p>{t("sn.bind_subtitle")}</p>
+      {initializing && (
+        <div className="sn-full-loading" role="status" aria-live="polite">
+          <div className="sn-full-spinner" aria-hidden />
+          <div className="sn-full-title">{t("sn.header")}</div>
+          <div className="sn-full-desc">{t("sn.fetching")}</div>
         </div>
-      </header>
+      )}
+      {!initializing && (
+        <>
+          <header className="home-header">
+            <div>
+              <h1>{t("sn.bind_title")}</h1>
+              <p>{t("sn.bind_subtitle")}</p>
+            </div>
+          </header>
 
-      {/* About SN info card */}
-      <div className="sn-info-card">
-        <div className="sn-info-title">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-            <circle cx="12" cy="12" r="10" />
-            <path d="M12 16v-4" />
-            <path d="M12 8h.01" />
-          </svg>
-          {t("sn.about_title")}
-        </div>
-        <div className="sn-info-desc">{t("sn.about_desc")}</div>
-        <div className="sn-info-link"><a href="#/sn">{t("sn.learn_more")}</a></div>
-      </div>
-
-      {activeDid ? (
+          {/* About SN info card */}
+          <div className="sn-info-card">
+            <div className="sn-info-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 16v-4" />
+                <path d="M12 8h.01" />
+              </svg>
+              {t("sn.about_title")}
+            </div>
+            <div className="sn-info-desc">{t("sn.about_desc")}</div>
+            <div className="sn-info-link"><a href="#/sn">{t("sn.learn_more")}</a></div>
+          </div>
+        </>
+      )}
+      {!initializing && activeDid ? (
         <section className="did-section" style={{ marginBottom: 12 }}>
           {/* snChecking handled by loading card below */}
           {!snChecking && snQueryFailed && (
@@ -299,24 +313,26 @@ const Home: React.FC = () => {
               <button className="home-refresh" onClick={() => refetchSn(true)}>{t("sn.retry")}</button>
             </div>
           )}
-          {snChecking && (
+          {!initializing && snChecking && (
             <div className="sn-loading-card" role="status" aria-live="polite">
               <div className="sn-spinner" aria-hidden />
               <div className="sn-loading-text">{t("sn.fetching")}</div>
             </div>
           )}
-          {!snChecking && !snQueryFailed && snRegistered && (
-            <div className="did-addresses" style={{ marginBottom: 8 }}>
-              <div className="did-address-row">
-                <span className="did-address-index">{t("sn.status_label")}</span>
-                <span className="did-address-value">{t("sn.status_registered")}</span>
+          {!initializing && !snChecking && !snQueryFailed && snRegistered && (
+            <div className="sn-registered-card">
+              <div className="sn-registered-header">
+                <span className="sn-registered-badge">{t("sn.status_registered")}</span>
               </div>
+              <pre className="sn-json" aria-label="SN info">
+{JSON.stringify(snInfo, null, 2)}
+              </pre>
             </div>
           )}
-          {!snChecking && !snQueryFailed && !snRegistered && (
+          {!initializing && !snChecking && !snQueryFailed && !snRegistered && (
             <div className="sn-status" style={{ marginBottom: 8 }}>{t("sn.status_unregistered")}</div>
           )}
-          {!snChecking && !snQueryFailed && !snRegistered && (
+          {!initializing && !snChecking && !snQueryFailed && !snRegistered && (
           <div className="sn-form">
             <div>
               <label style={{ fontSize: 14, color: "var(--app-text)" }}>{t("sn.username_label")}</label>
@@ -366,11 +382,11 @@ const Home: React.FC = () => {
           </div>
           )}
         </section>
-      ) : (
+      ) : (!initializing ? (
         <div className="home-placeholder">{t("sn.no_did_hint")}</div>
-      )}
+      ) : null)}
 
-      {(!snChecking && !snQueryFailed && !snRegistered) && (
+      {(!initializing && !snChecking && !snQueryFailed && !snRegistered) && (
         <div className="sn-page-actions">
           <GradientButton
             onClick={() => {

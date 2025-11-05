@@ -64,10 +64,13 @@ const IdentityList: React.FC = () => {
   };
 
   const addIdentity = () => {
-    // Go directly to the create DID flow.
-    // Backend will set the new identity as active on success.
-    navigate("/create");
+    // Open choice sheet: create new or import existing
+    setAddOpen(true);
   };
+
+  const [addOpen, setAddOpen] = React.useState(false);
+  const goCreate = () => { setAddOpen(false); navigate("/create"); };
+  const goImport = () => { setAddOpen(false); navigate("/import"); };
 
   return (
     <div className="App" style={{ display: "flex", flexDirection: "column", height: "100%" }}>
@@ -142,6 +145,82 @@ const IdentityList: React.FC = () => {
         loading={loading}
         error={error}
       />
+
+      {addOpen && (
+        <div
+          role="dialog"
+          aria-modal
+          onClick={() => setAddOpen(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.35)",
+            display: "flex",
+            alignItems: "flex-end",
+            justifyContent: "center",
+            padding: 16,
+            zIndex: 1000,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "100%",
+              maxWidth: 440,
+              background: "var(--app-bg)",
+              color: "var(--app-text)",
+              border: "1px solid var(--border)",
+              borderRadius: 16,
+              padding: 16,
+              boxShadow: "none",
+            }}
+          >
+            <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 12 }}>
+              {t("identities.add_identity")}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <button
+                onClick={goCreate}
+                style={{
+                  height: 44,
+                  borderRadius: 12,
+                  border: "none",
+                  color: "#fff",
+                  background: "linear-gradient(90deg, #6366f1 0%, #6c5ce7 100%)",
+                }}
+              >
+                {t("create.title_new")}
+              </button>
+              <button
+                onClick={goImport}
+                style={{
+                  height: 44,
+                  borderRadius: 12,
+                  background: "var(--header-btn-bg)",
+                  border: "1px solid var(--header-btn-border)",
+                  color: "var(--app-text)",
+                  fontWeight: 600,
+                }}
+              >
+                {t("welcome.import_did")}
+              </button>
+              <button
+                onClick={() => setAddOpen(false)}
+                style={{
+                  height: 40,
+                  borderRadius: 12,
+                  background: "transparent",
+                  border: "1px solid var(--border)",
+                  color: "var(--app-text)",
+                  fontWeight: 600,
+                }}
+              >
+                {t("common.actions.cancel")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
