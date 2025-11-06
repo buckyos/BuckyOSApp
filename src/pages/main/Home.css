@@ -227,7 +227,6 @@
   border-radius: 12px;
   background: rgba(148, 163, 184, 0.08);
   color: var(--app-text);
-  font-family: "Fira Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   font-size: 12px;
   overflow: auto;
   max-height: 240px;
@@ -313,7 +312,6 @@
 }
 
 .did-address-value {
-  font-family: "Fira Mono", "SFMono-Regular", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   font-size: 0.85rem;
   color: var(--app-text);
   word-break: break-all;

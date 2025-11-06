@@ -74,10 +74,7 @@ const ImportDid: React.FC<ImportDidProps> = ({ loading, error, onImport, onBack 
                             background: "var(--card-bg)",
                             color: "var(--app-text)",
                             padding: "12px 14px",
-                            resize: "vertical",
-                            fontFamily:
-                                '"Fira Mono", "SFMono-Regular", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-                            fontSize: 14,
+                            resize: "vertical",                            fontSize: 14,
                             lineHeight: 1.45,
                         }}
                         disabled={loading}
