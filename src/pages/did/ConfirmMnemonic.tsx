@@ -92,9 +92,9 @@ const ConfirmMnemonic: React.FC<ConfirmMnemonicProps> = ({
                             onClick={() => handleRemove(i)}
                             className="mnemonic-word"
                             style={{
-                                background: wrongIndex !== -1 ? "#ffe9e9" : "var(--chip-bg)",
-                                color: wrongIndex !== -1 ? "#b42318" : "#fff",
-                                border: "none",
+                                background: wrongIndex !== -1 ? "#ffe9e9" : "#ffffff",
+                                color: wrongIndex !== -1 ? "#b42318" : "var(--app-text)",
+                                border: wrongIndex !== -1 ? "1px solid #f5c2c2" : "1px solid var(--input-border)",
                                 cursor: "pointer",
                             }}
                         >

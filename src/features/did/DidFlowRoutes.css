@@ -135,8 +135,9 @@ button:disabled {
 }
 
 .mnemonic-word {
-    background: var(--chip-bg);
-    color: #fff;
+    background: #ffffff;
+    border: 1px solid var(--input-border);
+    color: var(--app-text);
     height: 44px;
     width: 100%;
     padding: 0 10px;
@@ -149,7 +150,8 @@ button:disabled {
 }
 
 .selected-box .mnemonic-word {
-    background: var(--chip-bg);
+    background: #ffffff;
+    border: 1px solid var(--input-border);
 }
 
 .selected-grid {

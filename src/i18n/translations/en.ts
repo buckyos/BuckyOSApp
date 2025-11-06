@@ -213,4 +213,14 @@ export default {
         title: "What is SN?",
         content: "SN是XXXX",
     },
+    ood: {
+        activate_title: "Activate OOD",
+        activate_subtitle: "Activate your OOD device to join the BuckyOS network.",
+        about_title: "About OOD",
+        about_desc: "OOD is your personal always-online device that provides connectivity in the BuckyOS network. After activation, it works together with SN to deliver more stable services for your identity.",
+        activate_desc_inline: "Tap the button below to scan nearby devices and activate OOD.",
+        scan_button: "Scan Device",
+        scanning: "Scanning for nearby devices...",
+        scan_not_found: "No available devices found yet.",
+    },
 };

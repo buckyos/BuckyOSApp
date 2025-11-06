@@ -40,15 +40,14 @@ const ShowMnemonic: React.FC<ShowMnemonicProps> = ({ mnemonic, onNext, onBack })
                 >
                     {mnemonic.map((word, index) => (
                         <div key={index} style={{
-                            background: "#ffffff80",
-                            border: "1px solid var(--border)",
+                            background: "#ffffff",
+                            border: "1px solid var(--input-border)",
                             borderRadius: 12,
                             height: 44,
                             display: "flex",
                             alignItems: "center",
                             padding: "0 10px",
                             gap: 8,
-                            backdropFilter: "saturate(120%) blur(0px)",
                         }}>
                             <span style={{
                                 minWidth: 20,

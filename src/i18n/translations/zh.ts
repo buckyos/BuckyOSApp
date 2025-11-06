@@ -211,4 +211,14 @@ export default {
         title: "什么是 SN？",
         content: "SN是XXXX",
     },
+    ood: {
+        activate_title: "激活 OOD",
+        activate_subtitle: "激活您的 OOD 设备以加入 BuckyOS 网络。",
+        about_title: "关于 OOD",
+        about_desc: "OOD 是您的个人在线设备，用于在 BuckyOS 网络中提供持久在线与连接能力。激活后，可与 SN 协同工作，为您的身份提供更稳定的服务。",
+        activate_desc_inline: "点击下方按钮开始扫描附近设备以激活 OOD。",
+        scan_button: "扫描设备",
+        scanning: "正在扫描附近的设备...",
+        scan_not_found: "暂未发现可用设备。",
+    },
 };

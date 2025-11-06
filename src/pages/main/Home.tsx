@@ -35,6 +35,9 @@ const Home: React.FC = () => {
   const SN_BIND_TAG = "[SN-BIND]";
   const formVisible = !snChecking && !snQueryFailed && !snRegistered;
   const [initializing, setInitializing] = React.useState<boolean>(true);
+  // OOD activation scanning state
+  const [scanningOod, setScanningOod] = React.useState(false);
+  const [scanHint, setScanHint] = React.useState("");
   const lastUserCheckedRef = React.useRef<string>("");
   const lastInviteCheckedRef = React.useRef<string>("");
 
@@ -284,8 +287,8 @@ const Home: React.FC = () => {
         <>
           <header className="home-header">
             <div>
-              <h1>{t("sn.bind_title")}</h1>
-              <p>{t("sn.bind_subtitle")}</p>
+              <h1>{snRegistered ? t("ood.activate_title") : t("sn.bind_title")}</h1>
+              <p>{snRegistered ? t("ood.activate_subtitle") : t("sn.bind_subtitle")}</p>
             </div>
           </header>
 
@@ -297,10 +300,12 @@ const Home: React.FC = () => {
                 <path d="M12 16v-4" />
                 <path d="M12 8h.01" />
               </svg>
-              {t("sn.about_title")}
+              {snRegistered ? t("ood.about_title") : t("sn.about_title")}
             </div>
-            <div className="sn-info-desc">{t("sn.about_desc")}</div>
-            <div className="sn-info-link"><a href="#/sn">{t("sn.learn_more")}</a></div>
+            <div className="sn-info-desc">{snRegistered ? t("ood.about_desc") : t("sn.about_desc")}</div>
+            {!snRegistered && (
+              <div className="sn-info-link"><a href="#/sn">{t("sn.learn_more")}</a></div>
+            )}
           </div>
         </>
       )}
@@ -313,20 +318,24 @@ const Home: React.FC = () => {
               <button className="home-refresh" onClick={() => refetchSn(true)}>{t("sn.retry")}</button>
             </div>
           )}
-          {!initializing && snChecking && (
+          {!initializing && snChecking && !snRegistered && (
             <div className="sn-loading-card" role="status" aria-live="polite">
               <div className="sn-spinner" aria-hidden />
               <div className="sn-loading-text">{t("sn.fetching")}</div>
             </div>
           )}
           {!initializing && !snChecking && !snQueryFailed && snRegistered && (
-            <div className="sn-registered-card">
-              <div className="sn-registered-header">
-                <span className="sn-registered-badge">{t("sn.status_registered")}</span>
-              </div>
-              <pre className="sn-json" aria-label="SN info">
-{JSON.stringify(snInfo, null, 2)}
-              </pre>
+            <div className="sn-loading-card" role="region">
+              {!scanningOod && (
+                <div className="sn-loading-text">{t("ood.activate_desc_inline")}</div>
+              )}
+              {scanningOod && (
+                <>
+                  <div className="sn-spinner" aria-hidden />
+                  <div className="sn-loading-text">{t("ood.scanning")}</div>
+                  {!!scanHint && <div className="sn-loading-text">{scanHint}</div>}
+                </>
+              )}
             </div>
           )}
           {!initializing && !snChecking && !snQueryFailed && !snRegistered && (
@@ -398,6 +407,27 @@ const Home: React.FC = () => {
             disabled={!canBind || checkingUser || checkingInvite}
           >
             {t("sn.bind_confirm")}
+          </GradientButton>
+        </div>
+      )}
+
+      {(!initializing && !snChecking && !snQueryFailed && snRegistered) && (
+        <div className="sn-page-actions">
+          <GradientButton
+            onClick={async () => {
+              setScanHint("");
+              setScanningOod(true);
+              try {
+                // Placeholder: simulate scan
+                await new Promise(r => setTimeout(r, 1600));
+                setScanHint(t("ood.scan_not_found"));
+              } finally {
+                setScanningOod(false);
+              }
+            }}
+            disabled={scanningOod}
+          >
+            {t("ood.scan_button")}
           </GradientButton>
         </div>
       )}
