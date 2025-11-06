@@ -75,7 +75,7 @@ const ConfirmMnemonic: React.FC<ConfirmMnemonicProps> = ({
             </div>
 
             {/* Selected words area in a soft card */}
-            <div className="page-content" style={{
+                <div className="page-content" style={{
                 background: "var(--card-bg)",
                 border: "1px solid var(--border)",
                 borderRadius: 18,
@@ -92,9 +92,9 @@ const ConfirmMnemonic: React.FC<ConfirmMnemonicProps> = ({
                             onClick={() => handleRemove(i)}
                             className="mnemonic-word"
                             style={{
-                                background: wrongIndex !== -1 ? "#ffe9e9" : "#ffffff",
-                                color: wrongIndex !== -1 ? "#b42318" : "var(--app-text)",
-                                border: wrongIndex !== -1 ? "1px solid #f5c2c2" : "1px solid var(--input-border)",
+                                background: wrongIndex !== -1 ? "#ffe9e9" : undefined,
+                                color: wrongIndex !== -1 ? "#b42318" : undefined,
+                                border: wrongIndex !== -1 ? "1px solid #f5c2c2" : undefined,
                                 cursor: "pointer",
                             }}
                         >

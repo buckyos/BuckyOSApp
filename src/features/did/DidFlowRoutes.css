@@ -134,6 +134,30 @@ button:disabled {
     /* 44px item + 12px top + 12px bottom */
 }
 
+.mnemonic-item {
+    background: #ffffff;
+    border: 1px solid var(--input-border);
+    border-radius: 12px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    gap: 8px;
+}
+
+.mnemonic-index {
+    min-width: 20px;
+    height: 24px;
+    border-radius: 999px;
+    background: #eef0fb;
+    color: #6b6ff3;
+    font-size: 11px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 6px;
+}
+
 .mnemonic-word {
     background: #ffffff;
     border: 1px solid var(--input-border);
@@ -152,6 +176,42 @@ button:disabled {
 .selected-box .mnemonic-word {
     background: #ffffff;
     border: 1px solid var(--input-border);
+}
+
+/* Dark theme refinements for mnemonic UI */
+[data-theme='dark'] .mnemonic-item {
+    background: #141a2b; /* slightly lighter than app bg */
+    border-color: #3a4252;
+}
+
+[data-theme='dark'] .mnemonic-index {
+    background: rgba(124, 166, 255, 0.18);
+    color: #a9b7ff;
+}
+
+[data-theme='dark'] .mnemonic-word,
+[data-theme='dark'] .selected-box .mnemonic-word,
+[data-theme='dark'] .selected-grid .mnemonic-word {
+    background: #141a2b;
+    border-color: #3a4252;
+    color: var(--app-text);
+}
+
+.mnemonic-info {
+    background: #f5f6ff;
+    color: #5960a9;
+    padding: 10px 12px;
+    border-radius: 14px;
+    margin-top: 12px;
+    text-align: center;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+[data-theme='dark'] .mnemonic-info {
+    background: rgba(124, 166, 255, 0.12);
+    color: #cdd4ff;
+    border: 1px solid rgba(124, 166, 255, 0.25);
 }
 
 .selected-grid {

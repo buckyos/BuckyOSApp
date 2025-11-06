@@ -39,28 +39,8 @@ const ShowMnemonic: React.FC<ShowMnemonicProps> = ({ mnemonic, onNext, onBack })
                     style={{ gridTemplateColumns: "repeat(2, 1fr)", gap: 10, margin: 0 }}
                 >
                     {mnemonic.map((word, index) => (
-                        <div key={index} style={{
-                            background: "#ffffff",
-                            border: "1px solid var(--input-border)",
-                            borderRadius: 12,
-                            height: 44,
-                            display: "flex",
-                            alignItems: "center",
-                            padding: "0 10px",
-                            gap: 8,
-                        }}>
-                            <span style={{
-                                minWidth: 20,
-                                height: 24,
-                                borderRadius: 999,
-                                background: "#eef0fb",
-                                color: "#6b6ff3",
-                                fontSize: 11,
-                                display: "inline-flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                padding: "0 6px",
-                            }}>{index + 1}</span>
+                        <div key={index} className="mnemonic-item">
+                            <span className="mnemonic-index">{index + 1}</span>
                             <span style={{ color: "var(--app-text)", fontWeight: "normal" }}>{word}</span>
                         </div>
                     ))}
@@ -68,16 +48,7 @@ const ShowMnemonic: React.FC<ShowMnemonicProps> = ({ mnemonic, onNext, onBack })
             </div>
 
             {/* info box */}
-            <div className="page-content" style={{
-                background: "#f5f6ff",
-                color: "#5960a9",
-                padding: "10px 12px",
-                borderRadius: 14,
-                marginTop: 12,
-                textAlign: "center",
-                fontSize: 13,
-                lineHeight: 1.45,
-            }}>
+            <div className="page-content mnemonic-info">
                 {t("showMnemonic.tips")}
             </div>
 
