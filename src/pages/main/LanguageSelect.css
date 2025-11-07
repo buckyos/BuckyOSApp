@@ -1,25 +1,26 @@
 /* Reuse the list look for language selection */
 .lang-list {
-  display: flex;
-  flex-direction: column;
+    display: flex;
+    flex-direction: column;
 }
 
 .lang-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  border-radius: 0 !important;
-  appearance: none;
-  -webkit-appearance: none;
-  padding: 16px 4px !important;
-  color: var(--app-text) !important;
-  border-bottom: 1px solid var(--border) !important;
-  text-align: left;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    appearance: none;
+    -webkit-appearance: none;
+    padding: 16px 4px !important;
+    color: var(--app-text) !important;
+    border-bottom: 1px solid var(--border) !important;
+    text-align: left;
 }
 
-.lang-item svg { color: var(--muted-text); }
-
+.lang-item svg {
+    color: var(--muted-text);
+}

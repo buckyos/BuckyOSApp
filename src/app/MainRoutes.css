@@ -1,130 +1,130 @@
 /* Minimal bottom tab bar with icon + label layout */
 .content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 .account-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px;
-  padding-bottom: 12px;
-  background: transparent;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    padding-bottom: 12px;
+    background: transparent;
 }
 
 .account-switcher {
-  margin-left: auto;
-  border-radius: 12px;
-  padding: 6px 10px;
-  border: 1px solid var(--border);
-  background: var(--card-bg);
-  color: var(--app-text);
-  font-size: 0.85rem;
+    margin-left: auto;
+    border-radius: 12px;
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    background: var(--card-bg);
+    color: var(--app-text);
+    font-size: 0.85rem;
 }
 
 .account-switcher:focus-visible {
-  outline: 2px solid rgba(51, 93, 255, 0.35);
-  outline-offset: 2px;
+    outline: 2px solid rgba(51, 93, 255, 0.35);
+    outline-offset: 2px;
 }
 
 .account-avatar {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #6366f1 0%, #6c5ce7 100%);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  font-size: 18px;
-  box-shadow: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6366f1 0%, #6c5ce7 100%);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 18px;
+    box-shadow: none;
 }
 
 .account-info {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.2;
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
 }
 
 .account-label {
-  font-size: 13px;
-  color: var(--muted-text);
+    font-size: 13px;
+    color: var(--muted-text);
 }
 
 .account-name {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--app-text);
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--app-text);
 }
 
 .content-body {
-  flex: 1;
-  overflow: auto;
-  display: flex;
-  flex-direction: column;
+    flex: 1;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
 }
 
 .tabbar {
-  display: flex;
-  justify-content: space-between;
-  margin: 0 -16px;
-  padding: 10px 24px calc(env(safe-area-inset-bottom, 0) + 12px);
-  border-top: 1px solid var(--border);
-  background: var(--app-bg);
-  box-shadow: none;
+    display: flex;
+    justify-content: space-between;
+    margin: 0 -16px;
+    padding: 10px 24px calc(env(safe-area-inset-bottom, 0) + 12px);
+    border-top: 1px solid var(--border);
+    background: var(--app-bg);
+    box-shadow: none;
 }
 
 .tabbar .tab {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 4px;
-  text-decoration: none;
-  color: var(--muted-text);
-  font-size: 0.75rem;
-  font-weight: 500;
-  transition: color 0.2s ease, transform 0.2s ease;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 4px;
+    text-decoration: none;
+    color: var(--muted-text);
+    font-size: 0.75rem;
+    font-weight: 500;
+    transition: color 0.2s ease, transform 0.2s ease;
 }
 
 .tabbar .tab:hover {
-  color: #335dff;
+    color: #335dff;
 }
 
 .tabbar .tab-icon {
-  width: 22px;
-  height: 22px;
-  stroke: currentColor;
+    width: 22px;
+    height: 22px;
+    stroke: currentColor;
 }
 
 .tabbar .tab-label {
-  line-height: 1;
+    line-height: 1;
 }
 
 .tabbar .tab:focus-visible {
-  outline: 2px solid rgba(51, 93, 255, 0.3);
-  outline-offset: 6px;
-  border-radius: 14px;
+    outline: 2px solid rgba(51, 93, 255, 0.3);
+    outline-offset: 6px;
+    border-radius: 14px;
 }
 
 .tabbar .tab.active {
-  color: #2f6bff;
-  font-weight: 600;
+    color: #2f6bff;
+    font-weight: 600;
 }
 
 [data-theme='dark'] .tabbar {
-  box-shadow: none;
+    box-shadow: none;
 }
 
 [data-theme='dark'] .tabbar .tab:hover {
-  color: #6f9dff;
+    color: #6f9dff;
 }
 
 [data-theme='dark'] .tabbar .tab.active {
-  color: #7ca6ff;
+    color: #7ca6ff;
 }

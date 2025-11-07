@@ -1,4 +1,4 @@
 declare module 'buckyos' {
-  export const buckyos: any;
+    export const buckyos: any;
 }
 

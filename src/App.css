@@ -41,7 +41,12 @@ body,
 }
 
 /* Ensure a single, consistent font across UI elements */
-pre, code, textarea, input, button, select {
+pre,
+code,
+textarea,
+input,
+button,
+select {
     font-family: inherit;
 }
 
