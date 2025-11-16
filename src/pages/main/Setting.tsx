@@ -12,6 +12,7 @@ import { getTheme, toggleTheme } from "../../theme";
 const Setting: React.FC = () => {
     const navigate = useNavigate();
     const { t, locale } = useI18n();
+    const defaultOpenUrl = "http://localhost:1420/test_api.html";
     const [theme, setTheme] = React.useState<string>(getTheme());
     const { activeDid, refresh } = useDidContext();
     const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false);
@@ -24,7 +25,7 @@ const Setting: React.FC = () => {
     const [backupError, setBackupError] = React.useState("");
     const [backupLoading, setBackupLoading] = React.useState(false);
     const [openUrlOpen, setOpenUrlOpen] = React.useState(false);
-    const [openUrlValue, setOpenUrlValue] = React.useState("");
+    const [openUrlValue, setOpenUrlValue] = React.useState(defaultOpenUrl);
     const [openUrlError, setOpenUrlError] = React.useState("");
     const [openUrlLoading, setOpenUrlLoading] = React.useState(false);
 
@@ -184,7 +185,7 @@ const Setting: React.FC = () => {
                         </svg>
                     </button>
 
-                    <button className="settings-item" onClick={() => { setOpenUrlValue(""); setOpenUrlError(""); setOpenUrlOpen(true); }}>
+                    <button className="settings-item" onClick={() => { setOpenUrlValue(defaultOpenUrl); setOpenUrlError(""); setOpenUrlOpen(true); }}>
                         <span className="label">{t("settings.openurl")}（test）</span>
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="9 18 15 12 9 6" />

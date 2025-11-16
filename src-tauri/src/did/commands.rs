@@ -2,6 +2,8 @@ use bip39::{Language, Mnemonic};
 use rand::{rngs::OsRng, RngCore};
 use serde::Deserialize;
 use tauri::AppHandle;
+use serde_json::Value;
+use serde_json::json;
 
 use super::crypto::{decrypt_mnemonic, encrypt_mnemonic};
 use super::domain::{BtcAddressType, DidInfo, DEFAULT_BTC_ADDRESS_TYPE};
@@ -236,6 +238,31 @@ pub fn active_did(app_handle: AppHandle) -> Result<Option<DidInfo>, String> {
 }
 
 #[tauri::command]
+pub fn active_did_public_key(app_handle: AppHandle) -> Result<Option<Value>, String> {
+    let store = open_store(&app_handle)?;
+    let vault = load_vault(&store)?;
+
+    let active_id = match &vault.active_did {
+        Some(id) => id,
+        None => return Ok(None),
+    };
+
+    let record = match vault.dids.iter().find(|d| &d.id == active_id) {
+        Some(r) => r,
+        None => return Ok(None),
+    };
+
+    let pubkey = record
+        .wallets
+        .bucky
+        .entries
+        .first()
+        .map(|b| b.public_key.clone());
+
+    Ok(pubkey)
+}
+
+#[tauri::command]
 pub fn set_active_did(app_handle: AppHandle, did_id: String) -> Result<DidInfo, String> {
     let store = open_store(&app_handle)?;
     let mut vault = load_vault(&store)?;
@@ -405,6 +432,150 @@ pub fn generate_zone_boot_config_jwt(
 
     Ok(token)
 }
+
+#[tauri::command]
+pub fn sign_with_active_did(
+    app_handle: AppHandle,
+    password: String,
+    payload: String,
+) -> Result<String, String> {
+    // 打开存储并获取当前激活 DID
+    let store = open_store(&app_handle)?;
+    let vault = load_vault(&store)?;
+    let active_id = vault
+        .active_did
+        .ok_or_else(|| "wallet_not_found".to_string())?;
+    let record = vault
+        .dids
+        .iter()
+        .find(|d| d.id == active_id)
+        .ok_or_else(|| "wallet_not_found".to_string())?;
+
+    // 使用密码解锁助记词来验证并提取私钥
+    let decrypted = decrypt_mnemonic(&password, &record.seed).map_err(|e| e.to_string())?;
+    let secret_phrase = SecretString::new(decrypted);
+    let mnemonic = Mnemonic::parse_in(Language::English, secret_phrase.expose_secret())
+        .map_err(|e| e.to_string())?;
+    drop(secret_phrase);
+
+    // 从助记词派生 ed25519 私钥（Bucky identity index 0）
+    let phrase = mnemonic.to_string();
+    let passphrase_opt: Option<&str> = None;
+    let index = 0u32;
+    let (private_pem, _public_jwk) = name_lib::generate_ed25519_key_pair_from_mnemonic(
+        &phrase,
+        passphrase_opt,
+        index,
+    )
+    .map_err(|e| e.to_string())?;
+
+    let pem_key = EncodingKey::from_ed_pem(private_pem.as_bytes())
+        .map_err(|e| format!("invalid ed25519 private key: {}", e))?;
+
+    // 以 EdDSA 生成 JWT，claims 为 { data: payload }
+    let mut header = Header::new(Algorithm::EdDSA);
+    header.typ = None; // 节省空间
+    header.kid = Some(record.id.clone());
+
+    let claims = json!({ "data": payload });
+    let token = encode(&header, &claims, &pem_key).map_err(|e| e.to_string())?;
+    Ok(token)
+}
+
+// removed legacy password prompt helpers; frontend handles prompting
+
+// removed submit_password; not used
+
+/*
+#[tauri::command]
+pub fn sign_with_active_did_prompt(
+    app_handle: AppHandle,
+    payload: String,
+) -> Result<String, String> {
+    // 生成请求 id 并创建密码对话框窗口
+    let req_id = ulid::Ulid::new().to_string();
+
+    let (tx, rx) = channel::<PasswordMsg>();
+    {
+        let mut map = prompt_senders().lock().map_err(|e| e.to_string())?;
+        map.insert(req_id.clone(), tx);
+    }
+
+    let label = format!("pwd_prompt_{}", req_id);
+    // 使用 about:blank + initialization_script 渲染受控页面，避免路径解析问题
+    let url = WebviewUrl::External("about:blank".parse().unwrap());
+    let script = format!(
+        r#"
+        (function() {{
+          const reqId = {req_id_json};
+          const h = String.raw;
+          document.title = '输入密码';
+          const style = `html, body {{ height:100%; margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial; background:#0f172a; color:#e2e8f0; }}
+            .wrap {{ display:flex; height:100%; align-items:center; justify-content:center; }}
+            .box {{ width:360px; background:#0b1220; border:1px solid #334155; border-radius:10px; padding:16px; box-shadow:0 10px 30px rgba(0,0,0,.3); }}
+            .title {{ font-size:16px; font-weight:700; margin-bottom:12px; }}
+            .row {{ margin:10px 0; }}
+            input {{ width:100%; padding:10px; border-radius:8px; border:1px solid #334155; background:#111827; color:#e2e8f0; outline:none; }}
+            .actions {{ display:flex; gap:12px; justify-content:flex-end; margin-top:12px; }}
+            button {{ cursor:pointer; padding:8px 18px; border-radius:999px; border:1px solid #475569; background:#1f2937; color:#e2e8f0; }}
+            button.primary {{ background: linear-gradient(135deg, #22d3ee, #a78bfa); color:#0b1220; font-weight:700; }}`;
+          document.body.innerHTML = h`<style>${{style}}</style>
+            <div class="wrap">
+              <div class="box">
+                <div class="title">请输入当前 DID 密码</div>
+                <div class="row">
+                  <input id="pwd" type="password" placeholder="密码" autofocus />
+                </div>
+                <div class="actions">
+                  <button id="cancel">取消</button>
+                  <button id="ok" class="primary">确定</button>
+                </div>
+              </div>
+            </div>`;
+          function ensureInvoke() {{
+            const g = window;
+            if (g.__TAURI__ && g.__TAURI__.core && typeof g.__TAURI__.core.invoke === 'function') return g.__TAURI__.core.invoke;
+            if (g.__TAURI_INTERNALS__ && typeof g.__TAURI_INTERNALS__.invoke === 'function') return g.__TAURI_INTERNALS__.invoke;
+            return null;
+          }}
+          const inv = ensureInvoke();
+          const pwd = document.getElementById('pwd');
+          const ok = document.getElementById('ok');
+          const cancel = document.getElementById('cancel');
+          ok.addEventListener('click', async () => {{
+            if (!inv) return alert('Tauri invoke API 不可用');
+            const password = pwd.value || '';
+            await inv('submit_password', {{ reqId: reqId, password, cancel: false }});
+          }});
+          cancel.addEventListener('click', async () => {{
+            if (!inv) return alert('Tauri invoke API 不可用');
+            await inv('submit_password', {{ reqId: reqId, cancel: true }});
+          }});
+          pwd.addEventListener('keydown', (e) => {{ if (e.key === 'Enter') ok.click(); }});
+        }})();
+        "#,
+        req_id_json = serde_json::to_string(&req_id).unwrap()
+    );
+
+    WebviewWindowBuilder::new(&app_handle, label.clone(), url)
+        .title("输入密码")
+        .inner_size(420.0, 220.0)
+        .resizable(false)
+        .initialization_script(script)
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    // 等待密码输入（阻塞当前命令调用，直到用户提交/取消）
+    let msg = rx.recv().map_err(|e| e.to_string())?;
+    match msg {
+        PasswordMsg::Cancel => Err("user_cancelled".to_string()),
+        PasswordMsg::Ok(password) => {
+            // 重用已有的签名逻辑
+            sign_with_active_did(app_handle, password, payload)
+        }
+    }
+}
+*/
 
 #[cfg(test)]
 mod tests {
