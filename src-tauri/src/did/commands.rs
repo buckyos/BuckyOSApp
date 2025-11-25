@@ -345,6 +345,80 @@ struct ZoneBootClaims {
     iat: usize,
 }
 
+#[derive(serde::Serialize)]
+struct SignMessageClaims<'a> {
+    message: &'a str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    did: Option<&'a str>,
+    iat: usize,
+}
+
+#[tauri::command]
+pub fn sign_with_active_did(
+    app_handle: AppHandle,
+    password: String,
+    message: String,
+) -> Result<String, String> {
+    if message.trim().is_empty() {
+        return Err("sign_message_required".to_string());
+    }
+
+    let store = open_store(&app_handle)?;
+    let vault = load_vault(&store)?;
+    let target_id = vault
+        .active_did
+        .clone()
+        .ok_or_else(|| "wallet_not_found".to_string())?;
+
+    let record = vault
+        .dids
+        .iter()
+        .find(|d| d.id == target_id)
+        .ok_or_else(|| "wallet_not_found".to_string())?;
+
+    let decrypted = decrypt_mnemonic(&password, &record.seed).map_err(|e| e.to_string())?;
+    let secret_phrase = SecretString::new(decrypted);
+    let mnemonic = Mnemonic::parse_in(Language::English, secret_phrase.expose_secret())
+        .map_err(|e| e.to_string())?;
+    drop(secret_phrase);
+
+    let phrase = mnemonic.to_string();
+    let passphrase_opt: Option<&str> = None;
+    let index = 0u32;
+    let (private_pem, _public_jwk) = name_lib::generate_ed25519_key_pair_from_mnemonic(
+        &phrase,
+        passphrase_opt,
+        index,
+    )
+    .map_err(|e| e.to_string())?;
+
+    let pem_key = EncodingKey::from_ed_pem(private_pem.as_bytes())
+        .map_err(|e| format!("invalid ed25519 private key: {}", e))?;
+
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|e| e.to_string())?
+        .as_secs() as usize;
+
+    let did_label = record
+        .wallets
+        .bucky
+        .entries
+        .first()
+        .map(|entry| entry.did.as_str());
+
+    let claims = SignMessageClaims {
+        message: &message,
+        did: did_label,
+        iat: now,
+    };
+
+    let token = encode(&Header { alg: Algorithm::EdDSA, ..Default::default() }, &claims, &pem_key)
+        .map_err(|e| e.to_string())?;
+
+    Ok(token)
+}
+
 #[tauri::command]
 pub fn generate_zone_boot_config_jwt(
     app_handle: AppHandle,

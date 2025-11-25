@@ -10,100 +10,88 @@
             box-sizing: border-box;
         }
 
+        :root {
+            color-scheme: light;
+        }
+
         body {
             margin: 0;
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-                sans-serif;
-            background: #f5f5f5;
-            height: 100vh;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #fff;
+            min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
+            padding: 12px;
         }
 
-        .card {
-            width: min(900px, 95vw);
-            background: #fff;
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            padding: 32px;
-            display: flex;
-            flex-direction: column;
-            gap: 32px;
-        }
-
-        .panes {
-            display: flex;
-            gap: 24px;
-            flex-wrap: wrap;
-        }
-
-        .pane {
-            flex: 1 1 300px;
+        .container {
+            width: min(520px, 100%);
             display: flex;
             flex-direction: column;
             gap: 12px;
         }
 
-        label {
-            font-size: 14px;
-            color: #666;
+        .io-box {
+            border-radius: 22px;
+            border: 1px solid #dfe3ea;
+            background: #f8f9fb;
+            padding: 16px;
         }
 
-        input,
         textarea {
             width: 100%;
-            padding: 12px 14px;
-            border-radius: 10px;
-            border: 1px solid #d0d7de;
-            font-size: 16px;
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-
-        input:focus,
-        textarea:focus {
-            outline: none;
-            border-color: #007aff;
-            box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2);
-        }
-
-        textarea {
-            min-height: 120px;
-            resize: vertical;
-        }
-
-        .button-row {
-            display: flex;
-            justify-content: center;
-        }
-
-        .button-column {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            align-items: center;
-        }
-
-        button {
-            min-width: 120px;
-            padding: 12px 32px;
-            font-size: 18px;
-            background: #007aff;
-            color: white;
             border: none;
-            border-radius: 999px;
+            background: transparent;
+            resize: none;
+            min-height: 200px;
+            font-size: 16px;
+            line-height: 1.5;
+            color: #0f172a;
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 8px;
+            }
+
+            .container {
+                width: 100%;
+                gap: 10px;
+            }
+
+            textarea {
+                min-height: 150px;
+                font-size: 15px;
+            }
+
+            .actions {
+                gap: 6px;
+            }
+
+            .action-button {
+                flex: 1 1 45%;
+                min-width: 0;
+            }
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .action-button {
+            flex: 1 1 auto;
+            min-width: 100px;
+            height: 40px;
+            border-radius: 10px;
+            border: 1px solid #cfd7e6;
+            background: #fff;
+            font-size: 15px;
+            font-weight: 600;
+            color: #0f172a;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
-        }
-
-        button:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 8px 20px rgba(0, 122, 255, 0.25);
-        }
-
-        button:active {
-            transform: translateY(0);
-            box-shadow: none;
         }
 
         .highlight {
@@ -123,27 +111,17 @@
 </head>
 
 <body>
-    <div class="card">
-        <div class="panes">
-            <div class="pane">
-                <label for="input-box">输入框</label>
-                <textarea id="input-box" placeholder="请输入待复制内容"></textarea>
-            </div>
-            <div class="pane">
-                <label for="output-box">输出框</label>
-                <textarea id="output-box" placeholder="结果会显示在这里" readonly></textarea>
-            </div>
+    <div class="container">
+        <div class="io-box">
+            <textarea id="input-box" placeholder="输入内容"></textarea>
         </div>
-        <div class="button-column">
-            <div class="button-row">
-                <button id="go-button">Go</button>
-            </div>
-            <div class="button-row">
-                <button id="public-key-button">Get Public Key</button>
-            </div>
-            <div class="button-row">
-                <button id="sign-button">SignWithActiveDid</button>
-            </div>
+        <div class="io-box">
+            <textarea id="output-box" placeholder="输出内容" readonly></textarea>
+        </div>
+        <div class="actions">
+            <button id="go-button" class="action-button">Go</button>
+            <button id="public-key-button" class="action-button">Get Public Key</button>
+            <button id="sign-button" class="action-button">SignWithActiveDid</button>
         </div>
     </div>
     <script src="/bucky-api.js"></script>
@@ -153,6 +131,13 @@
         const goButton = document.getElementById("go-button");
         const publicKeyButton = document.getElementById("public-key-button");
         const signButton = document.getElementById("sign-button");
+        const logError = (msg) => {
+            if (!outputBox) return;
+            outputBox.value = msg;
+            outputBox.classList.remove("highlight");
+            void outputBox.offsetWidth;
+            outputBox.classList.add("highlight");
+        };
 
         goButton.addEventListener("click", () => {
             outputBox.value = inputBox.value;
@@ -164,17 +149,18 @@
         publicKeyButton.addEventListener("click", async () => {
             try {
                 const result = await window.BuckyApi.getPublicKey();
-                if (result?.error) {
-                    alert(result.error);
+                if (result?.status === "success") {
+                    const key = result.data?.key ?? "";
+                    inputBox.value = key;
+                    inputBox.classList.remove("highlight");
+                    void inputBox.offsetWidth;
+                    inputBox.classList.add("highlight");
+                } else if (result?.status === "error") {
+                    logError(result.message || "获取公钥失败");
                     return;
                 }
-                const key = result?.key ?? "";
-                inputBox.value = key;
-                inputBox.classList.remove("highlight");
-                void inputBox.offsetWidth;
-                inputBox.classList.add("highlight");
             } catch (err) {
-                alert(err instanceof Error ? err.message : String(err));
+                logError(err instanceof Error ? err.message : String(err));
             }
         });
 
@@ -183,17 +169,17 @@
             try {
                 const payload = await window.BuckyApi.signWithActiveDid(message);
                 if (payload?.status === "success") {
-                    outputBox.value = payload.signature;
+                    outputBox.value = payload.data?.signature ?? "";
                     outputBox.classList.remove("highlight");
                     void outputBox.offsetWidth;
                     outputBox.classList.add("highlight");
                 } else if (payload?.status === "cancelled") {
-                    alert("用户取消操作");
+                    logError("用户取消操作");
                 } else if (payload?.status === "error") {
-                    alert(payload.message || "签名失败");
+                    logError(payload.message || "签名失败");
                 }
             } catch (err) {
-                alert(err instanceof Error ? err.message : String(err));
+                logError(err instanceof Error ? err.message : String(err));
             }
         });
     </script>
