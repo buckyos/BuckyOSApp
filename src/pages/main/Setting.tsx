@@ -9,6 +9,13 @@ import { deleteDid, revealMnemonic } from "../../features/did/api";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { getTheme, toggleTheme } from "../../theme";
 
+const defaultOpenUrl = "http://localhost:1420/test_api.html";
+
+const buildAppUrl = (hashPath: string) => {
+    const base = import.meta.env.DEV ? "http://localhost:1420" : "app://localhost";
+    return `${base}/index.html#${hashPath}`;
+};
+
 const Setting: React.FC = () => {
     const navigate = useNavigate();
     const { t, locale } = useI18n();
@@ -24,7 +31,7 @@ const Setting: React.FC = () => {
     const [backupError, setBackupError] = React.useState("");
     const [backupLoading, setBackupLoading] = React.useState(false);
     const [openUrlOpen, setOpenUrlOpen] = React.useState(false);
-    const [openUrlValue, setOpenUrlValue] = React.useState("");
+    const [openUrlValue, setOpenUrlValue] = React.useState(defaultOpenUrl);
     const [openUrlError, setOpenUrlError] = React.useState("");
     const [openUrlLoading, setOpenUrlLoading] = React.useState(false);
 
@@ -125,10 +132,11 @@ const Setting: React.FC = () => {
             setOpenUrlError("");
             setOpenUrlLoading(true);
             const label = `webview_${Date.now()}`;
-            new WebviewWindow(label, { url });
+            const containerUrl = buildAppUrl(`/web-container?src=${encodeURIComponent(url)}`);
+            new WebviewWindow(label, { url: containerUrl });
             setOpenUrlLoading(false);
             setOpenUrlOpen(false);
-            setOpenUrlValue("");
+            setOpenUrlValue(defaultOpenUrl);
         } catch (err) {
             const message = err instanceof Error ? err.message : String(err);
             setOpenUrlError(t("settings.openurl_error_generic", { message }));
@@ -184,8 +192,8 @@ const Setting: React.FC = () => {
                         </svg>
                     </button>
 
-                    <button className="settings-item" onClick={() => { setOpenUrlValue(""); setOpenUrlError(""); setOpenUrlOpen(true); }}>
-                        <span className="label">{t("settings.openurl")}（test）</span>
+                    <button className="settings-item" onClick={() => { setOpenUrlValue(defaultOpenUrl); setOpenUrlError(""); setOpenUrlOpen(true); }}>
+                        <span className="label">{t("settings.openurl")}</span>
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="9 18 15 12 9 6" />
                         </svg>

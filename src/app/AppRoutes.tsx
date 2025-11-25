@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import DidFlowRoutes from "../features/did/DidFlowRoutes";
 import MainRoutes from "./MainRoutes";
+import WebContainer from "../pages/WebContainer";
 import { DidProvider } from "../features/did/DidContext";
 
 function InitialGate() {
@@ -37,6 +38,14 @@ export default function AppRoutes() {
                         element={(
                             <DidProvider>
                                 <MainRoutes />
+                            </DidProvider>
+                        )}
+                    />
+                    <Route
+                        path="/web-container"
+                        element={(
+                            <DidProvider>
+                                <WebContainer />
                             </DidProvider>
                         )}
                     />

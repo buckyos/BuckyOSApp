@@ -6,6 +6,7 @@
     const pending = new Map();
     let counter = 0;
     const DEFAULT_TIMEOUT = 10_000;
+    const NO_TIMEOUT_ACTIONS = new Set(["signWithActiveDid"]);
 
     function buildId() {
         return `bucky_${Date.now()}_${counter++}`;
@@ -21,10 +22,13 @@
     function callNative(action, payload) {
         return new Promise((resolve, reject) => {
             const id = buildId();
-            const timer = window.setTimeout(() => {
-                cleanup(id);
-                reject(new Error(`BuckyApi request timed out: ${action}`));
-            }, DEFAULT_TIMEOUT);
+            const timeout = NO_TIMEOUT_ACTIONS.has(action) ? null : DEFAULT_TIMEOUT;
+            const timer = timeout
+                ? window.setTimeout(() => {
+                    cleanup(id);
+                    reject(new Error(`BuckyApi request timed out: ${action}`));
+                }, timeout)
+                : null;
             pending.set(id, { resolve, reject, timer });
             window.parent?.postMessage({ kind: "bucky-api", id, action, payload }, "*");
         });
