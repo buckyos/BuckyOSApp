@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Test API</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+                sans-serif;
+            background: #f5f5f5;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card {
+            width: min(900px, 95vw);
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            padding: 32px;
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+        }
+
+        .panes {
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+
+        .pane {
+            flex: 1 1 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        label {
+            font-size: 14px;
+            color: #666;
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 10px;
+            border: 1px solid #d0d7de;
+            font-size: 16px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #007aff;
+            box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2);
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .button-row {
+            display: flex;
+            justify-content: center;
+        }
+
+        .button-column {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            align-items: center;
+        }
+
+        button {
+            min-width: 120px;
+            padding: 12px 32px;
+            font-size: 18px;
+            background: #007aff;
+            color: white;
+            border: none;
+            border-radius: 999px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 20px rgba(0, 122, 255, 0.25);
+        }
+
+        button:active {
+            transform: translateY(0);
+            box-shadow: none;
+        }
+
+        .highlight {
+            animation: pulse 0.5s;
+        }
+
+        @keyframes pulse {
+            from {
+                box-shadow: 0 0 0 0 rgba(0, 122, 255, 0.4);
+            }
+
+            to {
+                box-shadow: 0 0 0 10px rgba(0, 122, 255, 0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <div class="panes">
+            <div class="pane">
+                <label for="input-box">输入框</label>
+                <textarea id="input-box" placeholder="请输入待复制内容"></textarea>
+            </div>
+            <div class="pane">
+                <label for="output-box">输出框</label>
+                <textarea id="output-box" placeholder="结果会显示在这里" readonly></textarea>
+            </div>
+        </div>
+        <div class="button-column">
+            <div class="button-row">
+                <button id="go-button">Go</button>
+            </div>
+            <div class="button-row">
+                <button id="public-key-button">Get Public Key</button>
+            </div>
+            <div class="button-row">
+                <button id="sign-button">SignWithActiveDid</button>
+            </div>
+        </div>
+    </div>
+    <script src="/bucky-api.js"></script>
+    <script>
+        const inputBox = document.getElementById("input-box");
+        const outputBox = document.getElementById("output-box");
+        const goButton = document.getElementById("go-button");
+        const publicKeyButton = document.getElementById("public-key-button");
+        const signButton = document.getElementById("sign-button");
+
+        goButton.addEventListener("click", () => {
+            outputBox.value = inputBox.value;
+            outputBox.classList.remove("highlight");
+            void outputBox.offsetWidth;
+            outputBox.classList.add("highlight");
+        });
+
+        publicKeyButton.addEventListener("click", async () => {
+            try {
+                const result = await window.BuckyApi.getPublicKey();
+                if (result?.error) {
+                    alert(result.error);
+                    return;
+                }
+                const key = result?.key ?? "";
+                inputBox.value = key;
+                inputBox.classList.remove("highlight");
+                void inputBox.offsetWidth;
+                inputBox.classList.add("highlight");
+            } catch (err) {
+                alert(err instanceof Error ? err.message : String(err));
+            }
+        });
+
+        signButton.addEventListener("click", async () => {
+            const message = inputBox.value || "";
+            try {
+                const payload = await window.BuckyApi.signWithActiveDid(message);
+                if (payload?.status === "success") {
+                    outputBox.value = payload.signature;
+                    outputBox.classList.remove("highlight");
+                    void outputBox.offsetWidth;
+                    outputBox.classList.add("highlight");
+                } else if (payload?.status === "cancelled") {
+                    alert("用户取消操作");
+                } else if (payload?.status === "error") {
+                    alert(payload.message || "签名失败");
+                }
+            } catch (err) {
+                alert(err instanceof Error ? err.message : String(err));
+            }
+        });
+    </script>
+</body>
+
+</html>
