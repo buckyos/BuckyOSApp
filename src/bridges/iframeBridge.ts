@@ -4,6 +4,7 @@ import { useDidContext } from "../features/did/DidContext";
 import InputDialog from "../components/ui/InputDialog";
 import { signWithActiveDid } from "../features/did/api";
 import { createRoot, Root } from "react-dom/client";
+import { BuckyErrorCodes } from "./buckyErrorCodes";
 
 export type IframeActionHandler = (payload: any) => unknown | Promise<unknown>;
 
@@ -27,14 +28,14 @@ export function useIframeBridge({ iframeRef, handlers, kind = "bucky-api" }: Use
             };
             const handlerFn = handlers[action];
             if (!handlerFn) {
-                respond({ status: "error", code: "unknown-action", message: `Unknown action: ${action}` });
+                respond({ code: BuckyErrorCodes.unknownAction, message: `Unknown action: ${action}` });
                 return;
             }
             Promise.resolve(handlerFn(payload ?? {}))
                 .then(respond)
                 .catch((error) => {
                     const message = error instanceof Error ? error.message : String(error);
-                    respond({ status: "error", code: "native-error", message });
+                    respond({ code: BuckyErrorCodes.nativeError, message });
                 });
         };
         window.addEventListener("message", listener);
@@ -73,17 +74,17 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
     const actionHandlers = React.useMemo(() => ({
         getPublicKey: () => {
             if (publicKey) {
-                return { status: "success", data: { key: publicKey } };
+                return { code: BuckyErrorCodes.success, data: { key: publicKey } };
             }
-            return { status: "error", code: "no-key", message: t("settings.embedded_webview_no_key") };
+            return { code: BuckyErrorCodes.noKey, message: t("settings.embedded_webview_no_key") };
         },
         signWithActiveDid: (payload: { message?: string }) => {
             const message = payload?.message ?? "";
             if (!message.trim()) {
-                return { status: "error", code: "no-message", message: t("settings.embedded_webview_sign_empty") };
+                return { code: BuckyErrorCodes.noMessage, message: t("settings.embedded_webview_sign_empty") };
             }
             if (!activeDid) {
-                return { status: "error", code: "no-active-did", message: t("settings.embedded_webview_no_did") };
+                return { code: BuckyErrorCodes.noActiveDid, message: t("settings.embedded_webview_no_did") };
             }
             return new Promise((resolve) => {
                 setPasswordDialog({
@@ -109,17 +110,17 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
         setPasswordDialog((prev) => ({ ...prev, loading: true, error: "" }));
         try {
             const signature = await signWithActiveDid(passwordDialog.value, passwordDialog.messageToSign);
-            resolverRef.current?.({ status: "success", data: { signature } });
+            resolverRef.current?.({ code: BuckyErrorCodes.success, data: { signature } });
             resolverRef.current = undefined;
             closeDialog();
         } catch (err) {
             const message = err instanceof Error ? err.message : String(err);
             if (message.includes("invalid password")) {
                 setPasswordDialog((prev) => ({ ...prev, loading: false, error: t("settings.embedded_webview_invalid_password") }));
-                resolverRef.current?.({ status: "error", code: "invalid-password", message });
+                resolverRef.current?.({ code: BuckyErrorCodes.invalidPassword, message });
             } else {
                 setPasswordDialog((prev) => ({ ...prev, loading: false, error: t("settings.embedded_webview_unknown_error") }));
-                resolverRef.current?.({ status: "error", code: "unknown", message });
+                resolverRef.current?.({ code: BuckyErrorCodes.nativeError, message });
             }
         }
     }, [passwordDialog.value, passwordDialog.messageToSign, closeDialog, t]);
@@ -155,7 +156,7 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
             onConfirm: handleConfirmPassword,
             onCancel: () => {
                 if (passwordDialog.loading) return;
-                resolverRef.current?.({ status: "cancelled" });
+                resolverRef.current?.({ code: BuckyErrorCodes.cancelled });
                 resolverRef.current = undefined;
                 closeDialog();
             },

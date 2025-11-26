@@ -149,15 +149,14 @@
         publicKeyButton.addEventListener("click", async () => {
             try {
                 const result = await window.BuckyApi.getPublicKey();
-                if (result?.status === "success") {
+                if (result?.code === 0) {
                     const key = result.data?.key ?? "";
                     inputBox.value = key;
                     inputBox.classList.remove("highlight");
                     void inputBox.offsetWidth;
                     inputBox.classList.add("highlight");
-                } else if (result?.status === "error") {
+                } else if (typeof result?.code === "number") {
                     logError(result.message || "获取公钥失败");
-                    return;
                 }
             } catch (err) {
                 logError(err instanceof Error ? err.message : String(err));
@@ -168,14 +167,14 @@
             const message = inputBox.value || "";
             try {
                 const payload = await window.BuckyApi.signWithActiveDid(message);
-                if (payload?.status === "success") {
+                if (payload?.code === 0) {
                     outputBox.value = payload.data?.signature ?? "";
                     outputBox.classList.remove("highlight");
                     void outputBox.offsetWidth;
                     outputBox.classList.add("highlight");
-                } else if (payload?.status === "cancelled") {
+                } else if (payload?.code === 2004) {
                     logError("用户取消操作");
-                } else if (payload?.status === "error") {
+                } else if (typeof payload?.code === "number") {
                     logError(payload.message || "签名失败");
                 }
             } catch (err) {
