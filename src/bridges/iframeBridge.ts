@@ -28,14 +28,14 @@ export function useIframeBridge({ iframeRef, handlers, kind = "bucky-api" }: Use
             };
             const handlerFn = handlers[action];
             if (!handlerFn) {
-                respond({ code: BuckyErrorCodes.unknownAction, message: `Unknown action: ${action}` });
+                respond({ code: BuckyErrorCodes.UnknownAction, message: `Unknown action: ${action}` });
                 return;
             }
             Promise.resolve(handlerFn(payload ?? {}))
                 .then(respond)
                 .catch((error) => {
                     const message = error instanceof Error ? error.message : String(error);
-                    respond({ code: BuckyErrorCodes.nativeError, message });
+                    respond({ code: BuckyErrorCodes.NativeError, message });
                 });
         };
         window.addEventListener("message", listener);
@@ -74,17 +74,17 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
     const actionHandlers = React.useMemo(() => ({
         getPublicKey: () => {
             if (publicKey) {
-                return { code: BuckyErrorCodes.success, data: { key: publicKey } };
+                return { code: BuckyErrorCodes.Success, data: { key: publicKey } };
             }
-            return { code: BuckyErrorCodes.noKey, message: t("settings.embedded_webview_no_key") };
+            return { code: BuckyErrorCodes.NoKey, message: t("settings.embedded_webview_no_key") };
         },
         signWithActiveDid: (payload: { message?: string }) => {
             const message = payload?.message ?? "";
             if (!message.trim()) {
-                return { code: BuckyErrorCodes.noMessage, message: t("settings.embedded_webview_sign_empty") };
+                return { code: BuckyErrorCodes.NoMessage, message: t("settings.embedded_webview_sign_empty") };
             }
             if (!activeDid) {
-                return { code: BuckyErrorCodes.noActiveDid, message: t("settings.embedded_webview_no_did") };
+                return { code: BuckyErrorCodes.NoActiveDid, message: t("settings.embedded_webview_no_did") };
             }
             return new Promise((resolve) => {
                 setPasswordDialog({
@@ -110,17 +110,17 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
         setPasswordDialog((prev) => ({ ...prev, loading: true, error: "" }));
         try {
             const signature = await signWithActiveDid(passwordDialog.value, passwordDialog.messageToSign);
-            resolverRef.current?.({ code: BuckyErrorCodes.success, data: { signature } });
+            resolverRef.current?.({ code: BuckyErrorCodes.Success, data: { signature } });
             resolverRef.current = undefined;
             closeDialog();
         } catch (err) {
             const message = err instanceof Error ? err.message : String(err);
             if (message.includes("invalid password")) {
                 setPasswordDialog((prev) => ({ ...prev, loading: false, error: t("settings.embedded_webview_invalid_password") }));
-                resolverRef.current?.({ code: BuckyErrorCodes.invalidPassword, message });
+                resolverRef.current?.({ code: BuckyErrorCodes.InvalidPassword, message });
             } else {
                 setPasswordDialog((prev) => ({ ...prev, loading: false, error: t("settings.embedded_webview_unknown_error") }));
-                resolverRef.current?.({ code: BuckyErrorCodes.nativeError, message });
+                resolverRef.current?.({ code: BuckyErrorCodes.NativeError, message });
             }
         }
     }, [passwordDialog.value, passwordDialog.messageToSign, closeDialog, t]);
@@ -156,7 +156,7 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
             onConfirm: handleConfirmPassword,
             onCancel: () => {
                 if (passwordDialog.loading) return;
-                resolverRef.current?.({ code: BuckyErrorCodes.cancelled });
+                resolverRef.current?.({ code: BuckyErrorCodes.Cancelled, message: t("common.actions.cancel") });
                 resolverRef.current = undefined;
                 closeDialog();
             },

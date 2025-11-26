@@ -172,8 +172,8 @@
                     outputBox.classList.remove("highlight");
                     void outputBox.offsetWidth;
                     outputBox.classList.add("highlight");
-                } else if (payload?.code === 2004) {
-                    logError("用户取消操作");
+                } else if (payload?.code === 7) {
+                    logError(payload.message);
                 } else if (typeof payload?.code === "number") {
                     logError(payload.message || "签名失败");
                 }
