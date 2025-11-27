@@ -43,7 +43,7 @@ function TabBar() {
 const MainRoutes: React.FC = () => {
     const navigate = useNavigate();
     const { t } = useI18n();
-    const { activeDid, dids, setActiveDid, loading } = useDidContext();
+    const { activeDid, dids, loading } = useDidContext();
     const routerLocation = useLocation();
     const normalizedPath = React.useMemo(() => {
         const path = routerLocation.pathname;
@@ -62,6 +62,17 @@ const MainRoutes: React.FC = () => {
             navigate("/main/home", { replace: true });
         }
     }, [navigate]);
+
+    React.useEffect(() => {
+        if (loading) return;
+        if (dids.length === 0) {
+            navigate("/", { replace: true });
+            return;
+        }
+        if (!activeDid && normalizedPath !== "/main/setting/identities") {
+            navigate("/main/setting/identities", { replace: true });
+        }
+    }, [loading, dids.length, activeDid, normalizedPath, navigate]);
 
     const displayName = activeDid && activeDid.nickname.trim().length > 0
         ? activeDid.nickname

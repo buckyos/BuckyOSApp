@@ -5,7 +5,7 @@ import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import "./Setting.css";
 import { useI18n } from "../../i18n";
 import { useDidContext } from "../../features/did/DidContext";
-import { deleteDid, revealMnemonic } from "../../features/did/api";
+import { deleteDid, revealMnemonic, listDids } from "../../features/did/api";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { getTheme, toggleTheme } from "../../theme";
 import { parseCommandError } from "../../utils/commandError";
@@ -51,11 +51,16 @@ const Setting: React.FC = () => {
                 return;
             }
             await deleteDid(deletePassword, activeDid.id);
+            const remaining = await listDids();
             setDeleteLoading(false);
             setDeleteOpen(false);
             setDeletePassword("");
             await refresh();
-            navigate("/", { replace: true });
+            if (remaining.length > 0) {
+                navigate("/main/setting/identities", { replace: true });
+            } else {
+                navigate("/", { replace: true });
+            }
         } catch (err) {
             const { code, message } = parseCommandError(err);
             if (code === CommandErrorCodes.InvalidPassword || message.includes("invalid_password")) {

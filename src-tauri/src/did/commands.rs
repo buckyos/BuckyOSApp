@@ -280,7 +280,7 @@ pub fn delete_wallet(
     vault.dids.remove(position);
 
     if matches!(vault.active_did.as_deref(), Some(active) if active == target_id) {
-        vault.active_did = vault.dids.first().map(|d| d.id.clone());
+        vault.active_did = None;
     }
 
     save_vault(&store, &vault)?;

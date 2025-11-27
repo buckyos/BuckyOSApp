@@ -14,6 +14,7 @@ const IdentityList: React.FC = () => {
     const { t } = useI18n();
     const navigate = useNavigate();
     const { dids, activeDid, setActiveDid } = useDidContext();
+    const forceSelection = !activeDid && dids.length > 0;
 
     const [targetId, setTargetId] = React.useState<string | null>(null);
     const [targetName, setTargetName] = React.useState<string>("");
@@ -77,7 +78,7 @@ const IdentityList: React.FC = () => {
 
     return (
         <div className="App" style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-            <MobileHeader title={t("identities.title")} showBack />
+            <MobileHeader title={t("identities.title")} showBack={!forceSelection} />
             <div style={{ padding: "8px 16px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
                 <div className="settings-list">
                     {dids.map((did) => {
