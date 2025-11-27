@@ -8,6 +8,8 @@ import { useDidContext } from "../../features/did/DidContext";
 import { deleteDid, revealMnemonic } from "../../features/did/api";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { getTheme, toggleTheme } from "../../theme";
+import { parseCommandError } from "../../utils/commandError";
+import { CommandErrorCodes } from "../../constants/commandErrorCodes";
 
 const defaultOpenUrl = "http://localhost:1420/test_api.html";
 
@@ -55,8 +57,8 @@ const Setting: React.FC = () => {
             await refresh();
             navigate("/", { replace: true });
         } catch (err) {
-            const message = err instanceof Error ? err.message : String(err);
-            if (message.includes("invalid password")) {
+            const { code, message } = parseCommandError(err);
+            if (code === CommandErrorCodes.InvalidPassword || message.includes("invalid_password")) {
                 setDeleteError(t("settings.delete_error_invalid"));
             } else if (message === "wallet_not_found") {
                 setDeleteError(t("settings.delete_error_missing"));
@@ -86,8 +88,8 @@ const Setting: React.FC = () => {
             setBackupPassword("");
             navigate("/main/setting/backup", { state: { mnemonic: words } });
         } catch (err) {
-            const message = err instanceof Error ? err.message : String(err);
-            if (message.includes("invalid password")) {
+            const { code, message } = parseCommandError(err);
+            if (code === CommandErrorCodes.InvalidPassword || message.includes("invalid_password")) {
                 setBackupError(t("settings.backup_error_invalid"));
             } else if (message === "wallet_not_found") {
                 setBackupError(t("settings.backup_error_missing"));

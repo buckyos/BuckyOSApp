@@ -5,6 +5,7 @@ use tauri_plugin_store::{Error as StoreError, Store, StoreExt};
 use ulid::Ulid;
 
 use super::domain::{BtcAddress, BuckyIdentity, ChainAddress, DidInfo, WalletCollection};
+use crate::error::{CommandErrors, CommandResult};
 
 // 固定使用主网，后续可以抽象为配置项。
 pub const NETWORK: bitcoin::Network = bitcoin::Network::Bitcoin;
@@ -77,29 +78,34 @@ impl VaultStore {
 
 pub type AppStore = std::sync::Arc<Store<Wry>>;
 
-pub fn open_store(app_handle: &AppHandle) -> Result<AppStore, String> {
-    app_handle.store("wallet.store").map_err(|e| e.to_string())
+pub fn open_store(app_handle: &AppHandle) -> CommandResult<AppStore> {
+    app_handle
+        .store("wallet.store")
+        .map_err(|e| CommandErrors::store_unavailable(e.to_string()))
 }
 
-pub fn load_vault(store: &AppStore) -> Result<VaultStore, String> {
+pub fn load_vault(store: &AppStore) -> CommandResult<VaultStore> {
     match store.reload() {
         Ok(_) => {}
         Err(StoreError::Io(io_err)) if io_err.kind() == ErrorKind::NotFound => {
             return Ok(VaultStore::default());
         }
-        Err(err) => return Err(err.to_string()),
+        Err(err) => return Err(CommandErrors::store_unavailable(err.to_string())),
     }
 
     match store.get(STORE_KEY) {
         Some(value) => serde_json::from_value::<VaultStore>(value)
             .map(VaultStore::ensure_version)
-            .map_err(|e| e.to_string()),
+            .map_err(|e| CommandErrors::vault_corrupted(e.to_string())),
         None => Ok(VaultStore::default()),
     }
 }
 
-pub fn save_vault(store: &AppStore, vault: &VaultStore) -> Result<(), String> {
-    let value = serde_json::to_value(vault).map_err(|e| e.to_string())?;
+pub fn save_vault(store: &AppStore, vault: &VaultStore) -> CommandResult<()> {
+    let value =
+        serde_json::to_value(vault).map_err(|e| CommandErrors::vault_corrupted(e.to_string()))?;
     store.set(STORE_KEY.to_string(), value);
-    store.save().map_err(|e| e.to_string())
+    store
+        .save()
+        .map_err(|e| CommandErrors::store_unavailable(e.to_string()))
 }

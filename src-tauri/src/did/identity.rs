@@ -3,6 +3,7 @@ use name_lib::{generate_ed25519_key_pair_from_mnemonic, get_device_did_from_ed25
 
 use super::derive::{derive_btc_address, derive_eth_address, SeedCtx};
 use super::domain::{BtcAddress, BtcAddressType, BuckyIdentity, ChainAddress, WalletCollection};
+use crate::error::{CommandErrors, CommandResult};
 
 #[derive(Clone, Debug)]
 pub enum WalletKind {
@@ -136,8 +137,8 @@ pub fn derive_did_from_mnemonic(
     mnemonic: &Mnemonic,
     passphrase: &str,
     plan: &DidDerivationPlan,
-) -> Result<DerivedDid, String> {
-    let ctx = SeedCtx::new(mnemonic, passphrase).map_err(|e| e.to_string())?;
+) -> CommandResult<DerivedDid> {
+    let ctx = SeedCtx::new(mnemonic, passphrase)?;
     let mut result = DerivedDid::default();
 
     let need_bucky = plan
@@ -159,9 +160,7 @@ pub fn derive_did_from_mnemonic(
         match &wallet.kind {
             WalletKind::Btc { address_type } => {
                 for index in &wallet.indices {
-                    let derived = derive_btc_address(&ctx, *address_type, *index)
-                        .map_err(|e| e.to_string())?
-                        .to_string();
+                    let derived = derive_btc_address(&ctx, *address_type, *index)?.to_string();
                     result.btc.push(BtcAddress {
                         address_type: *address_type,
                         index: *index,
@@ -171,7 +170,7 @@ pub fn derive_did_from_mnemonic(
             }
             WalletKind::Eth => {
                 for index in &wallet.indices {
-                    let derived = derive_eth_address(&ctx, *index).map_err(|e| e.to_string())?;
+                    let derived = derive_eth_address(&ctx, *index)?;
                     result.eth.push(ChainAddress {
                         index: *index,
                         address: derived,
@@ -188,9 +187,9 @@ pub fn derive_did_from_mnemonic(
                         passphrase_opt,
                         *index,
                     )
-                    .map_err(|e| e.to_string())?;
-                    let did =
-                        get_device_did_from_ed25519_jwk(&public_jwk).map_err(|e| e.to_string())?;
+                    .map_err(|e| CommandErrors::crypto_failed(e.to_string()))?;
+                    let did = get_device_did_from_ed25519_jwk(&public_jwk)
+                        .map_err(|e| CommandErrors::crypto_failed(e.to_string()))?;
                     result.bucky.push(BuckyIdentity {
                         index: *index,
                         did,
@@ -233,7 +232,7 @@ pub fn derive_wallets_with_requests(
     passphrase: &str,
     requests: &[WalletRequest],
     existing: Option<&WalletCollection>,
-) -> Result<WalletCollection, String> {
+) -> CommandResult<WalletCollection> {
     let plan = DidDerivationPlan::from_requests(requests, existing);
     if plan.is_empty() {
         return Ok(WalletCollection::default());

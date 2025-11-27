@@ -5,6 +5,8 @@ import InputDialog from "../components/ui/InputDialog";
 import { signWithActiveDid } from "../features/did/api";
 import { createRoot, Root } from "react-dom/client";
 import { BuckyErrorCodes } from "./buckyErrorCodes";
+import { parseCommandError } from "../utils/commandError";
+import { CommandErrorCodes } from "../constants/commandErrorCodes";
 
 export type IframeActionHandler = (payload: any) => unknown | Promise<unknown>;
 
@@ -34,7 +36,7 @@ export function useIframeBridge({ iframeRef, handlers, kind = "bucky-api" }: Use
             Promise.resolve(handlerFn(payload ?? {}))
                 .then(respond)
                 .catch((error) => {
-                    const message = error instanceof Error ? error.message : String(error);
+                    const { message } = parseCommandError(error);
                     respond({ code: BuckyErrorCodes.NativeError, message });
                 });
         };
@@ -114,8 +116,8 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
             resolverRef.current = undefined;
             closeDialog();
         } catch (err) {
-            const message = err instanceof Error ? err.message : String(err);
-            if (message.includes("invalid password")) {
+            const { code, message } = parseCommandError(err);
+            if (code === CommandErrorCodes.InvalidPassword || message.includes("invalid_password")) {
                 setPasswordDialog((prev) => ({ ...prev, loading: false, error: t("settings.embedded_webview_invalid_password") }));
                 resolverRef.current?.({ code: BuckyErrorCodes.InvalidPassword, message });
             } else {

@@ -1,11 +1,11 @@
 use aes_gcm::{aead::Aead, aead::KeyInit, Aes256Gcm, Nonce};
-use anyhow::{anyhow, Result};
 use bip39::Mnemonic;
 use pbkdf2::pbkdf2_hmac;
 use rand::{rngs::OsRng, RngCore};
 use sha2::Sha256;
 
 use super::store::EncryptedSeed;
+use crate::error::{CommandErrors, CommandResult};
 
 fn kdf(password: &str, salt: &[u8], iter: u32) -> [u8; 32] {
     let mut key = [0u8; 32];
@@ -13,7 +13,7 @@ fn kdf(password: &str, salt: &[u8], iter: u32) -> [u8; 32] {
     key
 }
 
-pub fn encrypt_mnemonic(password: &str, mnemonic: &Mnemonic) -> Result<EncryptedSeed> {
+pub fn encrypt_mnemonic(password: &str, mnemonic: &Mnemonic) -> CommandResult<EncryptedSeed> {
     let mut salt = [0u8; 16];
     OsRng.fill_bytes(&mut salt);
     let mut nonce_bytes = [0u8; 12];
@@ -27,7 +27,7 @@ pub fn encrypt_mnemonic(password: &str, mnemonic: &Mnemonic) -> Result<Encrypted
     let plaintext = mnemonic.to_string();
     let ciphertext = cipher
         .encrypt(nonce, plaintext.as_bytes())
-        .map_err(|e| anyhow!("encrypt failed: {e}"))?;
+        .map_err(|e| CommandErrors::crypto_failed(format!("encrypt failed: {e}")))?;
 
     Ok(EncryptedSeed {
         kdf_iter: iter,
@@ -37,10 +37,13 @@ pub fn encrypt_mnemonic(password: &str, mnemonic: &Mnemonic) -> Result<Encrypted
     })
 }
 
-pub fn decrypt_mnemonic(password: &str, seed: &EncryptedSeed) -> Result<String> {
-    let salt = hex::decode(&seed.kdf_salt_hex)?;
-    let nonce_bytes = hex::decode(&seed.cipher_nonce_hex)?;
-    let cipher_bytes = hex::decode(&seed.cipher_hex)?;
+pub fn decrypt_mnemonic(password: &str, seed: &EncryptedSeed) -> CommandResult<String> {
+    let salt = hex::decode(&seed.kdf_salt_hex)
+        .map_err(|e| CommandErrors::vault_corrupted(format!("invalid salt: {e}")))?;
+    let nonce_bytes = hex::decode(&seed.cipher_nonce_hex)
+        .map_err(|e| CommandErrors::vault_corrupted(format!("invalid nonce: {e}")))?;
+    let cipher_bytes = hex::decode(&seed.cipher_hex)
+        .map_err(|e| CommandErrors::vault_corrupted(format!("invalid cipher: {e}")))?;
 
     let key = kdf(password, &salt, seed.kdf_iter);
     let cipher = Aes256Gcm::new_from_slice(&key).expect("aes key");
@@ -48,7 +51,8 @@ pub fn decrypt_mnemonic(password: &str, seed: &EncryptedSeed) -> Result<String> 
 
     let plaintext = cipher
         .decrypt(nonce, cipher_bytes.as_ref())
-        .map_err(|_| anyhow!("invalid password"))?;
-    let phrase = String::from_utf8(plaintext)?;
+        .map_err(|_| CommandErrors::invalid_password())?;
+    let phrase = String::from_utf8(plaintext)
+        .map_err(|e| CommandErrors::vault_corrupted(format!("invalid utf8 mnemonic: {e}")))?;
     Ok(phrase)
 }

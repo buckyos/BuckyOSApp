@@ -516,6 +516,7 @@ dependencies = [
  "tauri-build",
  "tauri-plugin-opener",
  "tauri-plugin-store",
+ "thiserror 1.0.69",
  "ulid",
  "zeroize",
 ]

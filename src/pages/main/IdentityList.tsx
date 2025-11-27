@@ -7,6 +7,8 @@ import BottomSheetActions from "../../components/ui/BottomSheetActions";
 import { useI18n } from "../../i18n";
 import { useDidContext } from "../../features/did/DidContext";
 import { revealMnemonic } from "../../features/did/api";
+import { parseCommandError } from "../../utils/commandError";
+import { CommandErrorCodes } from "../../constants/commandErrorCodes";
 
 const IdentityList: React.FC = () => {
     const { t } = useI18n();
@@ -51,8 +53,8 @@ const IdentityList: React.FC = () => {
             await setActiveDid(targetId);
             closePasswordDialog();
         } catch (err) {
-            const message = err instanceof Error ? err.message : String(err);
-            if (message.includes("invalid password")) {
+            const { code, message } = parseCommandError(err);
+            if (code === CommandErrorCodes.InvalidPassword || message.includes("invalid_password")) {
                 setError(t("identities.error_invalid"));
             } else if (message === "wallet_not_found") {
                 setError(t("identities.error_missing"));

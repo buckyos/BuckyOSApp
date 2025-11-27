@@ -4,6 +4,8 @@ import { invoke } from "@tauri-apps/api/core";
 import { useI18n } from "../../i18n";
 import { listDids } from "./api";
 import type { DidInfo } from "./types";
+import { parseCommandError } from "../../utils/commandError";
+import { CommandErrorCodes } from "../../constants/commandErrorCodes";
 
 export function useDidFlow() {
     const navigate = useNavigate();
@@ -25,7 +27,7 @@ export function useDidFlow() {
             setConfirmedMnemonic(Array(generatedMnemonic.length).fill(""));
             navigate("/show-mnemonic");
         } catch (err) {
-            const message = err instanceof Error ? err.message : String(err);
+            const { message } = parseCommandError(err);
             setError(t("common.error.generate_mnemonic_failed", { message }));
         }
     };
@@ -46,9 +48,9 @@ export function useDidFlow() {
             setDidInfo(info);
             navigate("/main/home");
         } catch (err) {
-            const message = err instanceof Error ? err.message : String(err);
+            const { code, message } = parseCommandError(err);
             let translated = message;
-            if (message === "nickname_already_exists") {
+            if (code === CommandErrorCodes.NicknameExists || message === "nickname_already_exists") {
                 translated = t("create.error.nickname_exists");
             } else {
                 translated = t("common.error.create_did_failed", { message });
@@ -79,13 +81,13 @@ export function useDidFlow() {
             setDidInfo(info);
             navigate("/main/home");
         } catch (err) {
-            const message = err instanceof Error ? err.message : String(err);
+            const { code, message } = parseCommandError(err);
             let translated = message;
-            if (message === "nickname_already_exists") {
+            if (code === CommandErrorCodes.NicknameExists || message === "nickname_already_exists") {
                 translated = t("import.error.nickname_exists");
-            } else if (message === "mnemonic_required") {
+            } else if (code === CommandErrorCodes.MnemonicRequired || message === "mnemonic_required") {
                 translated = t("import.error.mnemonic_required");
-            } else if (message === "identity_already_exists") {
+            } else if (code === CommandErrorCodes.IdentityExists || message === "identity_already_exists") {
                 translated = t("import.error.identity_exists");
             } else {
                 translated = t("common.error.import_did_failed", { message });

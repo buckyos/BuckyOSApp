@@ -3,12 +3,14 @@ use rand::{rngs::OsRng, RngCore};
 use serde::Deserialize;
 use tauri::AppHandle;
 
+use crate::error::{CommandErrors, CommandResult};
+
 use super::crypto::{decrypt_mnemonic, encrypt_mnemonic};
 use super::domain::{BtcAddressType, DidInfo, DEFAULT_BTC_ADDRESS_TYPE};
 use super::identity::{derive_wallets_with_requests, DidDerivationPlan, WalletRequest};
 use super::store::{load_vault, new_did_id, open_store, save_vault, StoredDid};
-use secrecy::{ExposeSecret, SecretString};
 use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
+use secrecy::{ExposeSecret, SecretString};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[cfg(test)]
@@ -37,11 +39,10 @@ fn default_count() -> u32 {
 }
 
 #[tauri::command]
-pub fn generate_mnemonic() -> Result<Vec<String>, String> {
+pub fn generate_mnemonic() -> CommandResult<Vec<String>> {
     let mut entropy = [0u8; 16]; // 128 bits for 12 words
     OsRng.fill_bytes(&mut entropy);
-    let mnemonic =
-        Mnemonic::from_entropy_in(Language::English, &entropy).map_err(|e| e.to_string())?;
+    let mnemonic = Mnemonic::from_entropy_in(Language::English, &entropy)?;
     Ok(mnemonic
         .to_string()
         .split_whitespace()
@@ -55,15 +56,14 @@ pub fn create_did(
     nickname: String,
     password: String,
     mnemonic_words: Vec<String>,
-) -> Result<DidInfo, String> {
+) -> CommandResult<DidInfo> {
     let mnemonic_phrase = mnemonic_words.join(" ");
-    let mnemonic =
-        Mnemonic::parse_in(Language::English, &mnemonic_phrase).map_err(|e| e.to_string())?;
+    let mnemonic = Mnemonic::parse_in(Language::English, &mnemonic_phrase)?;
 
     let requests = DidDerivationPlan::default_requests();
     let wallets = derive_wallets_with_requests(&mnemonic, "", &requests, None)?;
 
-    let encrypted_seed = encrypt_mnemonic(&password, &mnemonic).map_err(|e| e.to_string())?;
+    let encrypted_seed = encrypt_mnemonic(&password, &mnemonic)?;
 
     let store = open_store(&app_handle)?;
     let mut vault = load_vault(&store)?;
@@ -73,7 +73,7 @@ pub fn create_did(
         .iter()
         .any(|did| did.nickname.eq_ignore_ascii_case(&nickname))
     {
-        return Err("nickname_already_exists".to_string());
+        return Err(CommandErrors::NicknameExists);
     }
 
     let record = StoredDid {
@@ -97,21 +97,20 @@ pub fn import_did(
     nickname: String,
     password: String,
     mnemonic_words: Vec<String>,
-) -> Result<DidInfo, String> {
+) -> CommandResult<DidInfo> {
     if mnemonic_words.is_empty() {
-        return Err("mnemonic_required".to_string());
+        return Err(CommandErrors::MnemonicRequired);
     }
 
     let decrypted = mnemonic_words.join(" ");
     let secret_phrase = SecretString::new(decrypted);
-    let mnemonic = Mnemonic::parse_in(Language::English, secret_phrase.expose_secret())
-        .map_err(|e| e.to_string())?;
+    let mnemonic = Mnemonic::parse_in(Language::English, secret_phrase.expose_secret())?;
     drop(secret_phrase);
 
     let requests = DidDerivationPlan::default_requests();
     let wallets = derive_wallets_with_requests(&mnemonic, "", &requests, None)?;
 
-    let encrypted_seed = encrypt_mnemonic(&password, &mnemonic).map_err(|e| e.to_string())?;
+    let encrypted_seed = encrypt_mnemonic(&password, &mnemonic)?;
 
     let store = open_store(&app_handle)?;
     let mut vault = load_vault(&store)?;
@@ -121,7 +120,7 @@ pub fn import_did(
         .iter()
         .any(|did| did.nickname.eq_ignore_ascii_case(&nickname))
     {
-        return Err("nickname_already_exists".to_string());
+        return Err(CommandErrors::NicknameExists);
     }
 
     if let Some(new_identity) = wallets.bucky.entries.first() {
@@ -133,7 +132,7 @@ pub fn import_did(
                 .iter()
                 .any(|entry| entry.did == new_identity.did)
         }) {
-            return Err("identity_already_exists".to_string());
+            return Err(CommandErrors::IdentityExists);
         }
     }
 
@@ -158,14 +157,14 @@ pub fn extend_wallets(
     password: String,
     did_id: String,
     request: WalletExtensionKind,
-) -> Result<DidInfo, String> {
+) -> CommandResult<DidInfo> {
     let count = match &request {
         WalletExtensionKind::Btc { count, .. }
         | WalletExtensionKind::Eth { count }
         | WalletExtensionKind::Bucky { count } => *count,
     };
     if count == 0 {
-        return Err("count_must_be_positive".to_string());
+        return Err(CommandErrors::CountMustBePositive);
     }
 
     let store = open_store(&app_handle)?;
@@ -176,12 +175,11 @@ pub fn extend_wallets(
             .dids
             .iter_mut()
             .find(|did| did.id == did_id)
-            .ok_or_else(|| "wallet_not_found".to_string())?;
+            .ok_or_else(|| CommandErrors::not_found("wallet_not_found"))?;
 
-        let decrypted = decrypt_mnemonic(&password, &record.seed).map_err(|e| e.to_string())?;
+        let decrypted = decrypt_mnemonic(&password, &record.seed)?;
         let secret_phrase = SecretString::new(decrypted);
-        let mnemonic = Mnemonic::parse_in(Language::English, secret_phrase.expose_secret())
-            .map_err(|e| e.to_string())?;
+        let mnemonic = Mnemonic::parse_in(Language::English, secret_phrase.expose_secret())?;
         drop(secret_phrase);
 
         let requests = match request {
@@ -208,21 +206,21 @@ pub fn extend_wallets(
 }
 
 #[tauri::command]
-pub fn wallet_exists(app_handle: AppHandle) -> Result<bool, String> {
+pub fn wallet_exists(app_handle: AppHandle) -> CommandResult<bool> {
     let store = open_store(&app_handle)?;
     let vault = load_vault(&store)?;
     Ok(!vault.dids.is_empty())
 }
 
 #[tauri::command]
-pub fn list_dids(app_handle: AppHandle) -> Result<Vec<DidInfo>, String> {
+pub fn list_dids(app_handle: AppHandle) -> CommandResult<Vec<DidInfo>> {
     let store = open_store(&app_handle)?;
     let vault = load_vault(&store)?;
     Ok(vault.dids.iter().map(StoredDid::to_info).collect())
 }
 
 #[tauri::command]
-pub fn active_did(app_handle: AppHandle) -> Result<Option<DidInfo>, String> {
+pub fn active_did(app_handle: AppHandle) -> CommandResult<Option<DidInfo>> {
     let store = open_store(&app_handle)?;
     let vault = load_vault(&store)?;
 
@@ -236,7 +234,7 @@ pub fn active_did(app_handle: AppHandle) -> Result<Option<DidInfo>, String> {
 }
 
 #[tauri::command]
-pub fn set_active_did(app_handle: AppHandle, did_id: String) -> Result<DidInfo, String> {
+pub fn set_active_did(app_handle: AppHandle, did_id: String) -> CommandResult<DidInfo> {
     let store = open_store(&app_handle)?;
     let mut vault = load_vault(&store)?;
 
@@ -245,7 +243,7 @@ pub fn set_active_did(app_handle: AppHandle, did_id: String) -> Result<DidInfo, 
         .iter()
         .find(|did| did.id == did_id)
         .cloned()
-        .ok_or_else(|| "wallet_not_found".to_string())?;
+        .ok_or_else(|| CommandErrors::not_found("wallet_not_found"))?;
 
     vault.active_did = Some(record.id.clone());
     save_vault(&store, &vault)?;
@@ -258,7 +256,7 @@ pub fn delete_wallet(
     app_handle: AppHandle,
     password: String,
     did_id: Option<String>,
-) -> Result<(), String> {
+) -> CommandResult<()> {
     let store = open_store(&app_handle)?;
     let mut vault = load_vault(&store)?;
 
@@ -267,17 +265,17 @@ pub fn delete_wallet(
         None => vault
             .active_did
             .clone()
-            .ok_or_else(|| "wallet_not_found".to_string())?,
+            .ok_or_else(|| CommandErrors::not_found("wallet_not_found"))?,
     };
 
     let position = vault
         .dids
         .iter()
         .position(|did| did.id == target_id)
-        .ok_or_else(|| "wallet_not_found".to_string())?;
+        .ok_or_else(|| CommandErrors::not_found("wallet_not_found"))?;
 
     let record = vault.dids.get(position).expect("did exists");
-    decrypt_mnemonic(&password, &record.seed).map_err(|e| e.to_string())?;
+    decrypt_mnemonic(&password, &record.seed)?;
 
     vault.dids.remove(position);
 
@@ -294,24 +292,23 @@ pub fn reveal_mnemonic(
     app_handle: AppHandle,
     password: String,
     did_id: Option<String>,
-) -> Result<Vec<String>, String> {
+) -> CommandResult<Vec<String>> {
     let store = open_store(&app_handle)?;
     let vault = load_vault(&store)?;
 
     let target_id = did_id
         .or_else(|| vault.active_did.clone())
-        .ok_or_else(|| "wallet_not_found".to_string())?;
+        .ok_or_else(|| CommandErrors::not_found("wallet_not_found"))?;
 
     let record = vault
         .dids
         .iter()
         .find(|did| did.id == target_id)
-        .ok_or_else(|| "wallet_not_found".to_string())?;
+        .ok_or_else(|| CommandErrors::not_found("wallet_not_found"))?;
 
-    let decrypted = decrypt_mnemonic(&password, &record.seed).map_err(|e| e.to_string())?;
+    let decrypted = decrypt_mnemonic(&password, &record.seed)?;
     let secret_phrase = SecretString::new(decrypted);
-    let mnemonic = Mnemonic::parse_in(Language::English, secret_phrase.expose_secret())
-        .map_err(|e| e.to_string())?;
+    let mnemonic = Mnemonic::parse_in(Language::English, secret_phrase.expose_secret())?;
     drop(secret_phrase);
 
     Ok(mnemonic
@@ -322,7 +319,7 @@ pub fn reveal_mnemonic(
 }
 
 #[tauri::command]
-pub fn current_wallet_nickname(app_handle: AppHandle) -> Result<Option<String>, String> {
+pub fn current_wallet_nickname(app_handle: AppHandle) -> CommandResult<Option<String>> {
     let store = open_store(&app_handle)?;
     let vault = load_vault(&store)?;
 
@@ -358,9 +355,9 @@ pub fn sign_with_active_did(
     app_handle: AppHandle,
     password: String,
     message: String,
-) -> Result<String, String> {
+) -> CommandResult<String> {
     if message.trim().is_empty() {
-        return Err("sign_message_required".to_string());
+        return Err(CommandErrors::SignMessageRequired);
     }
 
     let store = open_store(&app_handle)?;
@@ -368,36 +365,32 @@ pub fn sign_with_active_did(
     let target_id = vault
         .active_did
         .clone()
-        .ok_or_else(|| "wallet_not_found".to_string())?;
+        .ok_or_else(|| CommandErrors::not_found("wallet_not_found"))?;
 
     let record = vault
         .dids
         .iter()
         .find(|d| d.id == target_id)
-        .ok_or_else(|| "wallet_not_found".to_string())?;
+        .ok_or_else(|| CommandErrors::not_found("wallet_not_found"))?;
 
-    let decrypted = decrypt_mnemonic(&password, &record.seed).map_err(|e| e.to_string())?;
+    let decrypted = decrypt_mnemonic(&password, &record.seed)?;
     let secret_phrase = SecretString::new(decrypted);
-    let mnemonic = Mnemonic::parse_in(Language::English, secret_phrase.expose_secret())
-        .map_err(|e| e.to_string())?;
+    let mnemonic = Mnemonic::parse_in(Language::English, secret_phrase.expose_secret())?;
     drop(secret_phrase);
 
     let phrase = mnemonic.to_string();
     let passphrase_opt: Option<&str> = None;
     let index = 0u32;
-    let (private_pem, _public_jwk) = name_lib::generate_ed25519_key_pair_from_mnemonic(
-        &phrase,
-        passphrase_opt,
-        index,
-    )
-    .map_err(|e| e.to_string())?;
+    let (private_pem, _public_jwk) =
+        name_lib::generate_ed25519_key_pair_from_mnemonic(&phrase, passphrase_opt, index)
+            .map_err(|e| CommandErrors::crypto_failed(e.to_string()))?;
 
     let pem_key = EncodingKey::from_ed_pem(private_pem.as_bytes())
-        .map_err(|e| format!("invalid ed25519 private key: {}", e))?;
+        .map_err(|e| CommandErrors::crypto_failed(format!("invalid ed25519 private key: {e}")))?;
 
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .map_err(|e| e.to_string())?
+        .map_err(|e| CommandErrors::internal(e.to_string()))?
         .as_secs() as usize;
 
     let did_label = record
@@ -413,8 +406,14 @@ pub fn sign_with_active_did(
         iat: now,
     };
 
-    let token = encode(&Header { alg: Algorithm::EdDSA, ..Default::default() }, &claims, &pem_key)
-        .map_err(|e| e.to_string())?;
+    let token = encode(
+        &Header {
+            alg: Algorithm::EdDSA,
+            ..Default::default()
+        },
+        &claims,
+        &pem_key,
+    )?;
 
     Ok(token)
 }
@@ -426,43 +425,39 @@ pub fn generate_zone_boot_config_jwt(
     did_id: Option<String>,
     sn: Option<String>,
     #[allow(unused_variables)] ood_name: Option<String>,
-) -> Result<String, String> {
+) -> CommandResult<String> {
     // resolve target DID (active by default)
     let store = open_store(&app_handle)?;
     let vault = load_vault(&store)?;
     let target_id = did_id
         .or(vault.active_did.clone())
-        .ok_or_else(|| "wallet_not_found".to_string())?;
+        .ok_or_else(|| CommandErrors::not_found("wallet_not_found"))?;
     let record = vault
         .dids
         .iter()
         .find(|d| d.id == target_id)
-        .ok_or_else(|| "wallet_not_found".to_string())?;
+        .ok_or_else(|| CommandErrors::not_found("wallet_not_found"))?;
 
     // unlock mnemonic to validate password and derive private key
-    let decrypted = decrypt_mnemonic(&password, &record.seed).map_err(|e| e.to_string())?;
+    let decrypted = decrypt_mnemonic(&password, &record.seed)?;
     let secret_phrase = SecretString::new(decrypted);
-    let mnemonic = Mnemonic::parse_in(Language::English, secret_phrase.expose_secret())
-        .map_err(|e| e.to_string())?;
+    let mnemonic = Mnemonic::parse_in(Language::English, secret_phrase.expose_secret())?;
     drop(secret_phrase);
 
     // derive ed25519 owner private key from mnemonic index 0 (Bucky identity)
     let phrase = mnemonic.to_string();
     let passphrase_opt: Option<&str> = None;
     let index = 0u32;
-    let (private_pem, _public_jwk) = name_lib::generate_ed25519_key_pair_from_mnemonic(
-        &phrase,
-        passphrase_opt,
-        index,
-    )
-    .map_err(|e| e.to_string())?;
+    let (private_pem, _public_jwk) =
+        name_lib::generate_ed25519_key_pair_from_mnemonic(&phrase, passphrase_opt, index)
+            .map_err(|e| CommandErrors::crypto_failed(e.to_string()))?;
 
     let pem_key = EncodingKey::from_ed_pem(private_pem.as_bytes())
-        .map_err(|e| format!("invalid ed25519 private key: {}", e))?;
+        .map_err(|e| CommandErrors::crypto_failed(format!("invalid ed25519 private key: {e}")))?;
 
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .map_err(|e| e.to_string())?
+        .map_err(|e| CommandErrors::internal(e.to_string()))?
         .as_secs() as usize;
 
     let ood = ood_name.unwrap_or_else(|| "ood1".to_string());
@@ -474,8 +469,14 @@ pub fn generate_zone_boot_config_jwt(
         iat: now,
     };
 
-    let token = encode(&Header { alg: Algorithm::EdDSA, ..Default::default() }, &claims, &pem_key)
-        .map_err(|e| e.to_string())?;
+    let token = encode(
+        &Header {
+            alg: Algorithm::EdDSA,
+            ..Default::default()
+        },
+        &claims,
+        &pem_key,
+    )?;
 
     Ok(token)
 }
