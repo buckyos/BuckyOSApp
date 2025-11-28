@@ -44,6 +44,7 @@
 | `5` | NoMessage，签名内容为空 |
 | `6` | InvalidPassword，密码验证失败 |
 | `7` | Cancelled，用户在交互过程中取消操作 |
+| `8` | Busy，已有签名流程正在进行，请稍候重试 |
 
 第三方页面只需根据 `code` 做分支，`message` 中提供了可展示的文案。
 
@@ -68,6 +69,7 @@
   - `6` (InvalidPassword)：密码错误。
   - `7` (Cancelled)：用户取消密码输入。
   - `4` (NoActiveDid)：没有激活的 DID。
+  - `8` (Busy)：当前已有签名请求在进行中，请稍后再发起新的请求。
 
 > **提示**：`signWithActiveDid` 为交互式请求，可能等待用户输入较长时间。第三方页面应在等待期间禁用重复点击或展示 Loading。
 

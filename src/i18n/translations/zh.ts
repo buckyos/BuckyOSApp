@@ -133,6 +133,7 @@ export default {
         embedded_webview_confirm: "确定",
         embedded_webview_invalid_password: "密码不正确，请重试。",
         embedded_webview_unknown_error: "签名失败，请稍后再试。",
+        embedded_webview_busy: "已有签名请求正在处理中，请稍候。",
         switch_identity: "切换身份",
         backup_identity: "备份身份",
         delete_account: "删除账户",

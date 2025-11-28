@@ -134,6 +134,7 @@ export default {
         embedded_webview_confirm: "Confirm",
         embedded_webview_invalid_password: "Wrong password, please try again.",
         embedded_webview_unknown_error: "Failed to sign. Please try again later.",
+        embedded_webview_busy: "Another signature request is in progress. Please wait.",
         switch_identity: "Switch Identity",
         backup_identity: "Backup Identity",
         delete_account: "Delete Account",

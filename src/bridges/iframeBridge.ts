@@ -64,6 +64,7 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
         loading: false,
         messageToSign: "",
     });
+    const [signInProgress, setSignInProgress] = React.useState(false);
     const resolverRef = React.useRef<(result: any) => void>();
     const portalContainerRef = React.useRef<HTMLDivElement | null>(null);
     const portalRootRef = React.useRef<Root | null>(null);
@@ -88,7 +89,11 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
             if (!activeDid) {
                 return { code: BuckyErrorCodes.NoActiveDid, message: t("settings.embedded_webview_no_did") };
             }
+            if (signInProgress || passwordDialog.open) {
+                return { code: BuckyErrorCodes.Busy, message: t("settings.embedded_webview_busy") };
+            }
             return new Promise((resolve) => {
+                setSignInProgress(true);
                 setPasswordDialog({
                     open: true,
                     value: "",
@@ -102,10 +107,11 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
                 };
             });
         },
-    }), [publicKey, t, activeDid]);
+    }), [publicKey, t, activeDid, signInProgress, passwordDialog.open]);
 
     const closeDialog = React.useCallback(() => {
         setPasswordDialog((prev) => ({ ...prev, open: false, value: "", error: "", messageToSign: "" }));
+        setSignInProgress(false);
     }, []);
 
     const handleConfirmPassword = React.useCallback(async () => {

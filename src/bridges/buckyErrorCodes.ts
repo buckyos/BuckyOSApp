@@ -7,6 +7,7 @@ export const BuckyErrorCodes = {
     NoMessage: 5,
     InvalidPassword: 6,
     Cancelled: 7,
+    Busy: 8,
 } as const;
 
 export type BuckyErrorCode = typeof BuckyErrorCodes[keyof typeof BuckyErrorCodes];
