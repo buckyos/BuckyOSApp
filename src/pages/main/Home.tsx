@@ -16,9 +16,9 @@ const Home: React.FC = () => {
 
     // SN registration/checking
     const [snChecking, setSnChecking] = React.useState(false);
-    const [snError, setSnError] = React.useState<string>("");
+    const [, setSnError] = React.useState<string>("");
     const [snRegistered, setSnRegistered] = React.useState(false);
-    const [snInfo, setSnInfo] = React.useState<any>(null);
+    const [, setSnInfo] = React.useState<any>(null);
     const [snUsername, setSnUsername] = React.useState<string>("");
     const [snInvite, setSnInvite] = React.useState<string>("");
     const [snUserValid, setSnUserValid] = React.useState<boolean | null>(null);
@@ -59,7 +59,7 @@ const Home: React.FC = () => {
             setSnChecking(true);
             setSnError("");
             setSnQueryFailed(false);
-            const { ok, raw } = await getUserByPublicKey(JSON.stringify(jwk), "ood1");
+            const { ok, raw } = await getUserByPublicKey(JSON.stringify(jwk));
             if (ok) {
                 setSnRegistered(true);
                 setSnInfo(raw);
@@ -237,7 +237,7 @@ const Home: React.FC = () => {
                 tries += 1;
                 try {
                     console.debug(SN_BIND_TAG, "poll", { attempt: tries });
-                    const { ok: found, raw } = await getUserByPublicKey(jwk, "ood1");
+                    const { ok: found, raw } = await getUserByPublicKey(jwk);
                     console.debug(SN_BIND_TAG, "poll result", { attempt: tries, ok: found, hasRaw: !!raw });
                     if (found) {
                         ok = true;

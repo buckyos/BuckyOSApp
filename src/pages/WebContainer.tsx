@@ -1,7 +1,6 @@
 import React from "react";
 import { useSearchParams } from "react-router-dom";
 import { useIframeBridge, useBuckyIframeActions } from "../bridges/iframeBridge";
-import MobileHeader from "../components/ui/MobileHeader";
 
 const DEFAULT_URL = "http://localhost:1420/test_api.html";
 

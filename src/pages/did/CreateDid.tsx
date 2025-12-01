@@ -30,7 +30,6 @@ const CreateDid: React.FC<CreateDidProps> = ({
     const [showPwd2, setShowPwd2] = React.useState(false);
     // Removed SN invite and register option from Create DID
     const [nicknameTaken, setNicknameTaken] = React.useState(false);
-    const [checkingName, setCheckingName] = React.useState(false);
     const passwordsValid = password.length >= 6 && confirmPassword.length >= 6 && password === confirmPassword;
     // Allow proceeding with DID creation; SN registration will be handled on Home
     const canProceed = !!nickname && !nicknameTaken && passwordsValid;
@@ -42,7 +41,6 @@ const CreateDid: React.FC<CreateDidProps> = ({
             setNicknameTaken(false);
             return;
         }
-        setCheckingName(true);
         (async () => {
             try {
                 const dids = await listDids();
@@ -50,8 +48,6 @@ const CreateDid: React.FC<CreateDidProps> = ({
                 if (alive) setNicknameTaken(exists);
             } catch (_) {
                 if (alive) setNicknameTaken(false);
-            } finally {
-                if (alive) setCheckingName(false);
             }
         })();
         return () => { alive = false; };

@@ -11,7 +11,7 @@ import { CommandErrorCodes } from "../constants/commandErrorCodes";
 export type IframeActionHandler = (payload: any) => unknown | Promise<unknown>;
 
 export interface UseIframeBridgeOptions {
-    iframeRef: React.RefObject<HTMLIFrameElement>;
+    iframeRef: React.RefObject<HTMLIFrameElement | null>;
     handlers: Record<string, IframeActionHandler>;
     kind?: string;
 }
@@ -53,10 +53,10 @@ type SignState = {
     messageToSign: string;
 };
 
-export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HTMLIFrameElement> }) {
+export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HTMLIFrameElement | null> }) {
     const { t } = useI18n();
     const { activeDid } = useDidContext();
-    const iframeRef = options?.iframeRef ?? React.useRef<HTMLIFrameElement>(null);
+    const iframeRef = options?.iframeRef ?? React.useRef<HTMLIFrameElement | null>(null);
     const [passwordDialog, setPasswordDialog] = React.useState<SignState>({
         open: false,
         value: "",
@@ -65,7 +65,7 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
         messageToSign: "",
     });
     const [signInProgress, setSignInProgress] = React.useState(false);
-    const resolverRef = React.useRef<(result: any) => void>();
+    const resolverRef = React.useRef<((result: any) => void) | null>(null);
     const portalContainerRef = React.useRef<HTMLDivElement | null>(null);
     const portalRootRef = React.useRef<Root | null>(null);
 
@@ -102,7 +102,7 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
                     messageToSign: message,
                 });
                 resolverRef.current = (result) => {
-                    resolverRef.current = undefined;
+                    resolverRef.current = null;
                     resolve(result);
                 };
             });
@@ -119,7 +119,7 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
         try {
             const signature = await signWithActiveDid(passwordDialog.value, passwordDialog.messageToSign);
             resolverRef.current?.({ code: BuckyErrorCodes.Success, data: { signature } });
-            resolverRef.current = undefined;
+            resolverRef.current = null;
             closeDialog();
         } catch (err) {
             const { code, message } = parseCommandError(err);
@@ -165,7 +165,7 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
             onCancel: () => {
                 if (passwordDialog.loading) return;
                 resolverRef.current?.({ code: BuckyErrorCodes.Cancelled, message: t("common.actions.cancel") });
-                resolverRef.current = undefined;
+                resolverRef.current = null;
                 closeDialog();
             },
             loading: passwordDialog.loading,
