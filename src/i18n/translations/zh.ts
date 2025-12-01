@@ -201,7 +201,7 @@ export default {
         username_placeholder: "请输入用户名",
         username_checking: "正在检查用户名...",
         username_ok: "用户名可用",
-        username_taken: "用户名不可用",
+        username_taken: "用户名不可用，请修改",
         invite_label: "SN 邀请码",
         invite_placeholder: "请输入邀请码",
         invite_checking: "正在检查邀请码...",

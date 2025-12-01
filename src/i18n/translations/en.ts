@@ -203,7 +203,7 @@ export default {
         username_placeholder: "Enter username",
         username_checking: "Checking username...",
         username_ok: "Username is available",
-        username_taken: "Username is not available",
+        username_taken: "Username is not available, please modify",
         invite_label: "SN Invite Code",
         invite_placeholder: "Enter invite code",
         invite_checking: "Checking invite code...",
