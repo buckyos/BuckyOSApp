@@ -6,7 +6,7 @@ use tauri::AppHandle;
 use crate::error::{CommandErrors, CommandResult};
 
 use super::crypto::{decrypt_mnemonic, encrypt_mnemonic};
-use super::domain::{BtcAddressType, DidInfo, DEFAULT_BTC_ADDRESS_TYPE};
+use super::domain::{BtcAddressType, DidInfo};
 use super::identity::{derive_wallets_with_requests, DidDerivationPlan, WalletRequest};
 use super::store::{load_vault, new_did_id, open_store, save_vault, StoredDid};
 use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};

@@ -27,9 +27,6 @@ impl SeedCtx {
         &self.secp
     }
 
-    pub fn master_xprv(&self) -> &Xpriv {
-        &self.master_xprv
-    }
 }
 
 pub fn derive_btc_address(

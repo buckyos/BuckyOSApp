@@ -13,15 +13,16 @@ const WebContainer: React.FC = () => {
     useIframeBridge({ iframeRef, handlers: defaultActionHandlers });
 
     return (
-        <div className="App" style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-            <div style={{ flex: 1, paddingBottom: 16 }}>
-                <iframe
-                    ref={iframeRef}
-                    title={title}
-                    src={target}
-                    style={{ width: "100%", height: "100%", border: "none" }}
-                />
-            </div>
+        <div
+            className="App"
+            style={{ width: "100vw", height: "100vh", margin: 0, padding: 0 }}
+        >
+            <iframe
+                ref={iframeRef}
+                title={title}
+                src={target}
+                style={{ width: "100%", height: "100%", border: "none" }}
+            />
         </div>
     );
 };

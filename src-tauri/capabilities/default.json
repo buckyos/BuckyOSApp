@@ -6,6 +6,12 @@
     "main",
     "webview_*"
   ],
+  "remote": {
+    "urls": [
+      "https://*",
+      "http://*"
+    ]
+  },
   "permissions": [
     "core:default",
     "core:webview:allow-create-webview",

@@ -4,7 +4,7 @@ use tauri::{AppHandle, Wry};
 use tauri_plugin_store::{Error as StoreError, Store, StoreExt};
 use ulid::Ulid;
 
-use super::domain::{BtcAddress, BuckyIdentity, ChainAddress, DidInfo, WalletCollection};
+use super::domain::{BtcAddress, DidInfo, WalletCollection};
 use crate::error::{CommandErrors, CommandResult};
 
 // 固定使用主网，后续可以抽象为配置项。

@@ -57,13 +57,6 @@ pub struct AddressSeries<T> {
 }
 
 impl<T> AddressSeries<T> {
-    pub fn new(entries: Vec<T>, next_index: u32) -> Self {
-        Self {
-            entries,
-            next_index,
-        }
-    }
-
     pub fn empty() -> Self {
         Self {
             entries: Vec::new(),
