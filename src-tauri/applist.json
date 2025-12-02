@@ -1,0 +1,20 @@
+[
+  {
+    "pkg_name": "gateway",
+    "accent": "linear-gradient(135deg, #6366f1 0%, #4338ca 100%)",
+    "show_name": "智能网关",
+    "app_icon_url": null,
+    "selector_type": "default",
+    "install_config_tips": "管理本地网络、监控链路状态与设备健康。",
+    "pkg_list": "gateway"
+  },
+  {
+    "pkg_name": "backup",
+    "accent": "linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)",
+    "show_name": "Backup Client",
+    "app_icon_url": null,
+    "selector_type": "default",
+    "install_config_tips": "为关键数据提供备份与恢复策略。",
+    "pkg_list": "backup"
+  }
+]

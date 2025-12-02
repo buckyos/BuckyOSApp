@@ -4,6 +4,7 @@ fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
 }
 
+mod applist;
 mod did;
 mod error;
 
@@ -25,7 +26,8 @@ pub fn run() {
             did::extend_wallets,
             did::current_wallet_nickname,
             did::generate_zone_boot_config_jwt,
-            did::sign_with_active_did
+            did::sign_with_active_did,
+            applist::get_applist,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
