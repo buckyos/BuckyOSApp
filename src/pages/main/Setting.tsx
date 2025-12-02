@@ -14,7 +14,7 @@ import { CommandErrorCodes } from "../../constants/commandErrorCodes";
 const defaultOpenUrl = "http://localhost:1420/test_api.html";
 
 const buildAppUrl = (hashPath: string) => {
-    const base = import.meta.env.DEV ? "http://localhost:1420" : "app://localhost";
+    const base = import.meta.env.DEV ? "http://localhost:1420" : "tauri://localhost";
     return `${base}/index.html#${hashPath}`;
 };
 
@@ -138,8 +138,11 @@ const Setting: React.FC = () => {
         try {
             setOpenUrlError("");
             setOpenUrlLoading(true);
-            const label = `webview_${Date.now()}`;
-            const containerUrl = buildAppUrl(`/web-container?src=${encodeURIComponent(url)}`);
+            const label = `webview_${crypto.randomUUID()}`;
+            const containerUrl = buildAppUrl(
+                `/web-container?label=${encodeURIComponent(label)}&src=${encodeURIComponent(url)}`
+            );
+            console.debug("[Setting] open url window", { label, containerUrl });
             new WebviewWindow(label, { url: containerUrl });
             setOpenUrlLoading(false);
             setOpenUrlOpen(false);

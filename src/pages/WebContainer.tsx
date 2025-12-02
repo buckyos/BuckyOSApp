@@ -7,7 +7,8 @@ const DEFAULT_URL = "http://localhost:1420/test_api.html";
 const WebContainer: React.FC = () => {
     const [searchParams] = useSearchParams();
     const target = decodeURIComponent(searchParams.get("src") || DEFAULT_URL);
-    const title = searchParams.get("title") || "External Page";
+    const windowLabel = searchParams.get("label") || "webview_external";
+    const title = searchParams.get("title") || windowLabel;
 
     const { iframeRef, defaultActionHandlers } = useBuckyIframeActions();
     useIframeBridge({ iframeRef, handlers: defaultActionHandlers });
