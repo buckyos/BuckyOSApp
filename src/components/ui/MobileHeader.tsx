@@ -68,7 +68,7 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({ title, showBack = false, on
                     style={{
                         fontSize: 20,
                         margin: 0,
-                        lineHeight: 1,
+                        lineHeight: 1.2,
                         whiteSpace: "nowrap",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
