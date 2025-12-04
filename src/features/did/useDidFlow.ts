@@ -108,6 +108,11 @@ export function useDidFlow() {
         navigate("/import");
     };
 
+    const goToDidInfo = () => {
+        setError("");
+        navigate("/did-info");
+    };
+
     const goToShowMnemonic = async () => {
         if (password !== confirmPassword) {
             setError(t("common.error.passwords_mismatch"));
@@ -177,6 +182,7 @@ export function useDidFlow() {
         handleCreateDid,
         handleImportDid,
         goToImportDid,
+        goToDidInfo,
         goToWelcome,
         resetFlow,
     };

@@ -10,6 +10,7 @@ import { useDidFlow } from "./useDidFlow";
 import "./DidFlowRoutes.css";
 import SnIntro from "../../pages/did/SnIntro";
 import ImportDid from "../../pages/did/ImportDid";
+import DidInfo from "../../pages/did/DidInfo";
 
 const DidFlowRoutes: React.FC = () => {
     const {
@@ -32,6 +33,7 @@ const DidFlowRoutes: React.FC = () => {
         handleCreateDid,
         handleImportDid,
         goToWelcome,
+        goToDidInfo,
         resetFlow,
     } = useDidFlow();
 
@@ -39,7 +41,11 @@ const DidFlowRoutes: React.FC = () => {
         <div className="App">
             <LoadingOverlay visible={loading} textKey="common.creating" />
             <Routes>
-                <Route path="/" element={<Welcome onStart={goToCreateDid} onImport={goToImportDid} />} />
+                <Route
+                    path="/"
+                    element={<Welcome onStart={goToCreateDid} onImport={goToImportDid} onShowDidInfo={goToDidInfo} />}
+                />
+                <Route path="/did-info" element={<DidInfo onBack={goToWelcome} />} />
                 <Route path="/sn" element={<SnIntro />} />
                 <Route
                     path="/import"

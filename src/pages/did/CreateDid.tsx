@@ -54,15 +54,9 @@ const CreateDid: React.FC<CreateDidProps> = ({
     }, [nickname]);
     return (
         <div className="did-container" style={{ position: "relative", overflow: "hidden" }}>
-            {/* Header: arrow only, positioned closer to top-left */}
-            <div style={{ position: "absolute", top: 6, left: 6, zIndex: 2 }}>
-                <MobileHeader title="" showBack />
-            </div>
-
-            {/* Page title */}
-            <div className="page-header">
-                <div className="page-title">{t("create.title_new")}</div>
-                <div className="page-subtitle">{t("create.subtitle")}</div>
+            {/* Page title + back */}
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <MobileHeader title={t("create.title_new")} showBack />
             </div>
 
             {/* Nickname */}

@@ -45,13 +45,11 @@ const ImportDid: React.FC<ImportDidProps> = ({ loading, error, onImport, onBack 
 
     return (
         <div className="did-container" style={{ position: "relative", overflow: "hidden" }}>
-            <div style={{ position: "absolute", top: 6, left: 6, zIndex: 2 }}>
-                <MobileHeader title="" showBack onBack={onBack} />
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <MobileHeader title={t("import.title")} showBack onBack={onBack} />
             </div>
-
-            <div className="page-header">
-                <div className="page-title">{t("import.title")}</div>
-                <div className="page-subtitle">{t("import.subtitle")}</div>
+            <div className="page-content" style={{ marginTop: -8 }}>
+                <p style={{ color: "var(--muted-text)", margin: 0 }}>{t("import.subtitle")}</p>
             </div>
 
             <div className="page-content" style={{ display: "flex", flexDirection: "column", gap: 16 }}>

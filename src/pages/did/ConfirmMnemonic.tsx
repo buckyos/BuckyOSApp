@@ -63,15 +63,11 @@ const ConfirmMnemonic: React.FC<ConfirmMnemonicProps> = ({
 
     return (
         <div className="did-container" style={{ position: "relative" }}>
-            {/* Back arrow */}
-            <div style={{ position: "absolute", top: 6, left: 6, zIndex: 2 }}>
-                <MobileHeader title="" showBack onBack={onBack} />
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <MobileHeader title={t("confirmMnemonic.title")} showBack onBack={onBack} />
             </div>
-
-            {/* titles only (icon removed) */}
-            <div className="page-header">
-                <div className="page-title">{t("confirmMnemonic.title")}</div>
-                <div className="page-subtitle">{t("confirmMnemonic.tips")}</div>
+            <div className="page-content" style={{ marginTop: -8 }}>
+                <p style={{ color: "var(--muted-text)", margin: 0 }}>{t("confirmMnemonic.tips")}</p>
             </div>
 
             {/* Selected words area in a soft card */}
