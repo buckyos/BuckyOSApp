@@ -1,7 +1,7 @@
 import { buckyos } from "buckyos";
 
 // SN kRPC client via buckyos-websdk
-let SN_API_URL = "http://sn.buckyos.ai/kapi/sn";
+let SN_API_URL = "https://sn.buckyos.ai/kapi/sn";
 
 export function setSnApiUrl(url: string) {
     SN_API_URL = url;
