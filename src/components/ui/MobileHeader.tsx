@@ -21,9 +21,10 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({ title, showBack = false, on
             style={{
                 display: "flex",
                 alignItems: "center",
-                gap: 10,
+                gap: 6,
                 padding: "8px 0 12px",
                 minHeight: 44, // ensure consistent header row height
+                width: "100%",
             }}
         >
             {showBack && (
@@ -33,7 +34,7 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({ title, showBack = false, on
                     style={{
                         display: "flex",
                         alignItems: "center",
-                        justifyContent: "center",
+                        justifyContent: "flex-start",
                         width: 36,
                         height: 36,
                         padding: 0,

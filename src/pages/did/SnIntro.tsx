@@ -15,4 +15,3 @@ const SnIntro: React.FC = () => {
 };
 
 export default SnIntro;
-

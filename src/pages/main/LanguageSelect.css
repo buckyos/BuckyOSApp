@@ -9,6 +9,7 @@
     align-items: center;
     justify-content: space-between;
     width: 100%;
+    position: relative;
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
@@ -23,4 +24,17 @@
 
 .lang-item svg {
     color: var(--muted-text);
+}
+
+.lang-check {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
 }

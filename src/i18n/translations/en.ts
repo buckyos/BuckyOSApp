@@ -201,7 +201,7 @@ export default {
     },
     sn: {
         bind_title: "Bind SN",
-        bind_subtitle: "Bind a Super Node to enjoy BuckyOS network services.",
+        bind_subtitle: "",
         header: "SN",
         header_desc: "Check and register SN",
         fetching: "Fetching SN binding status...",
@@ -223,7 +223,7 @@ export default {
         username_help: "Defaults to your DID nickname.",
         invite_help: "Please enter a valid SN invite code.",
         about_title: "About SN (Super Node)",
-        about_desc: "SN (Super Node) is a super node in the BuckyOS network that provides decentralized services. After binding, you can get better connectivity and service experience.",
+        about_desc: "SN (Super Node) is a super node in the BuckyOS network. Once you bind to an SN, you get a dedicated, memorable domain and anyone can reach your BuckyOS services from anywhere through it (access always requires your authorization).",
         learn_more: "Learn more",
         bind_confirm: "Bind",
         bind_password_title: "Enter Password",

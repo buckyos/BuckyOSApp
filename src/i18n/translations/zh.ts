@@ -199,7 +199,7 @@ export default {
     },
     sn: {
         bind_title: "绑定 SN",
-        bind_subtitle: "绑定超级节点以享受 BuckyOS 网络服务。",
+        bind_subtitle: "",
         header: "SN",
         header_desc: "查询和注册 SN",
         fetching: "正在获取 SN 绑定状态...",
@@ -221,7 +221,7 @@ export default {
         username_help: "默认使用您的 DID 昵称",
         invite_help: "请输入有效的 SN 邀请码",
         about_title: "关于 SN (Super Node)",
-        about_desc: "SN（Super Node）是 BuckyOS 网络中的超级节点，用于提供去中心化服务。绑定 SN 后，您可以获得更好的网络连接和服务体验。",
+        about_desc: "SN（Super Node）是 BuckyOS 网络中的超级节点，绑定 SN 后，您将拥有一个专用、好记的域名，通过该域名，就能在任何地方访问您 BuckyOS 里的网络服务（当然，需要您的授权才可以访问）。",
         learn_more: "了解更多",
         bind_confirm: "确定绑定",
         bind_password_title: "输入密码",
