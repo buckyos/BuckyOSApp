@@ -292,21 +292,12 @@ const Home: React.FC = () => {
                         </div>
                     </header>
 
-                    {/* About SN info card */}
-                    <div className="sn-info-card">
-                        <div className="sn-info-title">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                                <circle cx="12" cy="12" r="10" />
-                                <path d="M12 16v-4" />
-                                <path d="M12 8h.01" />
-                            </svg>
-                            {snRegistered ? t("ood.about_title") : t("sn.about_title")}
-                        </div>
-                        <div className="sn-info-desc">{snRegistered ? t("ood.about_desc") : t("sn.about_desc")}</div>
-                        {!snRegistered && (
+                    {!snRegistered && (
+                        <div className="sn-info-card">
+                            <div className="sn-info-desc">{t("sn.about_desc")}</div>
                             <div className="sn-info-link"><a href="#/sn">{t("sn.learn_more")}</a></div>
-                        )}
-                    </div>
+                        </div>
+                    )}
                 </>
             )}
             {!initializing && activeDid ? (
@@ -356,7 +347,9 @@ const Home: React.FC = () => {
                                     <div style={{ color: "var(--muted-text)", fontSize: 12, marginTop: 4 }}>{t("sn.username_checking")}</div>
                                 )}
                                 {!checkingUser && snUserValid === true && (
-                                    <div style={{ color: "#10b981", fontSize: 12, marginTop: 4 }}>{t("sn.username_ok")}</div>
+                                    <div style={{ color: "#10b981", fontSize: 12, marginTop: 4 }}>
+                                        {t("sn.username_ok", { username: snUsername.trim() || snUsername })}
+                                    </div>
                                 )}
                                 {!checkingUser && snUserValid === false && (
                                     <div style={{ color: "#ef4444", fontSize: 12, marginTop: 4 }}>{t("sn.username_taken")}</div>
