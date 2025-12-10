@@ -7,6 +7,7 @@ fn greet(name: &str) -> String {
 mod applist;
 mod did;
 mod error;
+mod network;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -28,6 +29,7 @@ pub fn run() {
             did::generate_zone_boot_config_jwt,
             did::sign_with_active_did,
             applist::get_applist,
+            network::local_ipv4_list,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
