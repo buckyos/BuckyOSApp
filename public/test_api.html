@@ -122,6 +122,7 @@
             <button id="go-button" class="action-button">Go</button>
             <button id="public-key-button" class="action-button">Get Public Key</button>
             <button id="sign-button" class="action-button">SignWithActiveDid</button>
+            <button id="runtime-button" class="action-button">Check Runtime</button>
         </div>
         <a href="https://bilibili.com">跳转到 bilibili</a>
     </div>
@@ -132,6 +133,7 @@
         const goButton = document.getElementById("go-button");
         const publicKeyButton = document.getElementById("public-key-button");
         const signButton = document.getElementById("sign-button");
+        const runtimeButton = document.getElementById("runtime-button");
         const logError = (msg) => {
             if (!outputBox) return;
             outputBox.value = msg;
@@ -181,6 +183,16 @@
             } catch (err) {
                 logError(err instanceof Error ? err.message : String(err));
             }
+        });
+
+        runtimeButton.addEventListener("click", () => {
+            const isRuntime = window.BuckyApi?.isBuckyOSRuntime?.() ?? false;
+            outputBox.value = isRuntime
+                ? "BuckyOS Runtime Detected: True"
+                : "BuckyOS Runtime Detected: False";
+            outputBox.classList.remove("highlight");
+            void outputBox.offsetWidth;
+            outputBox.classList.add("highlight");
         });
     </script>
 </body>
