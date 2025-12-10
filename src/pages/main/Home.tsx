@@ -2,10 +2,11 @@ import React from "react";
 import "./Home.css";
 import { useDidContext } from "../../features/did/DidContext";
 import InputDialog from "../../components/ui/InputDialog";
-import GradientButton from "../../components/ui/GradientButton";
 import { useI18n } from "../../i18n";
 import { invoke } from "@tauri-apps/api/core";
 import { checkBuckyUsername, checkSnActiveCode, getUserByPublicKey, registerSnUser } from "../../services/sn";
+import GradientButton from "../../components/ui/GradientButton";
+import BindOod from "./components/BindOod";
 
 // In-memory cache for SN status per DID to avoid repeated queries
 const snStatusCache: Record<string, { registered: boolean; info: any } | undefined> = {};
@@ -172,6 +173,20 @@ const Home: React.FC = () => {
         return !snRegistered && snUserValid === true && snInviteValid === true;
     }, [snRegistered, snUserValid, snInviteValid]);
 
+    const showOodBind = !initializing && !snChecking && !snQueryFailed && snRegistered;
+    const showBindForm = !initializing && !snChecking && !snQueryFailed && !snRegistered;
+
+    const handleOodScan = React.useCallback(async () => {
+        setScanHint("");
+        setScanningOod(true);
+        try {
+            await new Promise((r) => setTimeout(r, 1600));
+            setScanHint(t("ood.scan_not_found"));
+        } finally {
+            setScanningOod(false);
+        }
+    }, [t]);
+
     const doBind = React.useCallback(async () => {
         if (!activeDid) return;
         setBindErr("");
@@ -315,24 +330,18 @@ const Home: React.FC = () => {
                             <div className="sn-loading-text">{t("sn.fetching")}</div>
                         </div>
                     )}
-                    {!initializing && !snChecking && !snQueryFailed && snRegistered && (
-                        <div className="sn-loading-card" role="region">
-                            {!scanningOod && (
-                                <div className="sn-loading-text">{t("ood.activate_desc_inline")}</div>
-                            )}
-                            {scanningOod && (
-                                <>
-                                    <div className="sn-spinner" aria-hidden />
-                                    <div className="sn-loading-text">{t("ood.scanning")}</div>
-                                    {!!scanHint && <div className="sn-loading-text">{scanHint}</div>}
-                                </>
-                            )}
-                        </div>
+                    {showOodBind && (
+                        <BindOod
+                            scanning={scanningOod}
+                            scanHint={scanHint}
+                            onScan={handleOodScan}
+                            t={t}
+                        />
                     )}
-                    {!initializing && !snChecking && !snQueryFailed && !snRegistered && (
+                    {showBindForm && (
                         <div className="sn-status" style={{ marginBottom: 8 }}>{t("sn.status_unregistered")}</div>
                     )}
-                    {!initializing && !snChecking && !snQueryFailed && !snRegistered && (
+                    {showBindForm && (
                         <div className="sn-form">
                             <div>
                                 <label style={{ fontSize: 14, color: "var(--app-text)" }}>{t("sn.username_label")}</label>
@@ -388,7 +397,7 @@ const Home: React.FC = () => {
                 <div className="home-placeholder">{t("sn.no_did_hint")}</div>
             ) : null)}
 
-            {(!initializing && !snChecking && !snQueryFailed && !snRegistered) && (
+            {showBindForm && (
                 <div className="sn-page-actions">
                     <GradientButton
                         onClick={() => {
@@ -400,27 +409,6 @@ const Home: React.FC = () => {
                         disabled={!canBind || checkingUser || checkingInvite}
                     >
                         {t("sn.bind_confirm")}
-                    </GradientButton>
-                </div>
-            )}
-
-            {(!initializing && !snChecking && !snQueryFailed && snRegistered) && (
-                <div className="sn-page-actions">
-                    <GradientButton
-                        onClick={async () => {
-                            setScanHint("");
-                            setScanningOod(true);
-                            try {
-                                // Placeholder: simulate scan
-                                await new Promise(r => setTimeout(r, 1600));
-                                setScanHint(t("ood.scan_not_found"));
-                            } finally {
-                                setScanningOod(false);
-                            }
-                        }}
-                        disabled={scanningOod}
-                    >
-                        {t("ood.scan_button")}
                     </GradientButton>
                 </div>
             )}

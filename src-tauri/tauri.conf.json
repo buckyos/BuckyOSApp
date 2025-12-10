@@ -1,6 +1,6 @@
 {
     "$schema": "https://schema.tauri.app/config/2",
-    "productName": "buckyosapp",
+    "productName": "BuckyOS",
     "version": "0.1.0",
     "identifier": "com.buckyos.buckyosapp",
     "build": {

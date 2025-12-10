@@ -3,6 +3,7 @@ import en from "./translations/en";
 import zh from "./translations/zh";
 
 type Locale = "en" | "zh";
+const LOCALE_STORAGE_KEY = "buckyos.locale";
 
 type Dict = typeof en;
 
@@ -35,6 +36,8 @@ interface I18nContextValue {
 const I18nContext = createContext<I18nContextValue | undefined>(undefined);
 
 function detectInitialLocale(): Locale {
+    const saved = (localStorage.getItem(LOCALE_STORAGE_KEY) as Locale | null);
+    if (saved === "en" || saved === "zh") return saved;
     const lang = (navigator.language || navigator.languages?.[0] || "en").toLowerCase();
     if (lang.startsWith("zh")) return "zh";
     return "en";
@@ -45,6 +48,7 @@ export const I18nProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
 
     const setLocale = (l: Locale) => {
         setLocaleState(l);
+        localStorage.setItem(LOCALE_STORAGE_KEY, l);
     };
 
     const dict = dictionaries[locale] as Dict;
