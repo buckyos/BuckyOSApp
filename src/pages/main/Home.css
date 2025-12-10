@@ -173,6 +173,152 @@
     opacity: 0.6;
 }
 
+.ood-info-card {
+    margin-top: 12px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 8px 12px;
+    background: var(--card-bg);
+    color: var(--muted-text);
+    font-size: 14px;
+}
+
+.ood-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 12px 0;
+}
+
+.ood-actions .soft-btn {
+    flex: 1 1 200px;
+    min-width: 140px;
+    height: 42px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--card-bg);
+    color: var(--app-text);
+    font-weight: 600;
+}
+
+.ood-actions .soft-btn.cancel {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+}
+
+.ood-progress {
+    height: 8px;
+    background: rgba(99, 102, 241, 0.15);
+    border-radius: 999px;
+    overflow: hidden;
+    margin-bottom: 6px;
+}
+
+.ood-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #6366f1, #6c5ce7);
+    width: 0%;
+    transition: width 0.2s ease;
+}
+
+.ood-progress-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.ood-progress-text {
+    font-size: 14px;
+    color: var(--muted-text);
+}
+
+
+.ood-device-list {
+    margin-top: 12px;
+}
+
+.ood-device-scroll {
+    max-height: 260px;
+    overflow-y: auto;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    list-style: none;
+}
+
+.ood-device-scroll::-webkit-scrollbar {
+    width: 6px;
+}
+
+.ood-device-scroll::-webkit-scrollbar-thumb {
+    background: rgba(99, 102, 241, 0.35);
+    border-radius: 999px;
+}
+
+.ood-device-header {
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.ood-device-empty {
+    color: var(--muted-text);
+    font-size: 0.9rem;
+}
+
+.ood-device-list ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.ood-device-list li {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ood-device-list li:hover {
+    border-color: rgba(99, 102, 241, 0.5);
+    box-shadow: 0 3px 10px rgba(99, 102, 241, 0.15);
+}
+
+.ood-device-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.ood-device-title-row span:first-child {
+    font-weight: 600;
+}
+
+.ood-device-tag {
+    font-size: 12px;
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: rgba(99, 102, 241, 0.16);
+    color: #4c50f5;
+    text-transform: uppercase;
+}
+
+.ood-device-list li small {
+    color: var(--muted-text);
+}
+
 .home-placeholder {
     margin-top: 48px;
     text-align: center;

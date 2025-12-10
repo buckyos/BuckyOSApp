@@ -36,9 +36,6 @@ const Home: React.FC = () => {
     const SN_BIND_TAG = "[SN-BIND]";
     const formVisible = !snChecking && !snQueryFailed && !snRegistered;
     const [initializing, setInitializing] = React.useState<boolean>(true);
-    // OOD activation scanning state
-    const [scanningOod, setScanningOod] = React.useState(false);
-    const [scanHint, setScanHint] = React.useState("");
     const lastUserCheckedRef = React.useRef<string>("");
     const lastInviteCheckedRef = React.useRef<string>("");
 
@@ -175,17 +172,6 @@ const Home: React.FC = () => {
 
     const showOodBind = !initializing && !snChecking && !snQueryFailed && snRegistered;
     const showBindForm = !initializing && !snChecking && !snQueryFailed && !snRegistered;
-
-    const handleOodScan = React.useCallback(async () => {
-        setScanHint("");
-        setScanningOod(true);
-        try {
-            await new Promise((r) => setTimeout(r, 1600));
-            setScanHint(t("ood.scan_not_found"));
-        } finally {
-            setScanningOod(false);
-        }
-    }, [t]);
 
     const doBind = React.useCallback(async () => {
         if (!activeDid) return;
@@ -330,14 +316,7 @@ const Home: React.FC = () => {
                             <div className="sn-loading-text">{t("sn.fetching")}</div>
                         </div>
                     )}
-                    {showOodBind && (
-                        <BindOod
-                            scanning={scanningOod}
-                            scanHint={scanHint}
-                            onScan={handleOodScan}
-                            t={t}
-                        />
-                    )}
+                    {showOodBind && <BindOod />}
                     {showBindForm && (
                         <div className="sn-status" style={{ marginBottom: 8 }}>{t("sn.status_unregistered")}</div>
                     )}

@@ -6,17 +6,12 @@ import "./Setting.css";
 import { useI18n } from "../../i18n";
 import { useDidContext } from "../../features/did/DidContext";
 import { deleteDid, revealMnemonic, listDids } from "../../features/did/api";
-import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
+import { openWebView } from "../../utils/webview";
 import { getTheme, toggleTheme } from "../../theme";
 import { parseCommandError } from "../../utils/commandError";
 import { CommandErrorCodes } from "../../constants/commandErrorCodes";
 
 const defaultOpenUrl = "http://localhost:1420/test_api.html";
-
-const buildAppUrl = (hashPath: string) => {
-    const base = import.meta.env.DEV ? "http://localhost:1420" : "tauri://localhost";
-    return `${base}/index.html#${hashPath}`;
-};
 
 const Setting: React.FC = () => {
     const navigate = useNavigate();
@@ -138,12 +133,7 @@ const Setting: React.FC = () => {
         try {
             setOpenUrlError("");
             setOpenUrlLoading(true);
-            const label = `webview_${crypto.randomUUID()}`;
-            const containerUrl = buildAppUrl(
-                `/web-container?label=${encodeURIComponent(label)}&src=${encodeURIComponent(url)}`
-            );
-            console.debug("[Setting] open url window", { label, containerUrl });
-            new WebviewWindow(label, { url: containerUrl });
+            await openWebView(url);
             setOpenUrlLoading(false);
             setOpenUrlOpen(false);
             setOpenUrlValue(defaultOpenUrl);
