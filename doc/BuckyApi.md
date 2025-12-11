@@ -4,7 +4,7 @@
 
 ## 集成步骤
 
-1. 在页面中引入脚本（需能访问本应用的静态资源，例如 `http://localhost:1420`）：
+1. 在页面中引入脚本：
    ```html
    <script src="/bucky-api.js"></script>
    ```
@@ -45,6 +45,7 @@
 | `6` | InvalidPassword，密码验证失败 |
 | `7` | Cancelled，用户在交互过程中取消操作 |
 | `8` | Busy，已有签名流程正在进行，请稍候重试 |
+| `9` | NotInRuntime，当前页面不在 BuckyOS Runtime 环境 |
 
 第三方页面只需根据 `code` 做分支，`message` 中提供了可展示的文案。
 
@@ -72,6 +73,12 @@
   - `8` (Busy)：当前已有签名请求在进行中，请稍后再发起新的请求。
 
 > **提示**：`signWithActiveDid` 为交互式请求，可能等待用户输入较长时间。第三方页面需避免连续发送多次请求。
+
+### `BuckyApi.isBuckyOSRuntime(): boolean`
+
+- **说明**：同步返回当前页面是否运行在 BuckyOS Runtime 的 WebView 中。第三方在调用其他接口前，可以先检测这个值；如果为 `false`，即使调用其他接口也会立即得到 `code = 9 (NotInRuntime)` 的错误。
+- **参数**：无。
+- **返回**：`true` 表示当前环境为 BuckyOS Runtime；`false` 表示只是普通浏览器环境，应避免调用 BuckyApi 的其它能力。
 
 ## 与宿主程序的交互
 

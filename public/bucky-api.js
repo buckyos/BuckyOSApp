@@ -29,6 +29,9 @@
     }
 
     function callNative(action, payload) {
+        if (!runtimeDetected) {
+            return Promise.resolve({ code: 9, message: "BuckyApi is only available inside BuckyOS runtime" });
+        }
         return new Promise((resolve, reject) => {
             const id = buildId();
             const timeout = NO_TIMEOUT_ACTIONS.has(action) ? null : DEFAULT_TIMEOUT;
