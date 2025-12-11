@@ -190,21 +190,10 @@
     margin: 12px 0;
 }
 
-.ood-actions .soft-btn {
+.ood-action-btn {
     flex: 1 1 200px;
     min-width: 140px;
-    height: 42px;
-    border-radius: 20px;
-    border: 1px solid var(--border);
-    background: var(--card-bg);
-    color: var(--app-text);
-    font-weight: 600;
-}
-
-.ood-actions .soft-btn.cancel {
-    background: rgba(239, 68, 68, 0.1);
-    border-color: rgba(239, 68, 68, 0.3);
-    color: #ef4444;
+    width: 100%;
 }
 
 .ood-progress {
@@ -313,6 +302,7 @@
     background: rgba(99, 102, 241, 0.16);
     color: #4c50f5;
     text-transform: uppercase;
+    align-self: flex-start;
 }
 
 .ood-device-list li small {
