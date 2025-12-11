@@ -3,15 +3,6 @@
         return;
     }
 
-    let runtimeDetected = false;
-    const RUNTIME_HANDSHAKE_KIND = "bucky-runtime-handshake";
-    const RUNTIME_HANDSHAKE_RESULT = "bucky-runtime-handshake-result";
-    function updateRuntimeFlag(value) {
-        runtimeDetected = !!value;
-        window.__BuckyOSRuntime = runtimeDetected;
-    }
-    updateRuntimeFlag(false);
-
     const pending = new Map();
     let counter = 0;
     const DEFAULT_TIMEOUT = 10_000;
@@ -29,9 +20,6 @@
     }
 
     function callNative(action, payload) {
-        if (!runtimeDetected) {
-            return Promise.resolve({ code: 9, message: "BuckyApi is only available inside BuckyOS runtime" });
-        }
         return new Promise((resolve, reject) => {
             const id = buildId();
             const timeout = NO_TIMEOUT_ACTIONS.has(action) ? null : DEFAULT_TIMEOUT;
@@ -49,10 +37,6 @@
     window.addEventListener("message", (event) => {
         const data = event.data;
         if (!data) return;
-        if (data.kind === RUNTIME_HANDSHAKE_RESULT) {
-            updateRuntimeFlag(!!data.runtime);
-            return;
-        }
         if (data.kind !== "bucky-api-result") return;
         const entry = pending.get(data.id);
         if (!entry) return;
@@ -60,21 +44,12 @@
         entry.resolve(data.payload);
     });
 
-    try {
-        window.parent?.postMessage({ kind: RUNTIME_HANDSHAKE_KIND }, "*");
-    } catch (_) {
-        // ignore
-    }
-
     window.BuckyApi = {
         getPublicKey() {
             return callNative("getPublicKey", {});
         },
         signWithActiveDid(message) {
             return callNative("signWithActiveDid", { message });
-        },
-        isBuckyOSRuntime() {
-            return runtimeDetected;
         },
     };
 })();

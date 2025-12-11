@@ -4,6 +4,14 @@ fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
 }
 
+const BUCKY_API_INIT: &str = include_str!("../../public/bucky-api.js");
+
+fn bucky_runtime_plugin<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
+    tauri::plugin::Builder::new("bucky-runtime")
+        .js_init_script_on_all_frames(BUCKY_API_INIT)
+        .build()
+}
+
 mod applist;
 mod did;
 mod error;
@@ -12,6 +20,7 @@ mod network;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(bucky_runtime_plugin())
         .plugin(tauri_plugin_store::Builder::default().build())
         .invoke_handler(tauri::generate_handler![
             greet,

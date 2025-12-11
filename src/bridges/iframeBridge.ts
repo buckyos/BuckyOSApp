@@ -23,10 +23,6 @@ export function useIframeBridge({ iframeRef, handlers, kind = "bucky-api" }: Use
             if (!iframeWindow || event.source !== iframeWindow) return;
             const data = event.data;
             if (!data || typeof data !== "object") return;
-            if (data.kind === "bucky-runtime-handshake") {
-                iframeWindow.postMessage({ kind: "bucky-runtime-handshake-result", runtime: true }, "*");
-                return;
-            }
             if (data.kind !== kind) return;
             const { action, id, payload } = data as { action?: string; id?: string; payload?: any };
             if (typeof action !== "string" || typeof id !== "string") return;
