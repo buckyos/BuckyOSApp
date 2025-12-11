@@ -16,6 +16,7 @@
     "core:default",
     "core:webview:allow-create-webview",
     "core:webview:allow-create-webview-window",
+    "core:window:allow-set-focus",
     "opener:default",
     "store:default"
   ]

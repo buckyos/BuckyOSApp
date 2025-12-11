@@ -261,12 +261,24 @@ const BindOod: React.FC = () => {
             </div>
 
             <div className="ood-actions">
-                <GradientButton onClick={scanning ? handleCancelScan : handleScanNetwork}>
+                <GradientButton
+                    className="ood-action-btn"
+                    fullWidth={false}
+                    style={{ height: 42 }}
+                    onClick={scanning ? handleCancelScan : handleScanNetwork}
+                >
                     {scanning ? t("ood.cancel_scan_button") : t("ood.scan_local_button")}
                 </GradientButton>
-                <button className="soft-btn outline" disabled title={t("ood.manual_url_hint")}>
+                <GradientButton
+                    className="ood-action-btn"
+                    fullWidth={false}
+                    variant="secondary"
+                    style={{ height: 42 }}
+                    disabled
+                    title={t("ood.manual_url_hint")}
+                >
                     {t("ood.manual_url_button")}
-                </button>
+                </GradientButton>
             </div>
 
             {(scanning || progress > 0 || !!status) && (
@@ -296,6 +308,7 @@ const BindOod: React.FC = () => {
                         {devices.map((device) => {
                             const title = `${device.hostname || device.ip}${device.isSelf ? t("ood.self_suffix") : ""}`;
                             const typeLabel = device.device_type || "unknown";
+                            const label = `active-${device.hostname || typeLabel}-${device.ip}`;
                             return (
                                 <li
                                     key={`${device.ip}-${device.hostname || typeLabel}`}
@@ -305,11 +318,11 @@ const BindOod: React.FC = () => {
                                         let target = activeUrl.trim();
                                         if (!target) return;
                                         if (/^https?:\/\//i.test(target)) {
-                                            openWebView(target);
+                                            openWebView(target, title, label);
                                         } else {
                                             const base = `http://${device.display_ip || device.ip}:3182`;
                                             const path = target.startsWith("/") ? target : `/${target}`;
-                                            openWebView(`${base}${path}`);
+                                            openWebView(`${base}${path}`, title, label);
                                         }
                                     }}
                                 >

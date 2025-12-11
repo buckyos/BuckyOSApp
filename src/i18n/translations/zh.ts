@@ -253,7 +253,7 @@ export default {
         scanning: "正在扫描附近的设备...",
         scan_not_found: "暂未发现可用设备。",
         scan_local_button: "扫描本地网络内的设备",
-        manual_url_button: "输入激活 URL",
+        manual_url_button: "激活远程设备",
         manual_url_hint: "即将支持",
         scanning_progress: "正在扫描：{{current}} / {{total}}",
         scanning_percent: "{{percent}}%",

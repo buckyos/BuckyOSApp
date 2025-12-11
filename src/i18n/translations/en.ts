@@ -255,7 +255,7 @@ export default {
         scanning: "Scanning for nearby devices...",
         scan_not_found: "No available devices found yet.",
         scan_local_button: "Scan devices on local network",
-        manual_url_button: "Enter activation URL",
+        manual_url_button: "Activate remote device",
         manual_url_hint: "Coming soon",
         scanning_progress: "Scanning: {{current}} / {{total}}",
         scanning_percent: "{{percent}}%",
