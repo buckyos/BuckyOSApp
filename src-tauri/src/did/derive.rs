@@ -26,7 +26,6 @@ impl SeedCtx {
     pub fn secp(&self) -> &Secp256k1<bitcoin::secp256k1::All> {
         &self.secp
     }
-
 }
 
 pub fn derive_btc_address(

@@ -3,6 +3,7 @@ import { useI18n } from "../../../i18n";
 import { getLocalIPv4List } from "../../../utils/network";
 import GradientButton from "../../../components/ui/GradientButton";
 import { openWebView } from "../../../utils/webview";
+import { info } from '@tauri-apps/plugin-log';
 
 interface DeviceInfo {
     hostname?: string;
@@ -19,13 +20,6 @@ interface DeviceRecord extends DeviceInfo {
 const REQUEST_TIMEOUT = 2500;
 const CONCURRENT_REQUESTS = 20;
 
-const DEMO_EXTRA_DEVICES: DeviceRecord[] = [
-    { hostname: "Office-EdgeDevice", device_type: "ood", display_ip: "192.168.100.80", ip: "demo-extra-1" },
-    { hostname: "IoT-Gateway-01", device_type: "iot", display_ip: "192.168.100.120", ip: "demo-extra-2" },
-    { hostname: "Home-Server", device_type: "ood", display_ip: "10.0.0.25", ip: "demo-extra-3" },
-    { hostname: "Lab-MiniPC", device_type: "mini-pc", display_ip: "192.168.1.55", ip: "demo-extra-4" },
-];
-
 const BindOod: React.FC = () => {
     const { t } = useI18n();
     const [devices, setDevices] = React.useState<DeviceRecord[]>([]);
@@ -34,7 +28,6 @@ const BindOod: React.FC = () => {
     const [status, setStatus] = React.useState("");
     const [selfScanDone, setSelfScanDone] = React.useState(false);
     const abortRef = React.useRef<boolean>(false);
-    const demoFilledRef = React.useRef<boolean>(false);
     const selfIpSetRef = React.useRef<Set<string>>(new Set());
 
     const addDevice = React.useCallback((info: DeviceRecord) => {
@@ -45,20 +38,6 @@ const BindOod: React.FC = () => {
                     (item.hostname && item.device_type && item.hostname === info.hostname && item.device_type === info.device_type)
             );
             if (exists) return prev;
-            if (!demoFilledRef.current && prev.length === 0) {
-                demoFilledRef.current = true;
-                const clones = Array.from({ length: 5 }, (_, idx) => ({
-                    ...info,
-                    ip: `${info.ip}-demo-${idx + 1}`,
-                    display_ip: info.ip,
-                }));
-                const extras = DEMO_EXTRA_DEVICES.map((dev, idx) => ({
-                    ...dev,
-                    ip: `${dev.ip}-${idx}`,
-                    display_ip: dev.display_ip || dev.ip,
-                }));
-                return [...prev, info, ...clones, ...extras];
-            }
             return [...prev, info];
         });
     }, []);
@@ -86,6 +65,7 @@ const BindOod: React.FC = () => {
                 if (abortRef.current) return;
                 const device = await fetchDeviceInfo(ip);
                 if (device) {
+                    info(`scan: ${ip} -> ${JSON.stringify(device)}`);
                     addDevice({ ...device, isSelf: selfIpSetRef.current.has(device.ip) });
                 }
             }
@@ -93,34 +73,22 @@ const BindOod: React.FC = () => {
         [addDevice, fetchDeviceInfo]
     );
 
+    const normalizeCandidateIps = React.useCallback((ips: string[]) => {
+        const sanitized = ips.filter((ip) => /^\d+\.\d+\.\d+\.\d+$/.test(ip) && !ip.startsWith("127."));
+        const hasNon172 = sanitized.some((ip) => !ip.startsWith("172."));
+        return hasNon172 ? sanitized.filter((ip) => !ip.startsWith("172.")) : sanitized;
+    }, []);
+
     React.useEffect(() => {
         let alive = true;
         (async () => {
             try {
-                const fallbackHost = window.location.hostname && /^\d+\.\d+\.\d+\.\d+$/.test(window.location.hostname)
-                    ? [window.location.hostname]
-                    : [];
                 const locals = await getLocalIPv4List().catch(() => []);
-                const unique = Array.from(
-                    new Set([
-                        ...locals,
-                        ...fallbackHost,
-                        ...(window.location.hostname === "localhost" ? ["127.0.0.1"] : []),
-                    ]),
-                );
-                selfIpSetRef.current = new Set(unique);
-                await scanSpecificIps(unique);
-                if (!demoFilledRef.current && unique.length === 0) {
-                    demoFilledRef.current = true;
-                    setDevices((prev) => [
-                        ...prev,
-                        ...DEMO_EXTRA_DEVICES.map((dev, idx) => ({
-                            ...dev,
-                            ip: `${dev.ip}-initial-${idx}`,
-                            display_ip: dev.display_ip || dev.ip,
-                        })),
-                    ]);
-                }
+                info(`[BindOod] local ips: ${locals.join(", ")}`);
+                const normalized = normalizeCandidateIps(locals);
+                info(`[BindOod] normalized ips: ${normalized.join(", ")}`);
+                selfIpSetRef.current = new Set(normalized);
+                await scanSpecificIps(normalized);
             } finally {
                 if (alive) setSelfScanDone(true);
             }
@@ -128,7 +96,7 @@ const BindOod: React.FC = () => {
         return () => {
             alive = false;
         };
-    }, [scanSpecificIps]);
+    }, [scanSpecificIps, normalizeCandidateIps]);
 
     const deriveBaseRanges = React.useCallback((ips: string[]) => {
         const bases = new Set<string>();
@@ -169,6 +137,7 @@ const BindOod: React.FC = () => {
                     fetchDeviceInfo(ip)
                         .then((device) => {
                             if (device) {
+                                info(`scan: ${ip} -> ${JSON.stringify(device)}`);
                                 addDevice({ ...device, isSelf: selfIpSetRef.current.has(device.ip) });
                                 found = true;
                             }
@@ -200,20 +169,15 @@ const BindOod: React.FC = () => {
         setStatus(t("ood.scan_status_preparing"));
         setScanning(true);
         try {
-            const fallbackHost = window.location.hostname && /^\d+\.\d+\.\d+\.\d+$/.test(window.location.hostname)
-                ? [window.location.hostname]
-                : window.location.hostname === "localhost"
-                    ? ["127.0.0.1"]
-                    : [];
             const locals = await getLocalIPv4List().catch(() => []);
-            const pool = [...locals, ...fallbackHost];
+            info(`[BindOod] local ips: ${locals.join(", ")}`);
+            const pool = normalizeCandidateIps(locals);
+            info(`[BindOod] normalized ips: ${pool.join(", ")}`);
             if (!pool.length) {
                 setStatus(t("ood.scan_error_no_ip"));
                 return;
             }
-            const non172 = pool.filter((ip) => !ip.startsWith("172."));
-            const candidatePool = non172.length ? non172 : pool;
-            const bases = deriveBaseRanges(candidatePool);
+            const bases = deriveBaseRanges(pool);
             if (!bases.length) {
                 setStatus(t("ood.scan_error_no_ip"));
                 return;
@@ -238,7 +202,7 @@ const BindOod: React.FC = () => {
         } finally {
             setScanning(false);
         }
-    }, [scanning, t, deriveBaseRanges, scanTargetsConcurrently]);
+    }, [scanning, t, deriveBaseRanges, scanTargetsConcurrently, normalizeCandidateIps]);
 
     const handleCancelScan = React.useCallback(() => {
         if (!scanning) return;
