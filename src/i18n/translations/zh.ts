@@ -199,7 +199,7 @@ export default {
     },
     sn: {
         bind_title: "绑定 SN",
-        bind_subtitle: "",
+        bind_subtitle: "绑定超级节点，获取专属易记域名，让外界随时访问您的 BuckyOS 服务。",
         header: "SN",
         header_desc: "查询和注册 SN",
         fetching: "正在获取 SN 绑定状态...",

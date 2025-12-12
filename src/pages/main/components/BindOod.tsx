@@ -3,7 +3,6 @@ import { useI18n } from "../../../i18n";
 import { getLocalIPv4List } from "../../../utils/network";
 import GradientButton from "../../../components/ui/GradientButton";
 import { openWebView } from "../../../utils/webview";
-import { info } from '@tauri-apps/plugin-log';
 
 interface DeviceInfo {
     hostname?: string;
@@ -65,7 +64,7 @@ const BindOod: React.FC = () => {
                 if (abortRef.current) return;
                 const device = await fetchDeviceInfo(ip);
                 if (device) {
-                    info(`scan: ${ip} -> ${JSON.stringify(device)}`);
+                    console.info("[BindOod] scan result", { ip, device });
                     addDevice({ ...device, isSelf: selfIpSetRef.current.has(device.ip) });
                 }
             }
@@ -84,9 +83,9 @@ const BindOod: React.FC = () => {
         (async () => {
             try {
                 const locals = await getLocalIPv4List().catch(() => []);
-                info(`[BindOod] local ips: ${locals.join(", ")}`);
+                console.info("[BindOod] local ips", locals);
                 const normalized = normalizeCandidateIps(locals);
-                info(`[BindOod] normalized ips: ${normalized.join(", ")}`);
+                console.info("[BindOod] normalized ips", normalized);
                 selfIpSetRef.current = new Set(normalized);
                 await scanSpecificIps(normalized);
             } finally {
@@ -137,7 +136,7 @@ const BindOod: React.FC = () => {
                     fetchDeviceInfo(ip)
                         .then((device) => {
                             if (device) {
-                                info(`scan: ${ip} -> ${JSON.stringify(device)}`);
+                                console.info("[BindOod] scan result", { ip, device });
                                 addDevice({ ...device, isSelf: selfIpSetRef.current.has(device.ip) });
                                 found = true;
                             }
@@ -170,9 +169,9 @@ const BindOod: React.FC = () => {
         setScanning(true);
         try {
             const locals = await getLocalIPv4List().catch(() => []);
-            info(`[BindOod] local ips: ${locals.join(", ")}`);
+            console.info("[BindOod] scan locals", locals);
             const pool = normalizeCandidateIps(locals);
-            info(`[BindOod] normalized ips: ${pool.join(", ")}`);
+            console.info("[BindOod] scan pool", pool);
             if (!pool.length) {
                 setStatus(t("ood.scan_error_no_ip"));
                 return;
@@ -219,7 +218,14 @@ const BindOod: React.FC = () => {
     }, []);
 
     return (
-        <>
+        <section className="did-section" style={{ marginBottom: 12 }}>
+            <header className="home-header">
+                <div>
+                    <h1>{t("ood.activate_title")}</h1>
+                    <p>{t("ood.activate_subtitle")}</p>
+                </div>
+            </header>
+
             <div className="ood-info-card">
                 <p>{t("ood.activate_desc_inline")}</p>
             </div>
@@ -301,7 +307,7 @@ const BindOod: React.FC = () => {
                     </ul>
                 )}
             </div>
-        </>
+        </section>
     );
 };
 

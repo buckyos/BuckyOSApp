@@ -201,7 +201,7 @@ export default {
     },
     sn: {
         bind_title: "Bind SN",
-        bind_subtitle: "",
+        bind_subtitle: "Bind a Super Node to reserve a dedicated, memorable domain for your BuckyOS services.",
         header: "SN",
         header_desc: "Check and register SN",
         fetching: "Fetching SN binding status...",
