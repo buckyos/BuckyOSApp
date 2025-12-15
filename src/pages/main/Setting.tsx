@@ -10,6 +10,7 @@ import { openWebView } from "../../utils/webview";
 import { getTheme, toggleTheme } from "../../theme";
 import { parseCommandError } from "../../utils/commandError";
 import { CommandErrorCodes } from "../../constants/commandErrorCodes";
+import { SunMoon, Globe, Users, ShieldCheck, Trash2, ExternalLink, Monitor } from "lucide-react";
 
 const defaultOpenUrl = "http://localhost:1420/test_api.html";
 
@@ -149,16 +150,22 @@ const Setting: React.FC = () => {
             <div>
                 <div className="settings-list">
                     <button className="settings-item" onClick={() => setTheme(toggleTheme())}>
-                        <span className="label">{t("settings.theme")}</span>
+                        <span className="settings-left">
+                            <SunMoon className="settings-icon" aria-hidden="true" strokeWidth={1.8} />
+                            <span className="label">{t("settings.theme")}</span>
+                        </span>
                         <span className="right">
-                            <span>{theme === 'dark' ? t("settings.theme_dark") : t("settings.theme_light")}</span>
+                            <span>{theme === "dark" ? t("settings.theme_dark") : t("settings.theme_light")}</span>
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                 <polyline points="9 18 15 12 9 6" />
                             </svg>
                         </span>
                     </button>
                     <button className="settings-item" onClick={() => navigate("/main/setting/language")}>
-                        <span className="label">{t("settings.language")}</span>
+                        <span className="settings-left">
+                            <Globe className="settings-icon" aria-hidden="true" strokeWidth={1.8} />
+                            <span className="label">{t("settings.language")}</span>
+                        </span>
                         <span className="right">
                             <span>{locale === "zh" ? t("common.language.zh") : t("common.language.en")}</span>
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -168,14 +175,20 @@ const Setting: React.FC = () => {
                     </button>
 
                     <button className="settings-item" onClick={() => navigate("/main/setting/identities")}>
-                        <span className="label">{t("settings.switch_identity")}</span>
+                        <span className="settings-left">
+                            <Users className="settings-icon" aria-hidden="true" strokeWidth={1.8} />
+                            <span className="label">{t("settings.switch_identity")}</span>
+                        </span>
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="9 18 15 12 9 6" />
                         </svg>
                     </button>
 
                     <button className="settings-item" onClick={openBackupDialog}>
-                        <span className="label">{t("settings.backup_identity")}</span>
+                        <span className="settings-left">
+                            <ShieldCheck className="settings-icon" aria-hidden="true" strokeWidth={1.8} />
+                            <span className="label">{t("settings.backup_identity")}</span>
+                        </span>
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="9 18 15 12 9 6" />
                         </svg>
@@ -186,21 +199,30 @@ const Setting: React.FC = () => {
                         setDeleteError("");
                         setDeleteConfirmOpen(true);
                     }}>
-                        <span className="label">{t("settings.delete_account")}</span>
+                        <span className="settings-left">
+                            <Trash2 className="settings-icon" aria-hidden="true" strokeWidth={1.8} />
+                            <span className="label">{t("settings.delete_account")}</span>
+                        </span>
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="9 18 15 12 9 6" />
                         </svg>
                     </button>
 
                     <button className="settings-item" onClick={() => { setOpenUrlValue(defaultOpenUrl); setOpenUrlError(""); setOpenUrlOpen(true); }}>
-                        <span className="label">{t("settings.openurl")}</span>
+                        <span className="settings-left">
+                            <ExternalLink className="settings-icon" aria-hidden="true" strokeWidth={1.8} />
+                            <span className="label">{t("settings.openurl")}</span>
+                        </span>
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="9 18 15 12 9 6" />
                         </svg>
                     </button>
 
                     <button className="settings-item" onClick={() => navigate("/main/setting/embedded-webview")}>
-                        <span className="label">{t("settings.embedded_webview")}</span>
+                        <span className="settings-left">
+                            <Monitor className="settings-icon" aria-hidden="true" strokeWidth={1.8} />
+                            <span className="label">{t("settings.embedded_webview")}</span>
+                        </span>
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="9 18 15 12 9 6" />
                         </svg>

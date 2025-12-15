@@ -23,6 +23,12 @@
     border-bottom: 1px solid var(--border) !important;
 }
 
+.settings-item .settings-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
 .settings-item .label {
     font-size: 16px;
 }
@@ -38,6 +44,16 @@
     color: var(--muted-text);
 }
 
+.settings-icon {
+    width: 22px;
+    height: 22px;
+    color: var(--muted-text);
+}
+
 .settings-item.danger {
     color: #ef4444 !important;
+}
+
+.settings-item.danger .settings-icon {
+    color: #ef4444;
 }
