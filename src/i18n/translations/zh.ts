@@ -290,5 +290,11 @@ export default {
         pending_list_empty: "尚未发现任何设备。",
         pending_list_scanning: "正在尝试检测本机上的设备...",
         self_suffix: "（本机）",
+        os_label: "系统",
+        cpu_label: "CPU",
+        gpu_label: "GPU",
+        memory_label: "内存",
+        storage_label: "存储",
+        unknown_value: "未知",
     },
 };

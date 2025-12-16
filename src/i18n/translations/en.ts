@@ -292,5 +292,11 @@ export default {
         pending_list_empty: "No devices detected yet.",
         pending_list_scanning: "Attempting to detect devices...",
         self_suffix: " (This device)",
+        os_label: "OS",
+        cpu_label: "CPU",
+        gpu_label: "GPU",
+        memory_label: "Memory",
+        storage_label: "Storage",
+        unknown_value: "Unknown",
     },
 };
