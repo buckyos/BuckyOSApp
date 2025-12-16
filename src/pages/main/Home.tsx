@@ -17,8 +17,14 @@ const Home: React.FC = () => {
 
     return (
         <div className="home-wrapper">
-            <BindSn activeDid={activeDid} onStatusChange={setSnStatus} />
-            {showBindOod && <BindOod />}
+            <div className="home-body">
+                <BindSn activeDid={activeDid} onStatusChange={setSnStatus} />
+                {showBindOod && (
+                    <div className="bind-ood-wrapper">
+                        <BindOod />
+                    </div>
+                )}
+            </div>
         </div>
     );
 };
