@@ -279,6 +279,7 @@ export default {
         hint: "Make sure the target device is powered on and on the same local network, then start a scan below.",
         running_title: "Searching for nearby devices",
         running_desc: "Please make sure this device and the target are on the same local network.",
+        running_short: "Scanning",
         result_desc: "Tap a device below to continue.",
         status_preparing: "Preparing scan...",
         status_done: "Scan completed.",

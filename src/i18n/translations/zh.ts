@@ -277,6 +277,7 @@ export default {
         hint: "请确保目标设备已开启并与当前设备处于同一局域网，然后点击下方按钮开始扫描。",
         running_title: "正在寻找附近的设备",
         running_desc: "请确保当前设备与目标设备处于同一局域网。",
+        running_short: "正在扫描",
         result_desc: "选择下方的设备以继续。",
         status_preparing: "正在准备扫描...",
         status_done: "扫描完成。",

@@ -31,11 +31,17 @@ const ScanDevice: React.FC = () => {
     const [progress, setProgress] = React.useState(0);
     const [status, setStatus] = React.useState(() => t("device_scan.status_preparing"));
     const [selfScanDone, setSelfScanDone] = React.useState(false);
-    const [listOverflow, setListOverflow] = React.useState(false);
     const abortRef = React.useRef<boolean>(false);
+    const activeControllersRef = React.useRef<Set<AbortController>>(new Set());
     const selfIpSetRef = React.useRef<Set<string>>(new Set());
     const listRef = React.useRef<HTMLUListElement | null>(null);
     const scanInFlightRef = React.useRef(false);
+    const pendingStartRef = React.useRef(false);
+
+    const abortAllRequests = React.useCallback(() => {
+        activeControllersRef.current.forEach((controller) => controller.abort());
+        activeControllersRef.current.clear();
+    }, []);
 
     const addDevice = React.useCallback((info: DeviceRecord) => {
         setDevices((prev) => {
@@ -52,6 +58,7 @@ const ScanDevice: React.FC = () => {
     const fetchDeviceInfo = React.useCallback(async (ip: string): Promise<DeviceRecord | null> => {
         if (!ip) return null;
         const controller = new AbortController();
+        activeControllersRef.current.add(controller);
         const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
         try {
             const resp = await fetch(`http://${ip}:3182/device`, { signal: controller.signal });
@@ -63,6 +70,7 @@ const ScanDevice: React.FC = () => {
             return null;
         } finally {
             window.clearTimeout(timeout);
+            activeControllersRef.current.delete(controller);
         }
     }, []);
 
@@ -168,7 +176,7 @@ const ScanDevice: React.FC = () => {
         [addDevice, fetchDeviceInfo]
     );
 
-    const runScan = React.useCallback(async () => {
+    const runScan = React.useCallback(async function runScanImpl() {
         if (scanInFlightRef.current) return;
         scanInFlightRef.current = true;
         abortRef.current = false;
@@ -210,20 +218,30 @@ const ScanDevice: React.FC = () => {
         } finally {
             setScanning(false);
             scanInFlightRef.current = false;
+            if (pendingStartRef.current) {
+                pendingStartRef.current = false;
+                runScanImpl();
+            }
         }
     }, [t, normalizeCandidateIps, deriveBaseRanges, scanTargetsConcurrently]);
 
     const startScan = React.useCallback(() => {
+        if (scanInFlightRef.current) {
+            pendingStartRef.current = true;
+            return;
+        }
+        pendingStartRef.current = false;
         void runScan();
     }, [runScan]);
 
     const handleCancelScan = React.useCallback(() => {
         if (!scanning) return;
         abortRef.current = true;
+        abortAllRequests();
         setStatus(t("device_scan.status_cancelled"));
         setProgress(0);
         setScanning(false);
-    }, [scanning, t]);
+    }, [abortAllRequests, scanning, t]);
 
     React.useEffect(() => {
         const kickoff = window.setTimeout(() => {
@@ -232,33 +250,16 @@ const ScanDevice: React.FC = () => {
         return () => {
             window.clearTimeout(kickoff);
             abortRef.current = true;
+            abortAllRequests();
         };
-    }, [startScan]);
+    }, [abortAllRequests, startScan]);
 
     React.useEffect(() => {
         return () => {
             abortRef.current = true;
+            abortAllRequests();
         };
-    }, []);
-
-    React.useEffect(() => {
-        const node = listRef.current;
-        if (!node) {
-            setListOverflow(false);
-            return;
-        }
-        const updateOverflow = () => {
-            setListOverflow(node.scrollHeight - node.clientHeight > 1);
-        };
-        updateOverflow();
-        const observer = new ResizeObserver(updateOverflow);
-        observer.observe(node);
-        node.addEventListener("scroll", updateOverflow, { passive: true });
-        return () => {
-            observer.disconnect();
-            node.removeEventListener("scroll", updateOverflow);
-        };
-    }, [devices.length]);
+    }, [abortAllRequests]);
 
     const percent = Math.min(100, Math.round(progress * 100));
     const statusTitle = scanning ? t("device_scan.running_title") : status || t("device_scan.status_preparing");
@@ -283,12 +284,19 @@ const ScanDevice: React.FC = () => {
                             <div className="bind-ood-progress-title">{statusTitle}</div>
                             <div className="bind-ood-progress-desc">{statusDesc}</div>
                         </div>
-                        <div className="bind-ood-progress-percent">{scanning || percent ? `${percent}%` : ""}</div>
+                        <div className="bind-ood-progress-percent">
+                            {scanning && (
+                                <span className="scan-progress-circle" aria-hidden="true">
+                                    <span />
+                                </span>
+                            )}
+                            <span>{scanning || percent ? `${percent}%` : ""}</span>
+                        </div>
                     </div>
                 </div>
 
                 <div className="ood-device-list">
-                    <div className={`device-scroll-wrapper ${devices.length ? "" : "is-empty"} ${listOverflow ? "show-fade" : ""}`}>
+                    <div className="device-scroll-wrapper">
                         {!devices.length ? (
                             <div className="ood-device-empty">
                                 {selfScanDone ? t("device_scan.pending_list_empty") : t("device_scan.pending_list_scanning")}
