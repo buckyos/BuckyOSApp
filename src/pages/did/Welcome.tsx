@@ -3,6 +3,7 @@ import { Sun, Moon, Globe } from "lucide-react";
 import { useI18n } from "../../i18n";
 import GradientButton from "../../components/ui/GradientButton";
 import { getTheme, toggleTheme, initTheme } from "../../theme";
+import appIcon from "../../assets/app-icon.png";
 
 interface WelcomeProps {
     onStart: () => void;
@@ -88,17 +89,18 @@ const Welcome: React.FC<WelcomeProps> = ({ onStart, onImport, onShowDidInfo }) =
                 padding: 24,
             }}>
                 <div style={{
-                    width: 92,
-                    height: 92,
-                    borderRadius: 26,
-                    background: "linear-gradient(180deg, #6b6ff3 0%, #7871f3 100%)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "#fff",
-                    fontSize: 36,
-                    boxShadow: "0 20px 40px rgba(104,108,243,0.25), 0 10px 25px rgba(0,0,0,0.06)",
-                }}>B</div>
+                    width: 128,
+                    height: 128,
+                    borderRadius: 36,
+                    boxShadow: "0 24px 48px rgba(104,108,243,0.25), 0 14px 28px rgba(0,0,0,0.08)",
+                    overflow: "hidden",
+                }}>
+                    <img
+                        src={appIcon}
+                        alt="BuckyOS icon"
+                        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                    />
+                </div>
                 <div className="page-header" style={{ margin: 0 }}>
                     <div className="page-title">{t("welcome.app_name")}</div>
                     <div className="page-subtitle">{t("welcome.subtitle")}</div>
