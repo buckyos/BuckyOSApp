@@ -51,7 +51,7 @@ type SignState = {
     value: string;
     error: string;
     loading: boolean;
-    messageToSign: string;
+    messagesToSign: string[];
 };
 
 export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HTMLIFrameElement | null> }) {
@@ -63,7 +63,7 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
         value: "",
         error: "",
         loading: false,
-        messageToSign: "",
+        messagesToSign: [],
     });
     const [signInProgress, setSignInProgress] = React.useState(false);
     const resolverRef = React.useRef<((result: any) => void) | null>(null);
@@ -82,9 +82,13 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
             }
             return { code: BuckyErrorCodes.NoKey, message: t("settings.embedded_webview_no_key") };
         },
-        signWithActiveDid: (payload: { message?: string }) => {
-            const message = payload?.message ?? "";
-            if (!message.trim()) {
+        signWithActiveDid: (payload: { messages?: string[] }) => {
+            const messages = Array.isArray(payload?.messages)
+                ? payload.messages.filter(
+                    (item): item is string => typeof item === "string" && item.trim().length > 0
+                )
+                : [];
+            if (!messages.length) {
                 return { code: BuckyErrorCodes.NoMessage, message: t("settings.embedded_webview_sign_empty") };
             }
             if (!activeDid) {
@@ -100,7 +104,7 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
                     value: "",
                     error: "",
                     loading: false,
-                    messageToSign: message,
+                    messagesToSign: messages,
                 });
                 resolverRef.current = (result) => {
                     resolverRef.current = null;
@@ -111,20 +115,23 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
     }), [publicKey, t, activeDid, signInProgress, passwordDialog.open]);
 
     const closeDialog = React.useCallback(() => {
-        setPasswordDialog((prev) => ({ ...prev, open: false, value: "", error: "", messageToSign: "" }));
+        setPasswordDialog((prev) => ({ ...prev, open: false, value: "", error: "", messagesToSign: [] }));
         setSignInProgress(false);
     }, []);
 
     const handleConfirmPassword = React.useCallback(async () => {
         setPasswordDialog((prev) => ({ ...prev, loading: true, error: "" }));
         try {
-            const signature = await signWithActiveDid(passwordDialog.value, passwordDialog.messageToSign);
-            resolverRef.current?.({ code: BuckyErrorCodes.Success, data: { signature } });
+            const signatures = await signWithActiveDid(
+                passwordDialog.value,
+                passwordDialog.messagesToSign
+            );
+            resolverRef.current?.({ code: BuckyErrorCodes.Success, data: { signatures } });
             resolverRef.current = null;
             closeDialog();
         } catch (err) {
             const { code, message } = parseCommandError(err);
-            if (code === CommandErrorCodes.InvalidPassword || message.includes("invalid_password")) {
+            if (code === CommandErrorCodes.InvalidPassword || message?.includes("invalid_password")) {
                 setPasswordDialog((prev) => ({ ...prev, loading: false, error: t("settings.embedded_webview_invalid_password") }));
                 resolverRef.current?.({ code: BuckyErrorCodes.InvalidPassword, message });
             } else {
@@ -132,7 +139,7 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
                 resolverRef.current?.({ code: BuckyErrorCodes.NativeError, message });
             }
         }
-    }, [passwordDialog.value, passwordDialog.messageToSign, closeDialog, t]);
+    }, [passwordDialog.value, passwordDialog.messagesToSign, closeDialog, t]);
 
     React.useEffect(() => {
         const container = document.createElement("div");

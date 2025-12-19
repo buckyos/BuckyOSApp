@@ -48,8 +48,8 @@
         getPublicKey() {
             return callNative("getPublicKey", {});
         },
-        signWithActiveDid(message) {
-            return callNative("signWithActiveDid", { message });
+        signWithActiveDid(messages) {
+            return callNative("signWithActiveDid", { messages });
         },
     };
 })();

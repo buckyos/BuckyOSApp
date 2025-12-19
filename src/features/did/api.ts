@@ -29,8 +29,11 @@ export async function extendWallets(
     return invoke("extend_wallets", { password, didId, request });
 }
 
-export async function signWithActiveDid(password: string, message: string): Promise<string> {
-    return invoke("sign_with_active_did", { password, message });
+export async function signWithActiveDid(
+    password: string,
+    messages: string[]
+): Promise<(string | null)[]> {
+    return invoke("sign_with_active_did", { password, messages });
 }
 
 export async function importDid(

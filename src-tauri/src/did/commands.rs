@@ -350,17 +350,11 @@ struct SignMessageClaims<'a> {
     iat: usize,
 }
 
-#[tauri::command]
-pub fn sign_with_active_did(
-    app_handle: AppHandle,
-    password: String,
-    message: String,
-) -> CommandResult<String> {
-    if message.trim().is_empty() {
-        return Err(CommandErrors::SignMessageRequired);
-    }
-
-    let store = open_store(&app_handle)?;
+fn load_active_signing_key(
+    app_handle: &AppHandle,
+    password: &str,
+) -> CommandResult<(EncodingKey, Option<String>)> {
+    let store = open_store(app_handle)?;
     let vault = load_vault(&store)?;
     let target_id = vault
         .active_did
@@ -373,7 +367,7 @@ pub fn sign_with_active_did(
         .find(|d| d.id == target_id)
         .ok_or_else(|| CommandErrors::not_found("wallet_not_found"))?;
 
-    let decrypted = decrypt_mnemonic(&password, &record.seed)?;
+    let decrypted = decrypt_mnemonic(password, &record.seed)?;
     let secret_phrase = SecretString::new(decrypted);
     let mnemonic = Mnemonic::parse_in(Language::English, secret_phrase.expose_secret())?;
     drop(secret_phrase);
@@ -388,34 +382,63 @@ pub fn sign_with_active_did(
     let pem_key = EncodingKey::from_ed_pem(private_pem.as_bytes())
         .map_err(|e| CommandErrors::crypto_failed(format!("invalid ed25519 private key: {e}")))?;
 
-    let now = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_err(|e| CommandErrors::internal(e.to_string()))?
-        .as_secs() as usize;
-
     let did_label = record
         .wallets
         .bucky
         .entries
         .first()
-        .map(|entry| entry.did.as_str());
+        .map(|entry| entry.did.clone());
 
-    let claims = SignMessageClaims {
-        message: &message,
-        did: did_label,
-        iat: now,
-    };
+    Ok((pem_key, did_label))
+}
 
-    let token = encode(
-        &Header {
-            alg: Algorithm::EdDSA,
-            ..Default::default()
-        },
-        &claims,
-        &pem_key,
-    )?;
+fn current_unix_timestamp() -> CommandResult<usize> {
+    Ok(SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|e| CommandErrors::internal(e.to_string()))?
+        .as_secs() as usize)
+}
 
-    Ok(token)
+#[tauri::command]
+pub fn sign_with_active_did(
+    app_handle: AppHandle,
+    password: String,
+    messages: Vec<String>,
+) -> CommandResult<Vec<Option<String>>> {
+    let mut sanitized: Vec<String> = messages.into_iter().map(|m| m.trim().to_string()).collect();
+    sanitized.retain(|m| !m.is_empty());
+
+    if sanitized.is_empty() {
+        return Err(CommandErrors::SignMessageRequired);
+    }
+
+    let (pem_key, did_label) = load_active_signing_key(&app_handle, &password)?;
+    let issued_at = current_unix_timestamp()?;
+
+    let mut signatures = Vec::with_capacity(sanitized.len());
+    for message in sanitized {
+        let claims = SignMessageClaims {
+            message: &message,
+            did: did_label.as_deref(),
+            iat: issued_at,
+        };
+        match encode(
+            &Header {
+                alg: Algorithm::EdDSA,
+                ..Default::default()
+            },
+            &claims,
+            &pem_key,
+        ) {
+            Ok(token) => signatures.push(Some(token)),
+            Err(err) => {
+                log::error!("sign_with_active_did encode failed: {err}");
+                signatures.push(None);
+            }
+        }
+    }
+
+    Ok(signatures)
 }
 
 #[tauri::command]

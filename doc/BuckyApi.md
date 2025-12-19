@@ -57,13 +57,13 @@
   - `3` (NoKey)：当前没有公钥。
   - `4` (NoActiveDid)：没有激活的 DID。
 
-### `BuckyApi.signWithActiveDid(message: string): Promise<{ code, message?, data?: { signature: string } }>`
+### `BuckyApi.signWithActiveDid(messages: string[]): Promise<{ code, message?, data?: { signatures: (string | null)[] } }>`
 
-- **说明**：使用本地当前激活 DID 的私钥对传入字符串进行签名，常用于 iframe 内的身份认证/授权。
-- **参数**：`message` —— 待签名内容。
-- **成功 data**：`{ signature: string }`，即签名后的字符串，第三方可带回到自己的后端进行验证。
+- **说明**：使用本地当前激活 DID 的私钥对传入字符串数组依次进行签名，常用于 iframe 内的身份认证/授权。
+- **参数**：`messages` —— 待签名字符串数组，按顺序签名；其中仅包含空白字符的项会被忽略，如果全部为空会返回 `NoMessage`。
+- **成功 data**：`{ signatures: (string | null)[] }`，长度与有效输入一致，若某一项签名失败则对应元素为 `null`，其余成功项按原顺序返回。
 - **典型错误码**：
-  - `5` (NoMessage)：`message` 为空。
+  - `5` (NoMessage)：`messages` 为空或不存在有效内容。
   - `6` (InvalidPassword)：密码错误。
   - `7` (Cancelled)：用户取消密码输入。
   - `4` (NoActiveDid)：没有激活的 DID。

@@ -164,11 +164,20 @@
         });
 
         signButton.addEventListener("click", async () => {
-            const message = inputBox.value || "";
+            const messages = (inputBox.value || "")
+                .split("\n")
+                .map((item) => item.trim())
+                .filter((item) => item.length > 0);
+            if (!messages.length) {
+                logError("请输入至少一条待签名内容");
+                return;
+            }
             try {
-                const payload = await window.BuckyApi.signWithActiveDid(message);
+                const payload = await window.BuckyApi.signWithActiveDid(messages);
                 if (payload?.code === 0) {
-                    outputBox.value = payload.data?.signature ?? "";
+                    console.log(payload);
+                    const signatures = payload.data?.signatures ?? [];
+                    outputBox.value = JSON.stringify(signatures, null, 2);
                     outputBox.classList.remove("highlight");
                     void outputBox.offsetWidth;
                     outputBox.classList.add("highlight");
