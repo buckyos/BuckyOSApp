@@ -122,6 +122,7 @@
             <button id="go-button" class="action-button">Go</button>
             <button id="public-key-button" class="action-button">Get Public Key</button>
             <button id="sign-button" class="action-button">SignWithActiveDid</button>
+            <button id="sign-demo-button" class="action-button">Sign Demo Batch</button>
         </div>
         <a href="https://bilibili.com">跳转到 bilibili</a>
     </div>
@@ -131,6 +132,7 @@
         const goButton = document.getElementById("go-button");
         const publicKeyButton = document.getElementById("public-key-button");
         const signButton = document.getElementById("sign-button");
+        const signDemoButton = document.getElementById("sign-demo-button");
         const logError = (msg) => {
             if (!outputBox) return;
             outputBox.value = msg;
@@ -185,6 +187,28 @@
                     logError(payload.message);
                 } else if (typeof payload?.code === "number") {
                     logError(payload.message || "签名失败");
+                }
+            } catch (err) {
+                logError(err instanceof Error ? err.message : String(err));
+            }
+        });
+
+        signDemoButton.addEventListener("click", async () => {
+            const demoMessages = [
+                `demo-msg-1:${new Date().toISOString()}`,
+                "demo-msg-2:固定内容",
+                `demo-msg-3:${Math.random().toString(36).slice(2, 10)}`,
+            ];
+            inputBox.value = demoMessages.join("\n");
+            try {
+                const payload = await window.BuckyApi.signWithActiveDid(demoMessages);
+                if (payload?.code === 0) {
+                    outputBox.value = JSON.stringify(payload.data?.signatures ?? [], null, 2);
+                    outputBox.classList.remove("highlight");
+                    void outputBox.offsetWidth;
+                    outputBox.classList.add("highlight");
+                } else {
+                    logError(payload?.message || "签名失败");
                 }
             } catch (err) {
                 logError(err instanceof Error ? err.message : String(err));
