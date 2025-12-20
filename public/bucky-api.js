@@ -48,6 +48,9 @@
         getPublicKey() {
             return callNative("getPublicKey", {});
         },
+        getCurrentUser() {
+            return callNative("getCurrentUser", {});
+        },
         signWithActiveDid(messages) {
             return callNative("signWithActiveDid", { messages });
         },

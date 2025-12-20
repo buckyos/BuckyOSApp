@@ -3,6 +3,7 @@ import { useI18n } from "../i18n";
 import { useDidContext } from "../features/did/DidContext";
 import InputDialog from "../components/ui/InputDialog";
 import { signWithActiveDid } from "../features/did/api";
+import { fetchSnStatus, getCachedSnStatus } from "../features/sn/snStatusManager";
 import { createRoot, Root } from "react-dom/client";
 import { BuckyErrorCodes } from "./buckyErrorCodes";
 import { parseCommandError } from "../utils/commandError";
@@ -81,6 +82,40 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
                 return { code: BuckyErrorCodes.Success, data: { key: publicKey } };
             }
             return { code: BuckyErrorCodes.NoKey, message: t("settings.embedded_webview_no_key") };
+        },
+        getCurrentUser: async () => {
+            if (!activeDid) {
+                return { code: BuckyErrorCodes.NoActiveDid, message: t("settings.embedded_webview_no_did") };
+            }
+            const wallet = activeDid.bucky_wallets?.[0];
+            if (!wallet) {
+                return { code: BuckyErrorCodes.NoKey, message: t("settings.embedded_webview_no_key") };
+            }
+            const did = wallet.did;
+            const username = activeDid.nickname ?? "";
+            const public_key = publicKey;
+            let snUsername: string | null = null;
+            const cached = getCachedSnStatus(activeDid.id);
+            if (cached && typeof cached.username === "string") {
+                snUsername = cached.username;
+            } else {
+                try {
+                    const jwk = JSON.stringify(wallet.public_key);
+                    const record = await fetchSnStatus(activeDid.id, jwk);
+                    snUsername = record.username ?? null;
+                } catch (err) {
+                    console.warn("[BuckyIframe] failed to fetch SN status", err);
+                }
+            }
+            return {
+                code: BuckyErrorCodes.Success,
+                data: {
+                    did,
+                    username,
+                    public_key,
+                    sn_username: snUsername,
+                },
+            };
         },
         signWithActiveDid: (payload: { messages?: string[] }) => {
             const messages = Array.isArray(payload?.messages)

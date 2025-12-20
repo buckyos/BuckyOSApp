@@ -119,8 +119,8 @@
             <textarea id="output-box" placeholder="输出内容" readonly></textarea>
         </div>
         <div class="actions">
-            <button id="go-button" class="action-button">Go</button>
             <button id="public-key-button" class="action-button">Get Public Key</button>
+            <button id="current-user-button" class="action-button">Get Current User</button>
             <button id="sign-button" class="action-button">SignWithActiveDid</button>
             <button id="sign-demo-button" class="action-button">Sign Demo Batch</button>
         </div>
@@ -129,9 +129,9 @@
     <script>
         const inputBox = document.getElementById("input-box");
         const outputBox = document.getElementById("output-box");
-        const goButton = document.getElementById("go-button");
         const publicKeyButton = document.getElementById("public-key-button");
         const signButton = document.getElementById("sign-button");
+        const currentUserButton = document.getElementById("current-user-button");
         const signDemoButton = document.getElementById("sign-demo-button");
         const logError = (msg) => {
             if (!outputBox) return;
@@ -140,13 +140,6 @@
             void outputBox.offsetWidth;
             outputBox.classList.add("highlight");
         };
-
-        goButton.addEventListener("click", () => {
-            outputBox.value = inputBox.value;
-            outputBox.classList.remove("highlight");
-            void outputBox.offsetWidth;
-            outputBox.classList.add("highlight");
-        });
 
         publicKeyButton.addEventListener("click", async () => {
             try {
@@ -187,6 +180,22 @@
                     logError(payload.message);
                 } else if (typeof payload?.code === "number") {
                     logError(payload.message || "签名失败");
+                }
+            } catch (err) {
+                logError(err instanceof Error ? err.message : String(err));
+            }
+        });
+
+        currentUserButton.addEventListener("click", async () => {
+            try {
+                const result = await window.BuckyApi.getCurrentUser();
+                if (result?.code === 0) {
+                    outputBox.value = JSON.stringify(result.data ?? {}, null, 2);
+                    outputBox.classList.remove("highlight");
+                    void outputBox.offsetWidth;
+                    outputBox.classList.add("highlight");
+                } else if (typeof result?.code === "number") {
+                    logError(result.message || "获取当前用户失败");
                 }
             } catch (err) {
                 logError(err instanceof Error ? err.message : String(err));
