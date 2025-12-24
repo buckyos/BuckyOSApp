@@ -290,15 +290,17 @@ const ScanDevice: React.FC = () => {
                                             key={`${device.ip}-${device.hostname || typeLabel}`}
                                             className="ood-device-item"
                                             onClick={() => {
-                                                const activeUrl = device.active_url || "";
-                                                let target = activeUrl.trim();
-                                                if (!target) return;
-                                                if (/^https?:\/\//i.test(target)) {
-                                                    openWebView(target, title, label);
+                                                const activeUrl = (device.active_url || "").trim();
+                                                if (!activeUrl) return;
+                                                const baseWindowOptions = {
+                                                    center: true,
+                                                };
+                                                if (/^https?:\/\//i.test(activeUrl)) {
+                                                    openWebView(activeUrl, title, label, baseWindowOptions);
                                                 } else {
                                                     const base = `http://${device.display_ip || device.ip}:3182`;
-                                                    const path = target.startsWith("/") ? target : `/${target}`;
-                                                    openWebView(`${base}${path}`, title, label);
+                                                    const path = activeUrl.startsWith("/") ? activeUrl : `/${activeUrl}`;
+                                                    openWebView(`${base}${path}`, title, label, baseWindowOptions);
                                                 }
                                             }}
                                         >
