@@ -19,12 +19,7 @@ pub fn get_sn_api_host(app_handle: AppHandle) -> CommandResult<String> {
         .app_config_dir()
         .map_err(|e| CommandErrors::internal(format!("missing app config directory: {e}")))?;
     let path = config_dir.join(CONFIG_FILENAME);
-    log::info!("[config] resolving SN host from {}", path.to_string_lossy());
     if !path.exists() {
-        log::warn!(
-            "[config] {} not found, fallback to default host",
-            CONFIG_FILENAME
-        );
         return Ok(DEFAULT_SN_API_URL.to_string());
     }
 
@@ -38,6 +33,5 @@ pub fn get_sn_api_host(app_handle: AppHandle) -> CommandResult<String> {
         .map(|h| h.trim().to_string())
         .filter(|h| !h.is_empty())
         .unwrap_or_else(|| DEFAULT_SN_API_URL.to_string());
-    log::info!("[config] using SN host: {}", host);
     Ok(host)
 }
