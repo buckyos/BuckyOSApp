@@ -1,12 +1,13 @@
 use bip39::{Language, Mnemonic};
 use rand::{rngs::OsRng, RngCore};
 use serde::Deserialize;
+use std::collections::HashMap;
 use tauri::AppHandle;
 
 use crate::error::{CommandErrors, CommandResult};
 
 use super::crypto::{decrypt_mnemonic, encrypt_mnemonic};
-use super::domain::{BtcAddressType, DidInfo};
+use super::domain::{BtcAddressType, DidInfo, SnStatusInfo};
 use super::identity::{derive_wallets_with_requests, DidDerivationPlan, WalletRequest};
 use super::store::{load_vault, new_did_id, open_store, save_vault, StoredDid};
 use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
@@ -81,6 +82,7 @@ pub fn create_did(
         nickname,
         seed: encrypted_seed,
         wallets,
+        sn_status: None,
     };
 
     vault.active_did = Some(record.id.clone());
@@ -141,6 +143,7 @@ pub fn import_did(
         nickname,
         seed: encrypted_seed,
         wallets,
+        sn_status: None,
     };
 
     vault.active_did = Some(record.id.clone());
@@ -249,6 +252,63 @@ pub fn set_active_did(app_handle: AppHandle, did_id: String) -> CommandResult<Di
     save_vault(&store, &vault)?;
 
     Ok(record.to_info())
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
+pub struct SnStatusPayload {
+    pub registered: bool,
+    pub username: Option<String>,
+}
+
+#[tauri::command]
+pub fn list_sn_statuses(app_handle: AppHandle) -> CommandResult<HashMap<String, SnStatusInfo>> {
+    let store = open_store(&app_handle)?;
+    let vault = load_vault(&store)?;
+    let mut map = HashMap::new();
+    for did in &vault.dids {
+        if let Some(status) = &did.sn_status {
+            map.insert(did.id.clone(), status.clone());
+        }
+    }
+    Ok(map)
+}
+
+#[tauri::command]
+pub fn set_sn_status(
+    app_handle: AppHandle,
+    did_id: String,
+    status: SnStatusPayload,
+) -> CommandResult<()> {
+    let store = open_store(&app_handle)?;
+    let mut vault = load_vault(&store)?;
+
+    let username = status
+        .username
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty());
+
+    let record = vault
+        .dids
+        .iter_mut()
+        .find(|did| did.id == did_id)
+        .ok_or_else(|| CommandErrors::not_found("wallet_not_found"))?;
+
+    record.sn_status = Some(SnStatusInfo {
+        registered: status.registered,
+        username,
+    });
+
+    save_vault(&store, &vault)
+}
+
+#[tauri::command]
+pub fn clear_sn_status(app_handle: AppHandle, did_id: String) -> CommandResult<()> {
+    let store = open_store(&app_handle)?;
+    let mut vault = load_vault(&store)?;
+    if let Some(record) = vault.dids.iter_mut().find(|did| did.id == did_id) {
+        record.sn_status = None;
+    }
+    save_vault(&store, &vault)
 }
 
 #[tauri::command]

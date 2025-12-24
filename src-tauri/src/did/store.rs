@@ -4,7 +4,7 @@ use tauri::{AppHandle, Wry};
 use tauri_plugin_store::{Error as StoreError, Store, StoreExt};
 use ulid::Ulid;
 
-use super::domain::{BtcAddress, DidInfo, WalletCollection};
+use super::domain::{BtcAddress, DidInfo, SnStatusInfo, WalletCollection};
 use crate::error::{CommandErrors, CommandResult};
 
 // 固定使用主网，后续可以抽象为配置项。
@@ -32,6 +32,8 @@ pub struct StoredDid {
     pub seed: EncryptedSeed,
     #[serde(default)]
     pub wallets: WalletCollection,
+    #[serde(default)]
+    pub sn_status: Option<SnStatusInfo>,
 }
 
 impl StoredDid {
@@ -57,6 +59,7 @@ impl StoredDid {
             btc_addresses,
             eth_addresses,
             bucky_wallets,
+            sn_status: self.sn_status.clone(),
         }
     }
 }

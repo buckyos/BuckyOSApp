@@ -63,7 +63,7 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
             if (!activeDid || !activeDid.bucky_wallets || activeDid.bucky_wallets.length === 0) return;
             const didId = activeDid.id;
             const jwk = JSON.stringify(activeDid.bucky_wallets[0]?.public_key as any);
-            const cached = !force ? getCachedSnStatus(didId) : undefined;
+            const cached = !force ? await getCachedSnStatus(didId) : undefined;
             if (cached) {
                 setSnError("");
                 setSnQueryFailed(false);
@@ -102,27 +102,35 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
     );
 
     React.useEffect(() => {
-        setSnError("");
-        setSnRegistered(false);
-        setSnQueryFailed(false);
-        setSnInfo(null);
-        setSnInvite("");
-        setSnInviteValid(null);
-        setSnUserValid(null);
-        setCheckingUser(false);
-        setCheckingInvite(false);
-        setSnChecking(true);
-        setInitializing(!!activeDid);
-        if (activeDid) {
-            const cached = getCachedSnStatus(activeDid.id);
-            if (cached?.registered && cached.username) {
-                setSnUsername(cached.username);
+        let cancelled = false;
+        const run = async () => {
+            setSnError("");
+            setSnRegistered(false);
+            setSnQueryFailed(false);
+            setSnInfo(null);
+            setSnInvite("");
+            setSnInviteValid(null);
+            setSnUserValid(null);
+            setCheckingUser(false);
+            setCheckingInvite(false);
+            setSnChecking(true);
+            setInitializing(!!activeDid);
+            if (activeDid) {
+                const cached = await getCachedSnStatus(activeDid.id);
+                if (cancelled) return;
+                if (cached?.registered && cached.username) {
+                    setSnUsername(cached.username);
+                } else {
+                    setSnUsername((activeDid.nickname || "").trim());
+                }
             } else {
-                setSnUsername((activeDid.nickname || "").trim());
+                setSnUsername("");
             }
-        } else {
-            setSnUsername("");
-        }
+        };
+        run();
+        return () => {
+            cancelled = true;
+        };
     }, [activeDid]);
 
     React.useEffect(() => {
@@ -257,9 +265,16 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
                 </div>
             )}
             {!snChecking && snQueryFailed && (
-                <div style={{ marginTop: 8 }}>
-                    <div className="error" style={{ color: "#ef4444", marginBottom: 8 }}>{t("sn.fetch_failed")}</div>
-                    <button className="home-refresh" onClick={() => refetchSn(true)}>{t("sn.retry")}</button>
+                <div className="sn-retry-wrapper">
+                    <div className="sn-retry-message">
+                        <p>{t("sn.fetch_failed")}</p>
+                        <p>{t("sn.retry_hint")}</p>
+                    </div>
+                    <div className="sn-retry-actions">
+                        <GradientButton onClick={() => refetchSn(true)}>
+                            {t("sn.retry")}
+                        </GradientButton>
+                    </div>
                 </div>
             )}
             {!snRegistered && !snQueryFailed && !snChecking && (

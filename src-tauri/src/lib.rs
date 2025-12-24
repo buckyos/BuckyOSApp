@@ -33,6 +33,7 @@ fn logging_plugin<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
 }
 
 mod applist;
+mod config;
 mod did;
 mod error;
 mod network;
@@ -58,9 +59,13 @@ pub fn run() {
             did::extend_wallets,
             did::current_wallet_nickname,
             did::generate_zone_boot_config_jwt,
+            did::list_sn_statuses,
+            did::set_sn_status,
+            did::clear_sn_status,
             did::sign_with_active_did,
             applist::get_applist,
             network::local_ipv4_list,
+            config::get_sn_api_host,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

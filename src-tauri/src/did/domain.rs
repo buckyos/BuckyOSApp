@@ -50,6 +50,13 @@ pub struct BuckyIdentity {
     pub public_key: Value,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+pub struct SnStatusInfo {
+    pub registered: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub username: Option<String>,
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AddressSeries<T> {
     pub entries: Vec<T>,
@@ -145,4 +152,6 @@ pub struct DidInfo {
     pub btc_addresses: Vec<BtcAddress>,
     pub eth_addresses: Vec<ChainAddress>,
     pub bucky_wallets: Vec<BuckyIdentity>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sn_status: Option<SnStatusInfo>,
 }

@@ -15,12 +15,18 @@ export interface BuckyWallet {
     public_key: Record<string, unknown>;
 }
 
+export interface SnStatusInfo {
+    registered: boolean;
+    username?: string | null;
+}
+
 export interface DidInfo {
     id: string;
     nickname: string;
     btc_addresses: BtcAddress[];
     eth_addresses: ChainAddress[];
     bucky_wallets: BuckyWallet[];
+    sn_status?: SnStatusInfo | null;
 }
 
 export type WalletExtensionRequest =

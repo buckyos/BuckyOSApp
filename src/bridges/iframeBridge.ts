@@ -95,7 +95,7 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
             const username = activeDid.nickname ?? "";
             const public_key = publicKey;
             let snUsername: string | null = null;
-            const cached = getCachedSnStatus(activeDid.id);
+            const cached = await getCachedSnStatus(activeDid.id);
             if (cached && typeof cached.username === "string") {
                 snUsername = cached.username;
             } else {

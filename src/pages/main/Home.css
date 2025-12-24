@@ -174,23 +174,37 @@
     color: var(--muted-text);
 }
 
+.sn-retry-wrapper {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.sn-retry-message {
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 14px;
+    background: var(--card-bg);
+    color: var(--muted-text);
+    line-height: 1.5;
+}
+
+.sn-retry-message p {
+    margin: 0;
+    font-size: 14px;
+}
+
+.sn-retry-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
 @keyframes snSpin {
     to {
         transform: rotate(360deg);
     }
-}
-
-.home-refresh {
-    border-radius: 12px;
-    padding: 8px 14px;
-    border: 1px solid var(--border);
-    background: var(--card-bg);
-    color: var(--app-text);
-    font-weight: 500;
-}
-
-.home-refresh:disabled {
-    opacity: 0.6;
 }
 
 .ood-info-card {
