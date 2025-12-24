@@ -18,62 +18,58 @@ export interface RegisterSnOptions {
     pollIntervalMs?: number;
 }
 
-const SN_STATUS_STORAGE_KEY = "buckyos.sn.status";
+type SnStatusStoreRecord = {
+    registered: boolean;
+    username?: string | null;
+};
 
-const memoryCache: Record<string, SnStatusRecord | undefined> = loadPersistedCache();
+const memoryCache: Record<string, SnStatusRecord | undefined> = {};
+let cachePromise: Promise<void> | null = null;
 
-function loadPersistedCache(): Record<string, SnStatusRecord | undefined> {
-    if (typeof window === "undefined") return {};
-    try {
-        const raw = localStorage.getItem(SN_STATUS_STORAGE_KEY);
-        if (!raw) return {};
-        const parsed = JSON.parse(raw);
-        if (!parsed || typeof parsed !== "object") return {};
-        const entries: Record<string, SnStatusRecord | undefined> = {};
-        Object.entries(parsed as Record<string, SnStatusRecord>).forEach(([did, record]) => {
-            if (!record) return;
-            entries[did] = {
-                registered: !!record.registered,
-                username: record.username ?? null,
-                info: null,
-            };
-        });
-        return entries;
-    } catch (err) {
-        console.warn("[SN] failed to parse cached status", err);
-        return {};
+async function ensureCacheLoaded(): Promise<void> {
+    if (!cachePromise) {
+        cachePromise = (async () => {
+            try {
+                const stored = await invoke<Record<string, SnStatusStoreRecord>>("list_sn_statuses");
+                if (stored && typeof stored === "object") {
+                    Object.entries(stored).forEach(([did, record]) => {
+                        if (!record) return;
+                        memoryCache[did] = {
+                            registered: !!record.registered,
+                            username: record.username ?? null,
+                            info: null,
+                        };
+                    });
+                }
+            } catch (err) {
+                console.warn("[SN] failed to load persisted SN status", err);
+            }
+        })();
     }
+    await cachePromise;
 }
 
-function persistCache() {
-    if (typeof window === "undefined") return;
-    try {
-        const serialized: Record<string, { registered: boolean; username?: string | null }> = {};
-        Object.entries(memoryCache).forEach(([did, record]) => {
-            if (!record) return;
-            serialized[did] = {
-                registered: record.registered,
-                username: record.username ?? null,
-            };
-        });
-        localStorage.setItem(SN_STATUS_STORAGE_KEY, JSON.stringify(serialized));
-    } catch (err) {
-        console.warn("[SN] failed to persist status", err);
-    }
-}
-
-export function getCachedSnStatus(didId: string): SnStatusRecord | undefined {
+export async function getCachedSnStatus(didId: string): Promise<SnStatusRecord | undefined> {
+    await ensureCacheLoaded();
     return memoryCache[didId];
 }
 
-export function setCachedSnStatus(didId: string, record: SnStatusRecord): void {
+export async function setCachedSnStatus(didId: string, record: SnStatusRecord): Promise<void> {
+    await ensureCacheLoaded();
     memoryCache[didId] = record;
-    persistCache();
+    await invoke("set_sn_status", {
+        didId,
+        status: {
+            registered: record.registered,
+            username: record.username ?? null,
+        },
+    });
 }
 
-export function clearCachedSnStatus(didId: string): void {
+export async function clearCachedSnStatus(didId: string): Promise<void> {
+    await ensureCacheLoaded();
     delete memoryCache[didId];
-    persistCache();
+    await invoke("clear_sn_status", { didId });
 }
 
 export async function fetchSnStatus(didId: string, publicKeyJwk: string): Promise<SnStatusRecord> {
@@ -82,7 +78,7 @@ export async function fetchSnStatus(didId: string, publicKeyJwk: string): Promis
     const record: SnStatusRecord = ok
         ? { registered: true, info: raw, username }
         : { registered: false, info: null, username: null };
-    setCachedSnStatus(didId, record);
+    await setCachedSnStatus(didId, record);
     return record;
 }
 
@@ -160,6 +156,6 @@ export async function registerSnAccount(options: RegisterSnOptions): Promise<SnS
         info,
         username: finalUsername,
     };
-    setCachedSnStatus(didId, record);
+    await setCachedSnStatus(didId, record);
     return record;
 }

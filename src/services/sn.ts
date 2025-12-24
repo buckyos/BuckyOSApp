@@ -1,16 +1,41 @@
 import { buckyos } from "buckyos";
+import { invoke } from "@tauri-apps/api/core";
 
 // SN kRPC client via buckyos-websdk
-let SN_API_URL = "https://sn.buckyos.ai/kapi/sn";
+const DEFAULT_SN_API_URL = "https://sn.buckyos.ai/kapi/sn";
+
+let snApiUrlOverride: string | null = null;
+let snApiUrlPromise: Promise<string> | null = null;
 
 export function setSnApiUrl(url: string) {
-    SN_API_URL = url;
+    snApiUrlOverride = url;
+    snApiUrlPromise = Promise.resolve(url);
 }
 
 type JsonValue = Record<string, any>;
 
+async function getSnApiUrl(): Promise<string> {
+    if (snApiUrlPromise) {
+        return snApiUrlPromise;
+    }
+    snApiUrlPromise = (async () => {
+        if (snApiUrlOverride) return snApiUrlOverride;
+        try {
+            const host = await invoke<string>("get_sn_api_host");
+            if (typeof host === "string" && host.trim().length > 0) {
+                return host;
+            }
+        } catch (err) {
+            console.warn("[SN] failed to load host config, fallback to default", err);
+        }
+        return DEFAULT_SN_API_URL;
+    })();
+    console.debug("[SN] get_sn_api_host: done", { snApiUrlPromise });
+    return snApiUrlPromise;
+}
+
 async function snCall<T = any>(method: string, params: JsonValue): Promise<T> {
-    const client = new buckyos.kRPCClient(SN_API_URL);
+    const client = new buckyos.kRPCClient(await getSnApiUrl());
     const data = await client.call(method, params);
     return data as T;
 }
