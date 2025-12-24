@@ -252,10 +252,10 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
                     <p>{t("sn.bind_subtitle") || t("sn.header_desc")}</p>
                 </div>
             </header>
+            {/* SN 引导暂时隐藏 learn more 链接，避免误导 */}
             {!snRegistered && (
                 <div className="sn-info-card">
                     <div className="sn-info-desc">{t("sn.about_desc")}</div>
-                    <div className="sn-info-link"><a href="#/sn">{t("sn.learn_more")}</a></div>
                 </div>
             )}
             {snChecking && !snRegistered && (
