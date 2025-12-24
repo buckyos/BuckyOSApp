@@ -1,4 +1,5 @@
 import React from "react";
+import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
 import MobileHeader from "../../components/ui/MobileHeader";
 import GradientButton from "../../components/ui/GradientButton";
 import { useI18n } from "../../i18n";
@@ -22,7 +23,7 @@ interface DeviceRecord extends DeviceInfo {
 }
 
 const REQUEST_TIMEOUT = 2500;
-const CONCURRENT_REQUESTS = 20;
+const CONCURRENT_REQUESTS = 50;
 
 const ScanDevice: React.FC = () => {
     const { t } = useI18n();
@@ -32,16 +33,10 @@ const ScanDevice: React.FC = () => {
     const [status, setStatus] = React.useState(() => t("device_scan.status_preparing"));
     const [selfScanDone, setSelfScanDone] = React.useState(false);
     const abortRef = React.useRef<boolean>(false);
-    const activeControllersRef = React.useRef<Set<AbortController>>(new Set());
     const selfIpSetRef = React.useRef<Set<string>>(new Set());
     const listRef = React.useRef<HTMLUListElement | null>(null);
     const scanInFlightRef = React.useRef(false);
     const pendingStartRef = React.useRef(false);
-
-    const abortAllRequests = React.useCallback(() => {
-        activeControllersRef.current.forEach((controller) => controller.abort());
-        activeControllersRef.current.clear();
-    }, []);
 
     const addDevice = React.useCallback((info: DeviceRecord) => {
         setDevices((prev) => {
@@ -58,19 +53,21 @@ const ScanDevice: React.FC = () => {
     const fetchDeviceInfo = React.useCallback(async (ip: string): Promise<DeviceRecord | null> => {
         if (!ip) return null;
         const controller = new AbortController();
-        activeControllersRef.current.add(controller);
-        const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+        const timer = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
         try {
-            const resp = await fetch(`http://${ip}:3182/device`, { signal: controller.signal });
-            if (!resp.ok) return null;
-            const data = (await resp.json()) as DeviceInfo;
+            const response = await tauriFetch(`http://${ip}:3182/device`, {
+                method: "GET",
+                signal: controller.signal,
+            });
+            if (!response.ok) return null;
+            const data = (await response.json()) as DeviceInfo | null;
             if (!data) return null;
             return { ...data, ip };
-        } catch {
+        } catch (err) {
+            console.debug("[ScanDevice] plugin-http fetch failed", { ip, err });
             return null;
         } finally {
-            window.clearTimeout(timeout);
-            activeControllersRef.current.delete(controller);
+            window.clearTimeout(timer);
         }
     }, []);
 
@@ -125,53 +122,37 @@ const ScanDevice: React.FC = () => {
     }, []);
 
     const scanTargetsConcurrently = React.useCallback(
-        (targets: string[]) => {
-            if (!targets.length) return Promise.resolve(false);
-            let index = 0;
-            let active = 0;
-            let processed = 0;
+        async (targets: string[]) => {
+            if (!targets.length) return false;
             let found = false;
+            let processed = 0;
+            let index = 0;
             const total = targets.length;
-            return new Promise<boolean>((resolve) => {
-                const maybeResolve = () => {
-                    if ((abortRef.current || index >= total) && active === 0) {
-                        resolve(found);
+
+            const processIp = async (ip: string) => {
+                if (abortRef.current) return;
+                try {
+                    const device = await fetchDeviceInfo(ip);
+                    if (device) {
+                        console.info("[ScanDevice] scan result", { ip, device });
+                        addDevice({ ...device, isSelf: selfIpSetRef.current.has(device.ip) });
+                        found = true;
                     }
-                };
-                const launch = () => {
-                    if (abortRef.current) {
-                        maybeResolve();
-                        return;
+                } finally {
+                    processed += 1;
+                    if (!abortRef.current) {
+                        setProgress(processed / total);
                     }
-                    if (index >= total) {
-                        maybeResolve();
-                        return;
-                    }
-                    const ip = targets[index++];
-                    active += 1;
-                    fetchDeviceInfo(ip)
-                        .then((device) => {
-                            if (device) {
-                                console.info("[ScanDevice] scan result", { ip, device });
-                                addDevice({ ...device, isSelf: selfIpSetRef.current.has(device.ip) });
-                                found = true;
-                            }
-                        })
-                        .finally(() => {
-                            active -= 1;
-                            processed += 1;
-                            if (!abortRef.current) {
-                                setProgress(processed / total);
-                            }
-                            launch();
-                            maybeResolve();
-                        });
-                };
-                const initial = Math.min(CONCURRENT_REQUESTS, total);
-                for (let i = 0; i < initial; i += 1) {
-                    launch();
                 }
-            });
+            };
+
+            while (index < total && !abortRef.current) {
+                const batch = targets.slice(index, index + CONCURRENT_REQUESTS);
+                index += batch.length;
+                await Promise.all(batch.map(processIp));
+            }
+
+            return found;
         },
         [addDevice, fetchDeviceInfo]
     );
@@ -237,11 +218,10 @@ const ScanDevice: React.FC = () => {
     const handleCancelScan = React.useCallback(() => {
         if (!scanning) return;
         abortRef.current = true;
-        abortAllRequests();
         setStatus(t("device_scan.status_cancelled"));
         setProgress(0);
         setScanning(false);
-    }, [abortAllRequests, scanning, t]);
+    }, [scanning, t]);
 
     React.useEffect(() => {
         const kickoff = window.setTimeout(() => {
@@ -250,16 +230,14 @@ const ScanDevice: React.FC = () => {
         return () => {
             window.clearTimeout(kickoff);
             abortRef.current = true;
-            abortAllRequests();
         };
-    }, [abortAllRequests, startScan]);
+    }, [startScan]);
 
     React.useEffect(() => {
         return () => {
             abortRef.current = true;
-            abortAllRequests();
         };
-    }, [abortAllRequests]);
+    }, []);
 
     const percent = Math.min(100, Math.round(progress * 100));
     const statusTitle = scanning ? t("device_scan.running_title") : status || t("device_scan.status_preparing");
@@ -328,6 +306,9 @@ const ScanDevice: React.FC = () => {
                                                 <span>{title}</span>
                                                 <span className="device-chip">{typeLabel}</span>
                                             </div>
+                                            {device.base_os_info && (
+                                                <div className="device-os-info">{device.base_os_info}</div>
+                                            )}
                                             <small>{device.display_ip || device.ip}</small>
                                         </li>
                                     );

@@ -140,8 +140,15 @@
     font-size: 1rem;
 }
 
-.bind-ood-scan-page .ood-device-item small {
+.device-os-info {
     font-size: 0.85rem;
+    color: var(--muted-text);
+    margin-bottom: 4px;
+}
+
+.bind-ood-scan-page .ood-device-item small {
+    font-size: 0.8rem;
+    color: var(--muted-text);
 }
 
 .device-chip {
