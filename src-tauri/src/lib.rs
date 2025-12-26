@@ -64,7 +64,7 @@ pub fn run() {
             did::list_sn_statuses,
             did::set_sn_status,
             did::clear_sn_status,
-            did::sign_with_active_did,
+            did::sign_json_with_active_did,
             applist::get_applist,
             network::local_ipv4_list,
             config::get_sn_api_host,

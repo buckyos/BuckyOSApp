@@ -6,7 +6,7 @@
     const pending = new Map();
     let counter = 0;
     const DEFAULT_TIMEOUT = 10_000;
-    const NO_TIMEOUT_ACTIONS = new Set(["signWithActiveDid"]);
+    const NO_TIMEOUT_ACTIONS = new Set(["signJsonWithActiveDid"]);
 
     function buildId() {
         return `bucky_${Date.now()}_${counter++}`;
@@ -51,8 +51,8 @@
         getCurrentUser() {
             return callNative("getCurrentUser", {});
         },
-        signWithActiveDid(messages) {
-            return callNative("signWithActiveDid", { messages });
+        signJsonWithActiveDid(payloads) {
+            return callNative("signJsonWithActiveDid", { payloads });
         },
     };
 })();

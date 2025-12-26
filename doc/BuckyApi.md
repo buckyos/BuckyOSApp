@@ -70,19 +70,19 @@
   - `3` (NoKey)：当前没有可用 bucky wallet。
   - `4` (NoActiveDid)：没有激活的 DID。
 
-### `BuckyApi.signWithActiveDid(messages: string[]): Promise<{ code, message?, data?: { signatures: (string | null)[] } }>`
+### `BuckyApi.signJsonWithActiveDid(payloads: Record<string, unknown>[]): Promise<{ code, message?, data?: { signatures: (string | null)[] } }>`
 
-- **说明**：使用本地当前激活 DID 的私钥对传入字符串数组依次进行签名，常用于 iframe 内的身份认证/授权。
-- **参数**：`messages` —— 待签名字符串数组，按顺序签名；其中仅包含空白字符的项会被忽略，如果全部为空会返回 `NoMessage`。
+- **说明**：使用当前激活 DID 的私钥对传入的 JSON 对象数组依次进行签名。
+- **参数**：`payloads` —— 待签名的 JSON 对象数组，非对象条目会被忽略；若过滤后为空则返回 `NoMessage`。
 - **成功 data**：`{ signatures: (string | null)[] }`，长度与有效输入一致，若某一项签名失败则对应元素为 `null`，其余成功项按原顺序返回。
 - **典型错误码**：
-  - `5` (NoMessage)：`messages` 为空或不存在有效内容。
+  - `5` (NoMessage)：`payloads` 为空或不存在有效 JSON 对象。
   - `6` (InvalidPassword)：密码错误。
   - `7` (Cancelled)：用户取消密码输入。
   - `4` (NoActiveDid)：没有激活的 DID。
   - `8` (Busy)：当前已有签名请求在进行中，请稍后再发起新的请求。
 
-> **提示**：`signWithActiveDid` 为交互式请求，可能等待用户输入较长时间。第三方页面需避免连续发送多次请求。
+> **提示**：`signJsonWithActiveDid` 为交互式请求，可能等待用户输入较长时间。第三方页面需避免连续发送多次请求。
 
 ## 与宿主程序的交互
 

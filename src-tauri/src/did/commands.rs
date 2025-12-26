@@ -1,6 +1,7 @@
 use bip39::{Language, Mnemonic};
 use rand::{rngs::OsRng, RngCore};
 use serde::Deserialize;
+use serde_json::Value;
 use std::collections::HashMap;
 use tauri::AppHandle;
 
@@ -402,14 +403,6 @@ struct ZoneBootClaims {
     iat: usize,
 }
 
-#[derive(serde::Serialize)]
-struct SignMessageClaims<'a> {
-    message: &'a str,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    did: Option<&'a str>,
-    iat: usize,
-}
-
 fn load_active_signing_key(
     app_handle: &AppHandle,
     password: &str,
@@ -452,47 +445,43 @@ fn load_active_signing_key(
     Ok((pem_key, did_label))
 }
 
-fn current_unix_timestamp() -> CommandResult<usize> {
-    Ok(SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_err(|e| CommandErrors::internal(e.to_string()))?
-        .as_secs() as usize)
-}
-
 #[tauri::command]
-pub fn sign_with_active_did(
+pub fn sign_json_with_active_did(
     app_handle: AppHandle,
     password: String,
-    messages: Vec<String>,
+    payloads: Vec<Value>,
 ) -> CommandResult<Vec<Option<String>>> {
-    let mut sanitized: Vec<String> = messages.into_iter().map(|m| m.trim().to_string()).collect();
-    sanitized.retain(|m| !m.is_empty());
+    let mut sanitized = Vec::with_capacity(payloads.len());
+    let mut invalid_found = false;
+    for value in payloads {
+        match value {
+            Value::Object(_) => sanitized.push(value),
+            _ => {
+                invalid_found = true;
+                break;
+            }
+        }
+    }
 
-    if sanitized.is_empty() {
+    if sanitized.is_empty() || invalid_found {
         return Err(CommandErrors::SignMessageRequired);
     }
 
-    let (pem_key, did_label) = load_active_signing_key(&app_handle, &password)?;
-    let issued_at = current_unix_timestamp()?;
+    let (pem_key, _did_label) = load_active_signing_key(&app_handle, &password)?;
 
     let mut signatures = Vec::with_capacity(sanitized.len());
-    for message in sanitized {
-        let claims = SignMessageClaims {
-            message: &message,
-            did: did_label.as_deref(),
-            iat: issued_at,
-        };
+    for payload in sanitized {
         match encode(
             &Header {
                 alg: Algorithm::EdDSA,
                 ..Default::default()
             },
-            &claims,
+            &payload,
             &pem_key,
         ) {
             Ok(token) => signatures.push(Some(token)),
             Err(err) => {
-                log::error!("sign_with_active_did encode failed: {err}");
+                log::error!("sign_json_with_active_did encode failed: {err}");
                 signatures.push(None);
             }
         }

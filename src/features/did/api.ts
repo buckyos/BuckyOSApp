@@ -29,11 +29,13 @@ export async function extendWallets(
     return invoke("extend_wallets", { password, didId, request });
 }
 
-export async function signWithActiveDid(
+export type JsonSignPayload = Record<string, unknown>;
+
+export async function signJsonWithActiveDid(
     password: string,
-    messages: string[]
+    payloads: JsonSignPayload[]
 ): Promise<(string | null)[]> {
-    return invoke("sign_with_active_did", { password, messages });
+    return invoke("sign_json_with_active_did", { password, payloads });
 }
 
 export async function importDid(

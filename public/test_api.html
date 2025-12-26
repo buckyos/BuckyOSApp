@@ -121,8 +121,10 @@
         <div class="actions">
             <button id="public-key-button" class="action-button">Get Public Key</button>
             <button id="current-user-button" class="action-button">Get Current User</button>
-            <button id="sign-button" class="action-button">SignWithActiveDid</button>
-            <button id="sign-demo-button" class="action-button">Sign Demo Batch</button>
+            <button id="sign-button" class="action-button">SignJsonWithActiveDid</button>
+            <button id="fill-single-json-button" class="action-button">填充单个 JSON</button>
+            <button id="fill-multi-json-button" class="action-button">填充 JSON 数组</button>
+            <button id="sign-demo-button" class="action-button">示例 JSON 并签名</button>
         </div>
         <a href="https://bilibili.com">跳转到 bilibili</a>
     </div>
@@ -132,6 +134,8 @@
         const publicKeyButton = document.getElementById("public-key-button");
         const signButton = document.getElementById("sign-button");
         const currentUserButton = document.getElementById("current-user-button");
+        const fillSingleJsonButton = document.getElementById("fill-single-json-button");
+        const fillMultiJsonButton = document.getElementById("fill-multi-json-button");
         const signDemoButton = document.getElementById("sign-demo-button");
         const logError = (msg) => {
             if (!outputBox) return;
@@ -158,32 +162,75 @@
             }
         });
 
-        signButton.addEventListener("click", async () => {
-            const messages = (inputBox.value || "")
-                .split("\n")
-                .map((item) => item.trim())
-                .filter((item) => item.length > 0);
-            if (!messages.length) {
-                logError("请输入至少一条待签名内容");
-                return;
-            }
+        const isPlainObject = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+
+        function parseInputPayloads() {
+            const raw = inputBox.value.trim();
+            if (!raw) return [];
             try {
-                const payload = await window.BuckyApi.signWithActiveDid(messages);
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) {
+                    return parsed.filter(isPlainObject);
+                }
+                if (isPlainObject(parsed)) {
+                    return [parsed];
+                }
+            } catch (err) {
+                const lines = raw
+                    .split("\n")
+                    .map((line) => line.trim())
+                    .filter((line) => line.length > 0);
+                const objects = [];
+                lines.forEach((line, index) => {
+                    try {
+                        const value = JSON.parse(line);
+                        if (isPlainObject(value)) {
+                            objects.push(value);
+                        }
+                    } catch (lineErr) {
+                        throw new Error(`第 ${index + 1} 行不是合法 JSON 对象`);
+                    }
+                });
+                if (objects.length) {
+                    return objects;
+                }
+            }
+            return [];
+        }
+
+        async function signPayloads(payloads) {
+            try {
+                const payload = await window.BuckyApi.signJsonWithActiveDid(payloads);
                 if (payload?.code === 0) {
-                    console.log(payload);
                     const signatures = payload.data?.signatures ?? [];
                     outputBox.value = JSON.stringify(signatures, null, 2);
                     outputBox.classList.remove("highlight");
                     void outputBox.offsetWidth;
                     outputBox.classList.add("highlight");
                 } else if (payload?.code === 7) {
-                    logError(payload.message);
+                    logError(payload.message || "用户已取消");
                 } else if (typeof payload?.code === "number") {
                     logError(payload.message || "签名失败");
                 }
             } catch (err) {
                 logError(err instanceof Error ? err.message : String(err));
             }
+        }
+
+        signButton.addEventListener("click", async () => {
+            let payloads;
+            try {
+                payloads = parseInputPayloads();
+            } catch (err) {
+                logError(err instanceof Error ? err.message : String(err));
+                return;
+            }
+
+            if (!payloads.length) {
+                logError("请输入至少一个 JSON 对象（可为数组或按行输入）");
+                return;
+            }
+            await signPayloads(payloads);
         });
 
         currentUserButton.addEventListener("click", async () => {
@@ -202,26 +249,37 @@
             }
         });
 
-        signDemoButton.addEventListener("click", async () => {
-            const demoMessages = [
-                `demo-msg-1:${new Date().toISOString()}`,
-                "demo-msg-2:固定内容",
-                `demo-msg-3:${Math.random().toString(36).slice(2, 10)}`,
+        fillSingleJsonButton.addEventListener("click", () => {
+            const singlePayload = {
+                id: `single-${Date.now()}`,
+                timestamp: new Date().toISOString(),
+                message: "示例 JSON 数据",
+            };
+            inputBox.value = JSON.stringify(singlePayload, null, 2);
+            inputBox.classList.remove("highlight");
+            void inputBox.offsetWidth;
+            inputBox.classList.add("highlight");
+        });
+
+        fillMultiJsonButton.addEventListener("click", () => {
+            const demoPayloads = [
+                { id: "multi-1", timestamp: new Date().toISOString(), level: "info" },
+                { id: "multi-2", message: "固定内容", random: Math.random().toString(36).slice(2, 10) },
+                { id: "multi-3", nonce: Math.floor(Math.random() * 1_000_000) },
             ];
-            inputBox.value = demoMessages.join("\n");
-            try {
-                const payload = await window.BuckyApi.signWithActiveDid(demoMessages);
-                if (payload?.code === 0) {
-                    outputBox.value = JSON.stringify(payload.data?.signatures ?? [], null, 2);
-                    outputBox.classList.remove("highlight");
-                    void outputBox.offsetWidth;
-                    outputBox.classList.add("highlight");
-                } else {
-                    logError(payload?.message || "签名失败");
-                }
-            } catch (err) {
-                logError(err instanceof Error ? err.message : String(err));
-            }
+            inputBox.value = JSON.stringify(demoPayloads, null, 2);
+            inputBox.classList.remove("highlight");
+            void inputBox.offsetWidth;
+            inputBox.classList.add("highlight");
+        });
+
+        signDemoButton.addEventListener("click", async () => {
+            const quickPayloads = [
+                { id: "quick-1", timestamp: new Date().toISOString(), note: "快速签名示例" },
+                { id: "quick-2", message: "点击按钮后立即签名", seed: Math.random() },
+            ];
+            inputBox.value = JSON.stringify(quickPayloads, null, 2);
+            await signPayloads(quickPayloads);
         });
 
     </script>

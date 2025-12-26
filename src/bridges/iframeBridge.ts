@@ -2,7 +2,7 @@ import React from "react";
 import { useI18n } from "../i18n";
 import { useDidContext } from "../features/did/DidContext";
 import InputDialog from "../components/ui/InputDialog";
-import { signWithActiveDid } from "../features/did/api";
+import { JsonSignPayload, signJsonWithActiveDid } from "../features/did/api";
 import { fetchSnStatus, getCachedSnStatus } from "../features/sn/snStatusManager";
 import { createRoot, Root } from "react-dom/client";
 import { BuckyErrorCodes } from "./buckyErrorCodes";
@@ -52,7 +52,7 @@ type SignState = {
     value: string;
     error: string;
     loading: boolean;
-    messagesToSign: string[];
+    payloadsToSign: JsonSignPayload[];
 };
 
 export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HTMLIFrameElement | null> }) {
@@ -64,7 +64,7 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
         value: "",
         error: "",
         loading: false,
-        messagesToSign: [],
+        payloadsToSign: [],
     });
     const [signInProgress, setSignInProgress] = React.useState(false);
     const resolverRef = React.useRef<((result: any) => void) | null>(null);
@@ -117,13 +117,14 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
                 },
             };
         },
-        signWithActiveDid: (payload: { messages?: string[] }) => {
-            const messages = Array.isArray(payload?.messages)
-                ? payload.messages.filter(
-                    (item): item is string => typeof item === "string" && item.trim().length > 0
+        signJsonWithActiveDid: (payload: { payloads?: unknown[] }) => {
+            const payloads = Array.isArray(payload?.payloads)
+                ? payload.payloads.filter(
+                    (item): item is JsonSignPayload =>
+                        typeof item === "object" && item !== null && !Array.isArray(item)
                 )
                 : [];
-            if (!messages.length) {
+            if (!payloads.length) {
                 return { code: BuckyErrorCodes.NoMessage, message: t("settings.embedded_webview_sign_empty") };
             }
             if (!activeDid) {
@@ -139,7 +140,7 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
                     value: "",
                     error: "",
                     loading: false,
-                    messagesToSign: messages,
+                    payloadsToSign: payloads,
                 });
                 resolverRef.current = (result) => {
                     resolverRef.current = null;
@@ -150,16 +151,16 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
     }), [publicKey, t, activeDid, signInProgress, passwordDialog.open]);
 
     const closeDialog = React.useCallback(() => {
-        setPasswordDialog((prev) => ({ ...prev, open: false, value: "", error: "", messagesToSign: [] }));
+        setPasswordDialog((prev) => ({ ...prev, open: false, value: "", error: "", payloadsToSign: [] }));
         setSignInProgress(false);
     }, []);
 
     const handleConfirmPassword = React.useCallback(async () => {
         setPasswordDialog((prev) => ({ ...prev, loading: true, error: "" }));
         try {
-            const signatures = await signWithActiveDid(
+            const signatures = await signJsonWithActiveDid(
                 passwordDialog.value,
-                passwordDialog.messagesToSign
+                passwordDialog.payloadsToSign
             );
             resolverRef.current?.({ code: BuckyErrorCodes.Success, data: { signatures } });
             resolverRef.current = null;
@@ -174,7 +175,7 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
                 resolverRef.current?.({ code: BuckyErrorCodes.NativeError, message });
             }
         }
-    }, [passwordDialog.value, passwordDialog.messagesToSign, closeDialog, t]);
+    }, [passwordDialog.value, passwordDialog.payloadsToSign, closeDialog, t]);
 
     React.useEffect(() => {
         const container = document.createElement("div");
