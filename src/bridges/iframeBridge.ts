@@ -73,7 +73,7 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
 
     const publicKey = React.useMemo(() => {
         const wallet = activeDid?.bucky_wallets?.[0];
-        return wallet?.public_key ? JSON.stringify(wallet.public_key) : "";
+        return wallet?.public_key ? wallet.public_key : null;
     }, [activeDid?.bucky_wallets, activeDid?.id]);
 
     const actionHandlers = React.useMemo(() => ({
