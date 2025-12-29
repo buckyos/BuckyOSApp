@@ -134,7 +134,10 @@ const Setting: React.FC = () => {
         try {
             setOpenUrlError("");
             setOpenUrlLoading(true);
-            await openWebView(url);
+            const userData = { source: "settings-openurl", url };
+            await openWebView(url, undefined, undefined, undefined, userData, (data) => {
+                console.info("[WebView] closed", data);
+            });
             setOpenUrlLoading(false);
             setOpenUrlOpen(false);
             setOpenUrlValue(defaultOpenUrl);

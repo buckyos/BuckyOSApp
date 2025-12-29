@@ -67,7 +67,6 @@ export async function registerSnUser(args: {
     userName: string;
     activeCode: string;
     publicKeyJwk: string; // stringified JWK
-    zoneConfigJwt: string;
     userDomain?: string | null;
 }): Promise<{ ok: boolean; raw: any }> {
     const normalizedUserName = normalizeUsername(args.userName);
@@ -75,7 +74,6 @@ export async function registerSnUser(args: {
         user_name: normalizedUserName,
         active_code: args.activeCode,
         public_key: args.publicKeyJwk,
-        zone_config: args.zoneConfigJwt,
     };
     if (args.userDomain) params["user_domain"] = args.userDomain;
     const data = await snCall<{ code?: number }>("register_user", params);

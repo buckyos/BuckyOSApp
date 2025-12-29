@@ -259,6 +259,8 @@ pub fn set_active_did(app_handle: AppHandle, did_id: String) -> CommandResult<Di
 pub struct SnStatusPayload {
     pub registered: bool,
     pub username: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub zone_config: Option<String>,
 }
 
 #[tauri::command]
@@ -297,6 +299,10 @@ pub fn set_sn_status(
     record.sn_status = Some(SnStatusInfo {
         registered: status.registered,
         username,
+        zone_config: status
+            .zone_config
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty()),
     });
 
     save_vault(&store, &vault)

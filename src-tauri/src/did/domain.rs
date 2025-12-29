@@ -55,6 +55,8 @@ pub struct SnStatusInfo {
     pub registered: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub username: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub zone_config: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

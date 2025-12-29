@@ -1,6 +1,5 @@
 import React from "react";
 import { useI18n } from "../../../i18n";
-import InputDialog from "../../../components/ui/InputDialog";
 import GradientButton from "../../../components/ui/GradientButton";
 import { checkBuckyUsername, checkSnActiveCode } from "../../../services/sn";
 import {
@@ -10,7 +9,6 @@ import {
 } from "../../../features/sn/snStatusManager";
 import type { DidInfo } from "../../../features/did/types";
 
-const SN_BIND_TAG = "[BindSn]";
 const SN_USERNAME_MIN_LEN = 3;
 const SN_USERNAME_MAX_LEN = 30;
 const SN_USERNAME_REGEX = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
@@ -49,10 +47,8 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
     const [snInviteValid, setSnInviteValid] = React.useState<boolean | null>(null);
     const [checkingUser, setCheckingUser] = React.useState(false);
     const [checkingInvite, setCheckingInvite] = React.useState(false);
-    const [bindPwdOpen, setBindPwdOpen] = React.useState(false);
-    const [bindPwd, setBindPwd] = React.useState("");
     const [bindLoading, setBindLoading] = React.useState(false);
-    const [bindErr, setBindErr] = React.useState("");
+    const [bindError, setBindError] = React.useState("");
     const [userCheckError, setUserCheckError] = React.useState<string>("");
     const [inviteCheckError, setInviteCheckError] = React.useState<string>("");
     const [snQueryFailed, setSnQueryFailed] = React.useState(false);
@@ -228,7 +224,8 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
 
     const doBind = React.useCallback(async () => {
         if (!activeDid) return;
-        setBindErr("");
+        if (bindLoading) return;
+        setBindError("");
         setBindLoading(true);
         try {
             const didId = activeDid.id;
@@ -236,7 +233,6 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
             const normalizedUsername = snUsername.trim().toLowerCase();
             const record = await registerSnAccount({
                 didId,
-                password: bindPwd,
                 username: normalizedUsername,
                 inviteCode: snInvite.trim(),
                 publicKeyJwk: jwk,
@@ -248,24 +244,19 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
             } else {
                 setSnUsername(normalizedUsername);
             }
-            setBindPwd("");
-            setBindPwdOpen(false);
         } catch (e) {
             const msg = e instanceof Error ? e.message : String(e);
-            if (msg.startsWith("zone_config_failed::")) {
-                const detail = msg.split("::")[1] ?? msg;
-                setBindErr(t("sn.error.zone_config_failed", { message: detail }));
-            } else if (msg === "register_sn_user_failed") {
-                setBindErr(t("sn.error.register_failed"));
+            if (msg === "register_sn_user_failed") {
+                setBindError(t("sn.error.register_failed"));
             } else if (msg === "sn_bind_timeout") {
-                setBindErr(t("sn.error.poll_timeout"));
+                setBindError(t("sn.error.poll_timeout"));
             } else {
-                setBindErr(t("sn.error.bind_failed", { message: msg }));
+                setBindError(t("sn.error.bind_failed", { message: msg }));
             }
         } finally {
             setBindLoading(false);
         }
-    }, [activeDid, bindPwd, snUsername, snInvite, t]);
+    }, [activeDid, bindLoading, snUsername, snInvite, t]);
 
     if (!activeDid) {
         return (
@@ -363,35 +354,17 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
                     </div>
                     <div className="sn-page-actions">
                         <GradientButton
-                            onClick={() => {
-                                console.debug(SN_BIND_TAG, "open password dialog");
-                                setBindPwd("");
-                                setBindErr("");
-                                setBindPwdOpen(true);
-                            }}
-                            disabled={!canBind || checkingUser || checkingInvite}
+                            onClick={doBind}
+                            disabled={!canBind || checkingUser || checkingInvite || bindLoading}
                         >
                             {t("sn.bind_confirm")}
                         </GradientButton>
+                        {bindError && (
+                            <div style={{ color: "#ef4444", fontSize: 13, marginTop: 8 }}>{bindError}</div>
+                        )}
                     </div>
                 </>
             )}
-
-            <InputDialog
-                open={bindPwdOpen}
-                title={t("sn.bind_password_title")}
-                message={t("sn.bind_password_message")}
-                value={bindPwd}
-                onChange={setBindPwd}
-                inputType="password"
-                placeholder={t("sn.bind_password_placeholder")}
-                confirmText={t("sn.bind_confirm")}
-                cancelText={t("common.actions.cancel")}
-                onConfirm={doBind}
-                onCancel={() => { if (!bindLoading) { setBindPwdOpen(false); setBindPwd(""); } }}
-                loading={bindLoading}
-                error={bindErr}
-            />
         </section>
     );
 };

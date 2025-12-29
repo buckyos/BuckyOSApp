@@ -22,6 +22,8 @@ export interface WebViewWindowOptions {
     center?: boolean;
 }
 
+export type WebViewClosedCallback<T = unknown> = (userData: T) => void;
+
 async function getSafeWindowOptions(options?: WebViewWindowOptions) {
     let screenWidth = window.screen?.width ?? 1920;
     let screenHeight = window.screen?.height ?? 1080;
@@ -52,7 +54,14 @@ async function getSafeWindowOptions(options?: WebViewWindowOptions) {
     };
 }
 
-export async function openWebView(url: string, title?: string, label?: string, windowOptions?: WebViewWindowOptions) {
+export async function openWebView<T = unknown>(
+    url: string,
+    title?: string,
+    label?: string,
+    windowOptions?: WebViewWindowOptions,
+    userData?: T,
+    onClosed?: WebViewClosedCallback<T>
+) {
     let target = url.trim();
     if (!/^https?:\/\//i.test(target)) {
         target = `https://${target}`;
@@ -83,11 +92,16 @@ export async function openWebView(url: string, title?: string, label?: string, w
     );
     const safeOptions = await getSafeWindowOptions(windowOptions);
     console.debug("[WebView] open url window", { label: resolvedLabel, containerUrl, title: resolvedTitle, windowOptions: safeOptions });
-    new WebviewWindow(resolvedLabel, {
+    const webviewWindow = new WebviewWindow(resolvedLabel, {
         url: containerUrl,
         title: resolvedTitle,
         width: safeOptions?.width,
         height: safeOptions?.height,
         center: safeOptions?.center,
     });
+    if (onClosed) {
+        await webviewWindow.once("tauri://destroyed", () => {
+            onClosed(userData as T);
+        });
+    }
 }
