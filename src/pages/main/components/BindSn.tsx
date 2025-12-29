@@ -11,6 +11,19 @@ import {
 import type { DidInfo } from "../../../features/did/types";
 
 const SN_BIND_TAG = "[BindSn]";
+const SN_USERNAME_MIN_LEN = 3;
+const SN_USERNAME_MAX_LEN = 30;
+const SN_USERNAME_REGEX = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
+
+function normalizeSnInput(value: string): string {
+    return value.toLowerCase();
+}
+
+function isValidSnUsername(raw: string): boolean {
+    const name = raw.trim().toLowerCase();
+    if (name.length < SN_USERNAME_MIN_LEN || name.length > SN_USERNAME_MAX_LEN) return false;
+    return SN_USERNAME_REGEX.test(name);
+}
 
 export interface SnStatusSummary {
     initializing: boolean;
@@ -70,7 +83,7 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
                 setSnRegistered(cached.registered);
                 setSnInfo(cached.info);
                 if (cached.registered && cached.username) {
-                    setSnUsername(cached.username);
+                    setSnUsername(normalizeSnInput(cached.username));
                 }
                 setSnChecking(false);
                 setInitializing(false);
@@ -84,9 +97,9 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
                 setSnRegistered(record.registered);
                 setSnInfo(record.info);
                 if (record.registered && record.username) {
-                    setSnUsername(record.username);
+                    setSnUsername(normalizeSnInput(record.username));
                 } else if (!record.registered) {
-                    setSnUsername((activeDid.nickname || "").trim());
+                    setSnUsername(normalizeSnInput((activeDid.nickname || "").trim()));
                 }
             } catch (e) {
                 const msg = e instanceof Error ? e.message : String(e);
@@ -119,9 +132,9 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
                 const cached = await getCachedSnStatus(activeDid.id);
                 if (cancelled) return;
                 if (cached?.registered && cached.username) {
-                    setSnUsername(cached.username);
+                    setSnUsername(normalizeSnInput(cached.username));
                 } else {
-                    setSnUsername((activeDid.nickname || "").trim());
+                    setSnUsername(normalizeSnInput((activeDid.nickname || "").trim()));
                 }
             } else {
                 setSnUsername("");
@@ -145,16 +158,30 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
         const name = snUsername.trim();
         if (!name) {
             setSnUserValid(null);
+            setUserCheckError("");
+            lastUserCheckedRef.current = "";
+            setCheckingUser(false);
             return;
         }
-        if (name === lastUserCheckedRef.current) return;
+        if (!isValidSnUsername(name)) {
+            setSnUserValid(null);
+            setUserCheckError(t("sn.username_format_hint"));
+            lastUserCheckedRef.current = "";
+            setCheckingUser(false);
+            return;
+        }
+        const normalized = name.toLowerCase();
+        if (normalized === lastUserCheckedRef.current) {
+            setCheckingUser(false);
+            return;
+        }
         setUserCheckError("");
         setCheckingUser(true);
         const timer = setTimeout(async () => {
             try {
-                const valid = await checkBuckyUsername(name);
+                const valid = await checkBuckyUsername(normalized);
                 setSnUserValid(valid);
-                lastUserCheckedRef.current = name;
+                lastUserCheckedRef.current = normalized;
             } catch (_) {
                 setSnUserValid(null);
                 setUserCheckError(t("sn.error.check_username_failed"));
@@ -162,7 +189,10 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
                 setCheckingUser(false);
             }
         }, 800);
-        return () => clearTimeout(timer);
+        return () => {
+            clearTimeout(timer);
+            setCheckingUser(false);
+        };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [snUsername, formVisible]);
 
@@ -203,17 +233,20 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
         try {
             const didId = activeDid.id;
             const jwk = JSON.stringify(activeDid.bucky_wallets[0].public_key as any);
+            const normalizedUsername = snUsername.trim().toLowerCase();
             const record = await registerSnAccount({
                 didId,
                 password: bindPwd,
-                username: snUsername.trim(),
+                username: normalizedUsername,
                 inviteCode: snInvite.trim(),
                 publicKeyJwk: jwk,
             });
             setSnRegistered(true);
             setSnInfo(record.info);
             if (record.username) {
-                setSnUsername(record.username);
+                setSnUsername(normalizeSnInput(record.username));
+            } else {
+                setSnUsername(normalizedUsername);
             }
             setBindPwd("");
             setBindPwdOpen(false);
@@ -286,23 +319,23 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
                             <input
                                 type="text"
                                 value={snUsername}
-                                onChange={(e) => setSnUsername(e.target.value)}
+                                onChange={(e) => setSnUsername(normalizeSnInput(e.target.value))}
                                 placeholder={t("sn.username_placeholder")}
                                 style={{ marginTop: 6 }}
                             />
                             {checkingUser && (
-                                <div style={{ color: "var(--muted-text)", fontSize: 12, marginTop: 4 }}>{t("sn.username_checking")}</div>
+                                <div style={{ color: "var(--muted-text)", fontSize: 13, marginTop: 4 }}>{t("sn.username_checking")}</div>
                             )}
                             {!checkingUser && snUserValid === true && (
-                                <div style={{ color: "#10b981", fontSize: 12, marginTop: 4 }}>
+                                <div style={{ color: "#10b981", fontSize: 13, marginTop: 4 }}>
                                     {t("sn.username_ok", { username: snUsername.trim() || snUsername })}
                                 </div>
                             )}
                             {!checkingUser && snUserValid === false && (
-                                <div style={{ color: "#ef4444", fontSize: 12, marginTop: 4 }}>{t("sn.username_taken")}</div>
+                                <div style={{ color: "#ef4444", fontSize: 13, marginTop: 4 }}>{t("sn.username_taken")}</div>
                             )}
                             {userCheckError && (
-                                <div style={{ color: "#ef4444", fontSize: 12, marginTop: 4 }}>{userCheckError}</div>
+                                <div style={{ color: "#ef4444", fontSize: 13, marginTop: 4 }}>{userCheckError}</div>
                             )}
                         </div>
                         <div>
@@ -315,16 +348,16 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
                                 style={{ marginTop: 6 }}
                             />
                             {checkingInvite && (
-                                <div style={{ color: "var(--muted-text)", fontSize: 12, marginTop: 4 }}>{t("sn.invite_checking")}</div>
+                                <div style={{ color: "var(--muted-text)", fontSize: 13, marginTop: 4 }}>{t("sn.invite_checking")}</div>
                             )}
                             {!checkingInvite && snInviteValid === true && (
-                                <div style={{ color: "#10b981", fontSize: 12, marginTop: 4 }}>{t("sn.invite_ok")}</div>
+                                <div style={{ color: "#10b981", fontSize: 13, marginTop: 4 }}>{t("sn.invite_ok")}</div>
                             )}
                             {!checkingInvite && snInviteValid === false && (
-                                <div style={{ color: "#ef4444", fontSize: 12, marginTop: 4 }}>{t("sn.invite_bad")}</div>
+                                <div style={{ color: "#ef4444", fontSize: 13, marginTop: 4 }}>{t("sn.invite_bad")}</div>
                             )}
                             {inviteCheckError && (
-                                <div style={{ color: "#ef4444", fontSize: 12, marginTop: 4 }}>{inviteCheckError}</div>
+                                <div style={{ color: "#ef4444", fontSize: 13, marginTop: 4 }}>{inviteCheckError}</div>
                             )}
                         </div>
                     </div>

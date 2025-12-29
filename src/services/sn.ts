@@ -7,6 +7,10 @@ const DEFAULT_SN_API_URL = "https://sn.buckyos.ai/kapi/sn";
 let snApiUrlOverride: string | null = null;
 let snApiUrlPromise: Promise<string> | null = null;
 
+function normalizeUsername(value: string): string {
+    return value.trim().toLowerCase();
+}
+
 export function setSnApiUrl(url: string) {
     snApiUrlOverride = url;
     snApiUrlPromise = Promise.resolve(url);
@@ -41,7 +45,9 @@ async function snCall<T = any>(method: string, params: JsonValue): Promise<T> {
 }
 
 export async function checkBuckyUsername(username: string): Promise<boolean> {
-    const data = await snCall<{ valid?: boolean; code?: number }>("check_username", { username });
+    const normalized = normalizeUsername(username);
+    if (!normalized) return false;
+    const data = await snCall<{ valid?: boolean; code?: number }>("check_username", { username: normalized });
     console.debug("[SN] check_username: done", { data });
 
     if (typeof data?.valid === "boolean") return data.valid;
@@ -64,8 +70,9 @@ export async function registerSnUser(args: {
     zoneConfigJwt: string;
     userDomain?: string | null;
 }): Promise<{ ok: boolean; raw: any }> {
+    const normalizedUserName = normalizeUsername(args.userName);
     const params: JsonValue = {
-        user_name: args.userName,
+        user_name: normalizedUserName,
         active_code: args.activeCode,
         public_key: args.publicKeyJwk,
         zone_config: args.zoneConfigJwt,
