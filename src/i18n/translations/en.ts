@@ -213,7 +213,7 @@ export default {
         no_did_hint: "No DID detected. Please create or import first.",
         username_label: "SN Username",
         username_placeholder: "Enter username",
-        username_format_hint: "Use 3-30 lowercase letters, numbers, or hyphens; start and end with a letter or number.",
+        username_format_hint: "Use 4-30 lowercase letters, numbers, or hyphens; start and end with a letter or number.",
         username_checking: "Checking username...",
         username_ok: "Username is available. After binding you can reach your zone via https://{{username}}.web3.buckyos.ai",
         username_taken: "Username is not available, please modify",

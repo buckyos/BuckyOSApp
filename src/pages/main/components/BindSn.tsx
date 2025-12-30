@@ -11,7 +11,7 @@ import {
 } from "../../../features/sn/snStatusManager";
 import type { DidInfo } from "../../../features/did/types";
 
-const SN_USERNAME_MIN_LEN = 3;
+const SN_USERNAME_MIN_LEN = 4;
 const SN_USERNAME_MAX_LEN = 30;
 const SN_USERNAME_REGEX = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
 
