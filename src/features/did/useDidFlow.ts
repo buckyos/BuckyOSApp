@@ -124,6 +124,10 @@ export function useDidFlow() {
         }
         // Check nickname uniqueness early on the create page
         const name = nickname.trim();
+        if (name.length < 5 || name.length > 20) {
+            setError(t("create.error.nickname_length"));
+            return;
+        }
         if (name) {
             try {
                 const dids = await listDids();

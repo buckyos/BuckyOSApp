@@ -11,8 +11,8 @@ import {
 } from "../../../features/sn/snStatusManager";
 import type { DidInfo } from "../../../features/did/types";
 
-const SN_USERNAME_MIN_LEN = 4;
-const SN_USERNAME_MAX_LEN = 30;
+const SN_USERNAME_MIN_LEN = 5;
+const SN_USERNAME_MAX_LEN = 20;
 const SN_USERNAME_REGEX = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
 
 function normalizeSnInput(value: string): string {
@@ -30,6 +30,7 @@ export interface SnStatusSummary {
     registered: boolean;
     checking: boolean;
     queryFailed: boolean;
+    oodBound: boolean;
 }
 
 interface BindSnProps {
@@ -43,7 +44,7 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
     const [snChecking, setSnChecking] = React.useState(false);
     const [, setSnError] = React.useState<string>("");
     const [snRegistered, setSnRegistered] = React.useState(false);
-    const [, setSnInfo] = React.useState<any>(null);
+    const [snInfo, setSnInfo] = React.useState<any>(null);
     const [snUsername, setSnUsername] = React.useState<string>("");
     const [snInvite, setSnInvite] = React.useState<string>("");
     const [snUserValid, setSnUserValid] = React.useState<boolean | null>(null);
@@ -63,8 +64,11 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
     const [initializing, setInitializing] = React.useState<boolean>(true);
     const lastUserCheckedRef = React.useRef<string>("");
     const lastInviteCheckedRef = React.useRef<string>("");
+    const snBound = Boolean(snInfo?.user_name);
+    const oodBound =
+        typeof snInfo?.zone_config === "string" && snInfo.zone_config.trim().length > 0;
 
-    const uiRegistered = snRegistered && !holdRegisteredUi;
+    const uiRegistered = snBound && !holdRegisteredUi;
     const formVisible = !snChecking && !snQueryFailed && !uiRegistered;
 
     React.useEffect(() => {
@@ -73,8 +77,9 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
             registered: uiRegistered,
             checking: snChecking,
             queryFailed: snQueryFailed,
+            oodBound,
         });
-    }, [initializing, uiRegistered, snChecking, snQueryFailed, onStatusChange]);
+    }, [initializing, uiRegistered, snChecking, snQueryFailed, oodBound, onStatusChange]);
 
     const refetchSn = React.useCallback(
         async (force = false) => {

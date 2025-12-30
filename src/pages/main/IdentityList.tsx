@@ -52,6 +52,7 @@ const IdentityList: React.FC = () => {
             // Use revealMnemonic as a password check for the target identity
             await revealMnemonic(password, targetId);
             await setActiveDid(targetId);
+            navigate("/main/setting", { replace: true });
             closePasswordDialog();
         } catch (err) {
             const { code, message } = parseCommandError(err);

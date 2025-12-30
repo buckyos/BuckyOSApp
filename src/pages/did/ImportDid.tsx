@@ -24,8 +24,13 @@ const ImportDid: React.FC<ImportDidProps> = ({ loading, error, onImport, onBack 
             setLocalError(t("import.error.mnemonic_required"));
             return;
         }
-        if (!nickname.trim()) {
+        const trimmedNickname = nickname.trim();
+        if (!trimmedNickname) {
             setLocalError(t("import.error.nickname_required"));
+            return;
+        }
+        if (trimmedNickname.length < 5 || trimmedNickname.length > 20) {
+            setLocalError(t("import.error.nickname_length"));
             return;
         }
         if (password !== confirmPassword) {
@@ -38,7 +43,7 @@ const ImportDid: React.FC<ImportDidProps> = ({ loading, error, onImport, onBack 
         }
         const mnemonicWords = trimmedMnemonic.split(/\s+/).filter(Boolean);
         setLocalError("");
-        onImport({ nickname: nickname.trim(), password, mnemonicWords });
+        onImport({ nickname: trimmedNickname, password, mnemonicWords });
     };
 
     const displayedError = localError || error;

@@ -15,6 +15,9 @@ interface CreateDidProps {
     error: string;
 }
 
+const NICKNAME_MIN_LEN = 5;
+const NICKNAME_MAX_LEN = 20;
+
 const CreateDid: React.FC<CreateDidProps> = ({
     nickname,
     setNickname,
@@ -31,12 +34,15 @@ const CreateDid: React.FC<CreateDidProps> = ({
     // Removed SN invite and register option from Create DID
     const [nicknameTaken, setNicknameTaken] = React.useState(false);
     const passwordsValid = password.length >= 6 && confirmPassword.length >= 6 && password === confirmPassword;
+    const trimmedNickname = nickname.trim();
+    const nicknameLengthValid =
+        trimmedNickname.length >= NICKNAME_MIN_LEN && trimmedNickname.length <= NICKNAME_MAX_LEN;
     // Allow proceeding with DID creation; SN registration will be handled on Home
-    const canProceed = !!nickname && !nicknameTaken && passwordsValid;
+    const canProceed = nicknameLengthValid && !nicknameTaken && passwordsValid;
 
     React.useEffect(() => {
         let alive = true;
-        const name = nickname.trim();
+        const name = trimmedNickname;
         if (!name) {
             setNicknameTaken(false);
             return;
@@ -79,6 +85,11 @@ const CreateDid: React.FC<CreateDidProps> = ({
                             style={{ paddingLeft: 40 }}
                         />
                     </div>
+                    {!nicknameLengthValid && trimmedNickname.length > 0 && (
+                        <p className="error" style={{ marginTop: 4 }}>
+                            {t("create.error.nickname_length")}
+                        </p>
+                    )}
                     {nicknameTaken && (
                         <p className="error" style={{ marginTop: 4 }}>
                             {t("create.error.nickname_exists")}
