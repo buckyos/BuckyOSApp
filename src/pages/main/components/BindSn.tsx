@@ -1,6 +1,8 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { useI18n } from "../../../i18n";
 import GradientButton from "../../../components/ui/GradientButton";
+import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 import { checkBuckyUsername, checkSnActiveCode } from "../../../services/sn";
 import {
     fetchSnStatus,
@@ -37,6 +39,7 @@ interface BindSnProps {
 
 const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
     const { t } = useI18n();
+    const navigate = useNavigate();
     const [snChecking, setSnChecking] = React.useState(false);
     const [, setSnError] = React.useState<string>("");
     const [snRegistered, setSnRegistered] = React.useState(false);
@@ -49,6 +52,11 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
     const [checkingInvite, setCheckingInvite] = React.useState(false);
     const [bindLoading, setBindLoading] = React.useState(false);
     const [bindError, setBindError] = React.useState("");
+    const [successDialogOpen, setSuccessDialogOpen] = React.useState(false);
+    const [successDialogUsername, setSuccessDialogUsername] = React.useState("");
+    const [pendingSuccessDialog, setPendingSuccessDialog] = React.useState(false);
+    const [holdRegisteredUi, setHoldRegisteredUi] = React.useState(false);
+    const [failureDialogOpen, setFailureDialogOpen] = React.useState(false);
     const [userCheckError, setUserCheckError] = React.useState<string>("");
     const [inviteCheckError, setInviteCheckError] = React.useState<string>("");
     const [snQueryFailed, setSnQueryFailed] = React.useState(false);
@@ -56,16 +64,17 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
     const lastUserCheckedRef = React.useRef<string>("");
     const lastInviteCheckedRef = React.useRef<string>("");
 
-    const formVisible = !snChecking && !snQueryFailed && !snRegistered;
+    const uiRegistered = snRegistered && !holdRegisteredUi;
+    const formVisible = !snChecking && !snQueryFailed && !uiRegistered;
 
     React.useEffect(() => {
         onStatusChange?.({
             initializing,
-            registered: snRegistered,
+            registered: uiRegistered,
             checking: snChecking,
             queryFailed: snQueryFailed,
         });
-    }, [initializing, snRegistered, snChecking, snQueryFailed, onStatusChange]);
+    }, [initializing, uiRegistered, snChecking, snQueryFailed, onStatusChange]);
 
     const refetchSn = React.useCallback(
         async (force = false) => {
@@ -244,6 +253,10 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
             } else {
                 setSnUsername(normalizedUsername);
             }
+            const displayUsername = record.username || normalizedUsername;
+            setSuccessDialogUsername(displayUsername);
+            setHoldRegisteredUi(true);
+            setPendingSuccessDialog(true);
         } catch (e) {
             const msg = e instanceof Error ? e.message : String(e);
             if (msg === "register_sn_user_failed") {
@@ -253,10 +266,19 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
             } else {
                 setBindError(t("sn.error.bind_failed", { message: msg }));
             }
+            setFailureDialogOpen(true);
         } finally {
             setBindLoading(false);
         }
     }, [activeDid, bindLoading, snUsername, snInvite, t]);
+
+    React.useEffect(() => {
+        if (!pendingSuccessDialog) return;
+        if (snRegistered && !snChecking && !snQueryFailed) {
+            setSuccessDialogOpen(true);
+            setPendingSuccessDialog(false);
+        }
+    }, [pendingSuccessDialog, snRegistered, snChecking, snQueryFailed]);
 
     if (!activeDid) {
         return (
@@ -264,12 +286,13 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
         );
     }
 
-    if (snRegistered && !snChecking && !snQueryFailed) {
+    if (uiRegistered && !snChecking && !snQueryFailed && !successDialogOpen && !failureDialogOpen) {
         return null;
     }
 
     return (
-        <section className="did-section" style={{ marginBottom: 12 }}>
+        <>
+            <section className="did-section" style={{ marginBottom: 12 }}>
             <header className="home-header">
                 <div>
                     <h1>{t("sn.bind_title")}</h1>
@@ -277,12 +300,12 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
                 </div>
             </header>
             {/* SN 引导暂时隐藏 learn more 链接，避免误导 */}
-            {!snRegistered && (
+            {!uiRegistered && (
                 <div className="sn-info-card">
                     <div className="sn-info-desc">{t("sn.about_desc")}</div>
                 </div>
             )}
-            {snChecking && !snRegistered && (
+            {snChecking && !uiRegistered && (
                 <div className="sn-loading-card" role="status" aria-live="polite">
                     <div className="sn-spinner" aria-hidden />
                     <div className="sn-loading-text">{t("sn.fetching")}</div>
@@ -301,7 +324,7 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
                     </div>
                 </div>
             )}
-            {!snRegistered && !snQueryFailed && !snChecking && (
+            {!uiRegistered && !snQueryFailed && !snChecking && (
                 <>
                     <div className="sn-status" style={{ marginBottom: 8 }}>{t("sn.status_unregistered")}</div>
                     <div className="sn-form">
@@ -365,7 +388,30 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
                     </div>
                 </>
             )}
-        </section>
+            </section>
+            <ConfirmDialog
+                open={successDialogOpen}
+                title={t("sn.dialog.title")}
+                message={t("sn.dialog.register_success_message", { username: successDialogUsername })}
+                confirmText={t("sn.dialog.confirm")}
+                showCancel={false}
+                onConfirm={() => {
+                    setSuccessDialogOpen(false);
+                    setHoldRegisteredUi(false);
+                    navigate("/main/home/ood-activate");
+                }}
+                onCancel={() => setSuccessDialogOpen(false)}
+            />
+            <ConfirmDialog
+                open={failureDialogOpen}
+                title={t("sn.dialog.title")}
+                message={t("sn.dialog.register_failed_message")}
+                confirmText={t("sn.dialog.confirm")}
+                showCancel={false}
+                onConfirm={() => setFailureDialogOpen(false)}
+                onCancel={() => setFailureDialogOpen(false)}
+            />
+        </>
     );
 };
 

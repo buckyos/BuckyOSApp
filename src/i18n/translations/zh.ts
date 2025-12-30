@@ -236,6 +236,12 @@ export default {
             poll_timeout: "等待注册结果超时。",
             bind_failed: "绑定失败：{{message}}",
         },
+        dialog: {
+            title: "提示",
+            confirm: "确定",
+            register_success_message: "恭喜,SN注册成功，\n用户名为{{username}}",
+            register_failed_message: "注册失败，请稍后重试。",
+        },
         register_option: "创建 DID 的同时注册 SN 账号",
         what_is: "什么是SN？",
         title: "什么是 SN？",

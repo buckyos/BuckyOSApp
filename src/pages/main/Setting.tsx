@@ -239,6 +239,7 @@ const Setting: React.FC = () => {
                 message={deleteWarning}
                 cancelText={t("common.actions.cancel", { _: "Cancel" })}
                 confirmText={t("settings.delete_continue")}
+                confirmVariant="danger"
                 onCancel={() => setDeleteConfirmOpen(false)}
                 onConfirm={() => {
                     setDeleteConfirmOpen(false);

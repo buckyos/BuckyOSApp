@@ -2,6 +2,7 @@ import React from "react";
 import { NavLink, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { Home as HomeIcon, PanelsTopLeft, Settings } from "lucide-react";
 import Home from "../pages/main/Home";
+import ActivateOod from "../pages/main/ActivateOod";
 import Apps from "../pages/main/Apps";
 import Setting from "../pages/main/Setting";
 import LanguageSelect from "../pages/main/LanguageSelect";
@@ -54,7 +55,7 @@ const MainRoutes: React.FC = () => {
         return path;
     }, [routerLocation.pathname]);
     const tabRoutes = React.useMemo(
-        () => new Set(["/main/home", "/main/apps", "/main/setting", "/main"]),
+        () => new Set(["/main/home", "/main/home/ood-activate", "/main/apps", "/main/setting", "/main"]),
         []
     );
     const showTabBar = tabRoutes.has(normalizedPath);
@@ -104,6 +105,7 @@ const MainRoutes: React.FC = () => {
                 <div className="content-body">
                     <Routes>
                         <Route path="/home" element={<Home />} />
+                        <Route path="/home/ood-activate" element={<ActivateOod />} />
                         <Route path="/apps" element={<Apps />} />
                         <Route path="/setting" element={<Setting />} />
                         <Route path="/setting/identities" element={<IdentityList />} />

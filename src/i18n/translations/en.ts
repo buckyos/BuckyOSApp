@@ -238,6 +238,12 @@ export default {
             poll_timeout: "Timed out waiting for registration result.",
             bind_failed: "Binding failed: {{message}}",
         },
+        dialog: {
+            title: "Notice",
+            confirm: "OK",
+            register_success_message: "Congrats, SN registered successfully.\nUsername: {{username}}",
+            register_failed_message: "Registration failed. Please try again later.",
+        },
         register_option: "Register an SN account while creating DID",
         what_is: "What is SN?",
         title: "What is SN?",
