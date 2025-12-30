@@ -33,6 +33,15 @@
     font-size: 16px;
 }
 
+.page-scroll-hide {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.page-scroll-hide::-webkit-scrollbar {
+    display: none;
+}
+
 .settings-item .right {
     display: flex;
     align-items: center;

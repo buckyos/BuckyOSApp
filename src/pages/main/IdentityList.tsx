@@ -77,7 +77,10 @@ const IdentityList: React.FC = () => {
     const goImport = () => { setAddOpen(false); navigate("/import"); };
 
     return (
-        <div className="App" style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+        <div
+            className="App page-scroll-hide"
+            style={{ display: "flex", flexDirection: "column", height: "100%", overflowY: "auto" }}
+        >
             <MobileHeader title={t("identities.title")} showBack={!forceSelection} />
             <div style={{ padding: "8px 16px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
                 <div className="settings-list">
