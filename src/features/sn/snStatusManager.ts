@@ -34,11 +34,16 @@ async function ensureCacheLoaded(): Promise<void> {
                 if (stored && typeof stored === "object") {
                     Object.entries(stored).forEach(([did, record]) => {
                         if (!record) return;
+                        const username = record.username ?? null;
+                        const zoneConfig = record.zone_config ?? null;
                         memoryCache[did] = {
-                            registered: !!record.registered,
-                            username: record.username ?? null,
-                            zoneConfig: record.zone_config ?? null,
-                            info: null,
+                            registered: Boolean(username),
+                            username,
+                            zoneConfig,
+                            info: {
+                                user_name: username,
+                                zone_config: zoneConfig,
+                            },
                         };
                     });
                 }
@@ -57,13 +62,17 @@ export async function getCachedSnStatus(didId: string): Promise<SnStatusRecord |
 
 export async function setCachedSnStatus(didId: string, record: SnStatusRecord): Promise<void> {
     await ensureCacheLoaded();
-    memoryCache[didId] = record;
+    const normalized: SnStatusRecord = {
+        ...record,
+        registered: Boolean(record.username),
+    };
+    memoryCache[didId] = normalized;
     await invoke("set_sn_status", {
         didId,
         status: {
-            registered: record.registered,
-            username: record.username ?? null,
-            zone_config: record.zoneConfig ?? null,
+            registered: normalized.registered,
+            username: normalized.username ?? null,
+            zone_config: normalized.zoneConfig ?? null,
         },
     });
 }
@@ -78,9 +87,10 @@ export async function fetchSnStatus(didId: string, publicKeyJwk: string): Promis
     const { ok, raw } = await getUserByPublicKey(publicKeyJwk);
     const username = ok && typeof raw?.user_name === "string" ? raw.user_name.trim() : null;
     const zoneConfig = ok && typeof raw?.zone_config === "string" ? raw.zone_config : null;
-    const record: SnStatusRecord = ok
-        ? { registered: true, info: raw, username, zoneConfig }
-        : { registered: false, info: null, username: null, zoneConfig: null };
+    const registered = Boolean(username);
+    const record: SnStatusRecord = registered
+        ? { registered, info: raw, username, zoneConfig }
+        : { registered, info: raw ?? null, username: null, zoneConfig: zoneConfig ?? null };
     await setCachedSnStatus(didId, record);
     return record;
 }
@@ -132,7 +142,7 @@ export async function registerSnAccount(options: RegisterSnOptions): Promise<SnS
     const zoneConfig =
         (typeof info?.zone_config === "string" && info.zone_config.trim()) || null;
     const record: SnStatusRecord = {
-        registered: true,
+        registered: Boolean(finalUsername),
         info,
         username: finalUsername,
         zoneConfig,

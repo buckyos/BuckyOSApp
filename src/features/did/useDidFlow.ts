@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/core";
 import { useI18n } from "../../i18n";
 import { listDids } from "./api";
+import { fetchSnStatus } from "../sn/snStatusManager";
 import type { DidInfo } from "./types";
 import { parseCommandError } from "../../utils/commandError";
 import { CommandErrorCodes } from "../../constants/commandErrorCodes";
@@ -78,6 +79,14 @@ export function useDidFlow() {
                 password: importPassword,
                 mnemonicWords,
             });
+            const wallet = info?.bucky_wallets?.[0];
+            if (wallet?.public_key) {
+                try {
+                    await fetchSnStatus(info.id, JSON.stringify(wallet.public_key as any));
+                } catch (err) {
+                    console.warn("[SN] import DID status check failed", err);
+                }
+            }
             setDidInfo(info);
             navigate("/main/home");
         } catch (err) {

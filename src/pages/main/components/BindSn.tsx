@@ -90,25 +90,37 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
             if (cached) {
                 setSnError("");
                 setSnQueryFailed(false);
-                setSnRegistered(cached.registered);
-                setSnInfo(cached.info);
-                if (cached.registered && cached.username) {
+                setSnRegistered(Boolean(cached.username));
+                setSnInfo(
+                    cached.info ?? {
+                        user_name: cached.username ?? null,
+                        zone_config: cached.zoneConfig ?? null,
+                    }
+                );
+                if (cached.username) {
                     setSnUsername(normalizeSnInput(cached.username));
                 }
-                setSnChecking(false);
-                setInitializing(false);
-                return;
+                if (cached.username && !force) {
+                    setSnChecking(false);
+                    setInitializing(false);
+                    return;
+                }
             }
             try {
                 setSnChecking(true);
                 setSnError("");
                 setSnQueryFailed(false);
                 const record = await fetchSnStatus(didId, jwk);
-                setSnRegistered(record.registered);
-                setSnInfo(record.info);
-                if (record.registered && record.username) {
+                setSnRegistered(Boolean(record.username));
+                setSnInfo(
+                    record.info ?? {
+                        user_name: record.username ?? null,
+                        zone_config: record.zoneConfig ?? null,
+                    }
+                );
+                if (record.username) {
                     setSnUsername(normalizeSnInput(record.username));
-                } else if (!record.registered) {
+                } else if (!record.username) {
                     setSnUsername(normalizeSnInput((activeDid.nickname || "").trim()));
                 }
             } catch (e) {
@@ -141,7 +153,7 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
             if (activeDid) {
                 const cached = await getCachedSnStatus(activeDid.id);
                 if (cancelled) return;
-                if (cached?.registered && cached.username) {
+                if (cached?.username) {
                     setSnUsername(normalizeSnInput(cached.username));
                 } else {
                     setSnUsername(normalizeSnInput((activeDid.nickname || "").trim()));
