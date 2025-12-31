@@ -50,6 +50,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             greet,
             did::generate_mnemonic,
+            did::validate_mnemonic_words,
             did::create_did,
             did::import_did,
             did::wallet_exists,

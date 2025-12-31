@@ -53,6 +53,20 @@ pub fn generate_mnemonic() -> CommandResult<Vec<String>> {
 }
 
 #[tauri::command]
+pub fn validate_mnemonic_words(words: Vec<String>) -> CommandResult<Option<String>> {
+    for word in words {
+        let trimmed = word.trim();
+        if trimmed.is_empty() {
+            continue;
+        }
+        if Language::English.find_word(trimmed).is_none() {
+            return Ok(Some(trimmed.to_string()));
+        }
+    }
+    Ok(None)
+}
+
+#[tauri::command]
 pub fn create_did(
     app_handle: AppHandle,
     nickname: String,

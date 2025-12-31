@@ -86,6 +86,7 @@ export default {
         submit: "Import DID",
         error: {
             mnemonic_required: "Mnemonic phrase is required.",
+            invalid_mnemonic_word: "{{word}} is not a valid mnemonic word",
             nickname_required: "Nickname is required.",
             nickname_length: "Username must be 5-20 characters.",
             nickname_exists: "This nickname already exists.",

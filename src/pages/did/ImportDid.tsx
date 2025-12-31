@@ -1,4 +1,5 @@
 import React from "react";
+import { invoke } from "@tauri-apps/api/core";
 import MobileHeader from "../../components/ui/MobileHeader";
 import GradientButton from "../../components/ui/GradientButton";
 import { useI18n } from "../../i18n";
@@ -17,6 +18,47 @@ const ImportDid: React.FC<ImportDidProps> = ({ loading, error, onImport, onBack 
     const [confirmPassword, setConfirmPassword] = React.useState("");
     const [mnemonicInput, setMnemonicInput] = React.useState("");
     const [localError, setLocalError] = React.useState("");
+    const [mnemonicWordError, setMnemonicWordError] = React.useState("");
+    const validationSeq = React.useRef(0);
+    const lastValidated = React.useRef("");
+
+    const validateCompletedWords = React.useCallback(async (value: string) => {
+        const endsWithSpace = /\s$/.test(value);
+        const words = value.trim().split(/\s+/).filter(Boolean);
+        const completedWords = endsWithSpace ? words : words.slice(0, -1);
+
+        if (completedWords.length === 0) {
+            setMnemonicWordError("");
+            lastValidated.current = "";
+            return;
+        }
+
+        const validationKey = completedWords.join(" ");
+        if (validationKey === lastValidated.current) {
+            return;
+        }
+        lastValidated.current = validationKey;
+
+        const seq = ++validationSeq.current;
+        try {
+            const invalidWord = await invoke<string | null>("validate_mnemonic_words", {
+                words: completedWords,
+            });
+            if (seq !== validationSeq.current) return;
+            if (invalidWord) {
+                setMnemonicWordError(
+                    t("import.error.invalid_mnemonic_word", { word: invalidWord })
+                );
+            } else {
+                setMnemonicWordError("");
+            }
+        } catch (err) {
+            console.warn("[DID] validate mnemonic words failed", err);
+            if (seq === validationSeq.current) {
+                setMnemonicWordError("");
+            }
+        }
+    }, [t]);
 
     const handleSubmit = () => {
         const trimmedMnemonic = mnemonicInput.trim();
@@ -46,7 +88,7 @@ const ImportDid: React.FC<ImportDidProps> = ({ loading, error, onImport, onBack 
         onImport({ nickname: trimmedNickname, password, mnemonicWords });
     };
 
-    const displayedError = localError || error;
+    const displayedError = localError || mnemonicWordError || error;
 
     return (
         <div className="did-container" style={{ position: "relative", overflow: "hidden" }}>
@@ -65,8 +107,10 @@ const ImportDid: React.FC<ImportDidProps> = ({ loading, error, onImport, onBack 
                     <textarea
                         value={mnemonicInput}
                         onChange={(event) => {
-                            setMnemonicInput(event.target.value);
+                            const { value } = event.target;
+                            setMnemonicInput(value);
                             setLocalError("");
+                            validateCompletedWords(value);
                         }}
                         placeholder={t("import.mnemonic_placeholder")}
                         style={{
@@ -133,7 +177,7 @@ const ImportDid: React.FC<ImportDidProps> = ({ loading, error, onImport, onBack 
                 </div>
 
                 {displayedError && (
-                    <p className="error" style={{ margin: 0 }}>
+                    <p className="error" style={{ margin: 0, color: "#d64545" }}>
                         {displayedError}
                     </p>
                 )}

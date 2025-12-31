@@ -85,6 +85,7 @@ export default {
         submit: "导入 DID",
         error: {
             mnemonic_required: "请输入助记词。",
+            invalid_mnemonic_word: "{{word}} 不是一个合法的助记词",
             nickname_required: "请输入昵称。",
             nickname_length: "用户名长度需为 5-20 个字符。",
             nickname_exists: "该昵称已存在。",
