@@ -198,6 +198,26 @@ button:disabled {
     color: var(--app-text);
 }
 
+@media (prefers-color-scheme: dark) {
+    .mnemonic-item {
+        background: #141a2b; /* slightly lighter than app bg */
+        border-color: #3a4252;
+    }
+
+    .mnemonic-index {
+        background: rgba(124, 166, 255, 0.18);
+        color: #a9b7ff;
+    }
+
+    .mnemonic-word,
+    .selected-box .mnemonic-word,
+    .selected-grid .mnemonic-word {
+        background: #141a2b;
+        border-color: #3a4252;
+        color: var(--app-text);
+    }
+}
+
 .mnemonic-info {
     background: #f5f6ff;
     color: #5960a9;
