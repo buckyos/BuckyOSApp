@@ -43,7 +43,6 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
     const navigate = useNavigate();
     const [snChecking, setSnChecking] = React.useState(false);
     const [, setSnError] = React.useState<string>("");
-    const [snRegistered, setSnRegistered] = React.useState(false);
     const [snInfo, setSnInfo] = React.useState<any>(null);
     const [snUsername, setSnUsername] = React.useState<string>("");
     const [snInvite, setSnInvite] = React.useState<string>("");
@@ -90,7 +89,6 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
             if (cached) {
                 setSnError("");
                 setSnQueryFailed(false);
-                setSnRegistered(Boolean(cached.username));
                 setSnInfo(
                     cached.info ?? {
                         user_name: cached.username ?? null,
@@ -111,7 +109,6 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
                 setSnError("");
                 setSnQueryFailed(false);
                 const record = await fetchSnStatus(didId, jwk);
-                setSnRegistered(Boolean(record.username));
                 setSnInfo(
                     record.info ?? {
                         user_name: record.username ?? null,
@@ -126,7 +123,6 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
             } catch (e) {
                 const msg = e instanceof Error ? e.message : String(e);
                 setSnError(t("sn.error.query_failed", { message: msg }));
-                setSnRegistered(false);
                 setSnQueryFailed(true);
             } finally {
                 setSnChecking(false);
@@ -140,7 +136,6 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
         let cancelled = false;
         const run = async () => {
             setSnError("");
-            setSnRegistered(false);
             setSnQueryFailed(false);
             setSnInfo(null);
             setSnInvite("");
@@ -245,8 +240,8 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
     }, [snInvite, formVisible]);
 
     const canBind = React.useMemo(() => {
-        return !snRegistered && snUserValid === true && snInviteValid === true;
-    }, [snRegistered, snUserValid, snInviteValid]);
+        return !snBound && snUserValid === true && snInviteValid === true;
+    }, [snBound, snUserValid, snInviteValid]);
 
     const doBind = React.useCallback(async () => {
         if (!activeDid) return;
@@ -263,8 +258,12 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
                 inviteCode: snInvite.trim(),
                 publicKeyJwk: jwk,
             });
-            setSnRegistered(true);
-            setSnInfo(record.info);
+            setSnInfo(
+                record.info ?? {
+                    user_name: record.username ?? null,
+                    zone_config: record.zoneConfig ?? null,
+                }
+            );
             if (record.username) {
                 setSnUsername(normalizeSnInput(record.username));
             } else {
@@ -291,11 +290,11 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
 
     React.useEffect(() => {
         if (!pendingSuccessDialog) return;
-        if (snRegistered && !snChecking && !snQueryFailed) {
+        if (snBound && !snChecking && !snQueryFailed) {
             setSuccessDialogOpen(true);
             setPendingSuccessDialog(false);
         }
-    }, [pendingSuccessDialog, snRegistered, snChecking, snQueryFailed]);
+    }, [pendingSuccessDialog, snBound, snChecking, snQueryFailed]);
 
     if (!activeDid) {
         return (

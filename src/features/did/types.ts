@@ -16,7 +16,6 @@ export interface BuckyWallet {
 }
 
 export interface SnStatusInfo {
-    registered: boolean;
     username?: string | null;
 }
 

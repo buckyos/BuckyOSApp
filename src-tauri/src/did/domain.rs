@@ -52,7 +52,6 @@ pub struct BuckyIdentity {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct SnStatusInfo {
-    pub registered: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub username: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]

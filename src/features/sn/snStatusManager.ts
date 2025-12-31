@@ -2,7 +2,6 @@ import { invoke } from "@tauri-apps/api/core";
 import { getUserByPublicKey, registerSnUser } from "../../services/sn";
 
 export interface SnStatusRecord {
-    registered: boolean;
     info: any;
     username?: string | null;
     zoneConfig?: string | null;
@@ -18,7 +17,6 @@ export interface RegisterSnOptions {
 }
 
 type SnStatusStoreRecord = {
-    registered: boolean;
     username?: string | null;
     zone_config?: string | null;
 };
@@ -37,7 +35,6 @@ async function ensureCacheLoaded(): Promise<void> {
                         const username = record.username ?? null;
                         const zoneConfig = record.zone_config ?? null;
                         memoryCache[did] = {
-                            registered: Boolean(username),
                             username,
                             zoneConfig,
                             info: {
@@ -62,15 +59,11 @@ export async function getCachedSnStatus(didId: string): Promise<SnStatusRecord |
 
 export async function setCachedSnStatus(didId: string, record: SnStatusRecord): Promise<void> {
     await ensureCacheLoaded();
-    const normalized: SnStatusRecord = {
-        ...record,
-        registered: Boolean(record.username),
-    };
+    const normalized: SnStatusRecord = { ...record };
     memoryCache[didId] = normalized;
     await invoke("set_sn_status", {
         didId,
         status: {
-            registered: normalized.registered,
             username: normalized.username ?? null,
             zone_config: normalized.zoneConfig ?? null,
         },
@@ -87,10 +80,9 @@ export async function fetchSnStatus(didId: string, publicKeyJwk: string): Promis
     const { ok, raw } = await getUserByPublicKey(publicKeyJwk);
     const username = ok && typeof raw?.user_name === "string" ? raw.user_name.trim() : null;
     const zoneConfig = ok && typeof raw?.zone_config === "string" ? raw.zone_config : null;
-    const registered = Boolean(username);
-    const record: SnStatusRecord = registered
-        ? { registered, info: raw, username, zoneConfig }
-        : { registered, info: raw ?? null, username: null, zoneConfig: zoneConfig ?? null };
+    const record: SnStatusRecord = username
+        ? { info: raw, username, zoneConfig }
+        : { info: raw ?? null, username: null, zoneConfig: zoneConfig ?? null };
     await setCachedSnStatus(didId, record);
     return record;
 }
@@ -142,7 +134,6 @@ export async function registerSnAccount(options: RegisterSnOptions): Promise<SnS
     const zoneConfig =
         (typeof info?.zone_config === "string" && info.zone_config.trim()) || null;
     const record: SnStatusRecord = {
-        registered: Boolean(finalUsername),
         info,
         username: finalUsername,
         zoneConfig,

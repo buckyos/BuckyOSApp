@@ -257,7 +257,6 @@ pub fn set_active_did(app_handle: AppHandle, did_id: String) -> CommandResult<Di
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
 pub struct SnStatusPayload {
-    pub registered: bool,
     pub username: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub zone_config: Option<String>,
@@ -297,7 +296,6 @@ pub fn set_sn_status(
         .ok_or_else(|| CommandErrors::not_found("wallet_not_found"))?;
 
     record.sn_status = Some(SnStatusInfo {
-        registered: status.registered,
         username,
         zone_config: status
             .zone_config
