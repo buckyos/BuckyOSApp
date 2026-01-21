@@ -1,0 +1,51 @@
+name: Build Buckyos Desktop Windows Version
+on:
+    workflow_call:
+        inputs:
+            version:
+                required: true
+                type: string
+            arch:
+                required: true
+                type: string
+
+jobs:
+    build:
+        runs-on: ${{ inputs.arch == 'aarch64' && 'windows-11-arm' || 'windows-2025' }}
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+            - name: Setup pnpm
+              uses: pnpm/action-setup@v4
+              with:
+                version: "latest"
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                node-version: '22.x'
+            - name: Setup Rust
+              uses: dtolnay/rust-toolchain@stable
+              with:
+                toolchain: stable
+                targets: ${{inputs.arch}}-pc-windows-msvc
+            - name: Setup MSVC
+              uses: ilammy/msvc-dev-cmd@v1
+            - name: Install dependencies
+              run: pnpm install
+            - name: Update Cargo
+              run: cargo update
+              working-directory: ./src-tauri
+            - name: Build Buckyos Desktop
+              run: pnpm tauri build --no-bundle -- --target ${{inputs.arch}}-pc-windows-msvc
+            - name: Perpare artifact
+              run: |
+                mkdir -p release\BuckyOSApp\${{inputs.version}}\BuckyOSApp-windows-${{inputs.arch == 'x86_64' && 'amd64' || 'aarch64'}}
+                copy src-tauri\target\${{inputs.arch}}-pc-windows-msvc\release\buckyosapp.exe release\BuckyOSApp\${{inputs.version}}\BuckyOSApp-windows-${{inputs.arch == 'x86_64' && 'amd64' || 'aarch64'}}
+                tar -czvf BuckyOSApp-windows-${{inputs.arch == 'x86_64' && 'amd64' || 'aarch64'}}.tar.gz -C release .
+            - name: Upload Artifact
+              uses: actions/upload-artifact@v4
+              id: upload
+              with:
+                name: BuckyOSApp-windows-${{inputs.arch == 'x86_64' && 'amd64' || 'aarch64'}}
+                path: BuckyOSApp-windows-${{inputs.arch == 'x86_64' && 'amd64' || 'aarch64'}}.tar.gz
+                if-no-files-found: error
