@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { getUserByPublicKey, registerSnUser } from "../../services/sn";
-import { debug as logDebug, error as logError, info as logInfo, warn as logWarn } from "@tauri-apps/plugin-log";
+import { info as logInfo } from "@tauri-apps/plugin-log";
 
 export interface SnStatusRecord {
     info: any;
@@ -69,7 +69,7 @@ export async function setCachedSnStatus(didId: string, record: SnStatusRecord): 
             zone_config: normalized.zoneConfig ?? null,
         },
     });
-    logInfo(`[SN-BIND] setCachedSnStatus: ${didId}, ${JSON.stringify(normalized)}`);
+    logInfo(`[SN-BIND] setCachedSnStatus: ${didId}, ${normalized.username ?? "null"}, ${normalized.zoneConfig ?? "null"}`);
 }
 
 export async function clearCachedSnStatus(didId: string): Promise<void> {
