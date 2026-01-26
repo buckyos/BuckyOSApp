@@ -18,6 +18,7 @@ const Setting: React.FC = () => {
     const navigate = useNavigate();
     const { t, locale } = useI18n();
     const [theme, setTheme] = React.useState<string>(getTheme());
+    const isDev = import.meta.env.DEV;
     const { activeDid, refresh } = useDidContext();
     const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false);
     const [deleteOpen, setDeleteOpen] = React.useState(false);
@@ -211,25 +212,29 @@ const Setting: React.FC = () => {
                         </svg>
                     </button>
 
-                    <button className="settings-item" onClick={() => { setOpenUrlValue(defaultOpenUrl); setOpenUrlError(""); setOpenUrlOpen(true); }}>
-                        <span className="settings-left">
-                            <ExternalLink className="settings-icon" aria-hidden="true" strokeWidth={1.8} />
-                            <span className="label">{t("settings.openurl")}</span>
-                        </span>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="9 18 15 12 9 6" />
-                        </svg>
-                    </button>
+                    {isDev && (
+                        <button className="settings-item" onClick={() => { setOpenUrlValue(defaultOpenUrl); setOpenUrlError(""); setOpenUrlOpen(true); }}>
+                            <span className="settings-left">
+                                <ExternalLink className="settings-icon" aria-hidden="true" strokeWidth={1.8} />
+                                <span className="label">{t("settings.openurl")}</span>
+                            </span>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="9 18 15 12 9 6" />
+                            </svg>
+                        </button>
+                    )}
 
-                    <button className="settings-item" onClick={() => navigate("/main/setting/embedded-webview")}>
-                        <span className="settings-left">
-                            <Monitor className="settings-icon" aria-hidden="true" strokeWidth={1.8} />
-                            <span className="label">{t("settings.embedded_webview")}</span>
-                        </span>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="9 18 15 12 9 6" />
-                        </svg>
-                    </button>
+                    {isDev && (
+                        <button className="settings-item" onClick={() => navigate("/main/setting/embedded-webview")}>
+                            <span className="settings-left">
+                                <Monitor className="settings-icon" aria-hidden="true" strokeWidth={1.8} />
+                                <span className="label">{t("settings.embedded_webview")}</span>
+                            </span>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="9 18 15 12 9 6" />
+                            </svg>
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -282,21 +287,23 @@ const Setting: React.FC = () => {
                 loading={backupLoading}
                 error={backupError}
             />
-            <InputDialog
-                open={openUrlOpen}
-                title={t("settings.openurl_title")}
-                message={t("settings.openurl_subtitle", { _: "" })}
-                value={openUrlValue}
-                onChange={setOpenUrlValue}
-                inputType="text"
-                placeholder={t("settings.openurl_placeholder")}
-                confirmText={openUrlLoading ? t("settings.openurl_loading") : t("settings.openurl_submit")}
-                cancelText={t("common.actions.cancel", { _: "Cancel" })}
-                onConfirm={handleOpenUrl}
-                onCancel={() => { if (openUrlLoading) return; setOpenUrlOpen(false); setOpenUrlValue(""); setOpenUrlError(""); }}
-                loading={openUrlLoading}
-                error={openUrlError}
-            />
+            {isDev && (
+                <InputDialog
+                    open={openUrlOpen}
+                    title={t("settings.openurl_title")}
+                    message={t("settings.openurl_subtitle", { _: "" })}
+                    value={openUrlValue}
+                    onChange={setOpenUrlValue}
+                    inputType="text"
+                    placeholder={t("settings.openurl_placeholder")}
+                    confirmText={openUrlLoading ? t("settings.openurl_loading") : t("settings.openurl_submit")}
+                    cancelText={t("common.actions.cancel", { _: "Cancel" })}
+                    onConfirm={handleOpenUrl}
+                    onCancel={() => { if (openUrlLoading) return; setOpenUrlOpen(false); setOpenUrlValue(""); setOpenUrlError(""); }}
+                    loading={openUrlLoading}
+                    error={openUrlError}
+                />
+            )}
         </div>
     );
 };
