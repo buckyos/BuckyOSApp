@@ -81,6 +81,16 @@
             flex-wrap: wrap;
         }
 
+        .recording-info {
+            font-size: 14px;
+            color: #334155;
+            margin-bottom: 8px;
+        }
+
+        .recording-audio {
+            width: 100%;
+        }
+
         .action-button {
             flex: 1 1 auto;
             min-width: 100px;
@@ -125,6 +135,14 @@
             <button id="fill-single-json-button" class="action-button">填充单个 JSON</button>
             <button id="fill-multi-json-button" class="action-button">填充 JSON 数组</button>
             <button id="sign-demo-button" class="action-button">示例 JSON 并签名</button>
+            <button id="start-recording-button" class="action-button">Start Recording</button>
+            <button id="status-recording-button" class="action-button">Get Recording Status</button>
+            <button id="stop-recording-button" class="action-button">Stop Recording</button>
+            <button id="cancel-recording-button" class="action-button">Cancel Recording</button>
+        </div>
+        <div class="io-box">
+            <div id="recording-info" class="recording-info">录音状态：未开始</div>
+            <audio id="recording-audio" class="recording-audio" controls></audio>
         </div>
         <a href="https://bilibili.com">跳转到 bilibili</a>
     </div>
@@ -137,12 +155,42 @@
         const fillSingleJsonButton = document.getElementById("fill-single-json-button");
         const fillMultiJsonButton = document.getElementById("fill-multi-json-button");
         const signDemoButton = document.getElementById("sign-demo-button");
+        const startRecordingButton = document.getElementById("start-recording-button");
+        const statusRecordingButton = document.getElementById("status-recording-button");
+        const stopRecordingButton = document.getElementById("stop-recording-button");
+        const cancelRecordingButton = document.getElementById("cancel-recording-button");
+        const recordingInfo = document.getElementById("recording-info");
+        const recordingAudio = document.getElementById("recording-audio");
+        let recordingSessionId = null;
+        let recordingUrl = null;
         const logError = (msg) => {
             if (!outputBox) return;
             outputBox.value = msg;
             outputBox.classList.remove("highlight");
             void outputBox.offsetWidth;
             outputBox.classList.add("highlight");
+        };
+
+        const setOutput = (payload) => {
+            outputBox.value = JSON.stringify(payload ?? {}, null, 2);
+            outputBox.classList.remove("highlight");
+            void outputBox.offsetWidth;
+            outputBox.classList.add("highlight");
+        };
+
+        const updateRecordingInfo = (text) => {
+            if (!recordingInfo) return;
+            recordingInfo.textContent = text;
+        };
+
+        const setRecordingUrl = (url) => {
+            if (recordingUrl && recordingUrl.startsWith("blob:")) {
+                URL.revokeObjectURL(recordingUrl);
+            }
+            recordingUrl = url;
+            if (recordingAudio) {
+                recordingAudio.src = url || "";
+            }
         };
 
         publicKeyButton.addEventListener("click", async () => {
@@ -237,10 +285,7 @@
             try {
                 const result = await window.BuckyApi.getCurrentUser();
                 if (result?.code === 0) {
-                    outputBox.value = JSON.stringify(result.data ?? {}, null, 2);
-                    outputBox.classList.remove("highlight");
-                    void outputBox.offsetWidth;
-                    outputBox.classList.add("highlight");
+                    setOutput(result.data ?? {});
                 } else if (typeof result?.code === "number") {
                     logError(result.message || "获取当前用户失败");
                 }
@@ -280,6 +325,77 @@
             ];
             inputBox.value = JSON.stringify(quickPayloads, null, 2);
             await signPayloads(quickPayloads);
+        });
+
+        startRecordingButton.addEventListener("click", async () => {
+            try {
+                const result = await window.BuckyApi.startRecording({ maxDurationMs: 60_000 });
+                if (result?.code === 0) {
+                    recordingSessionId = result.data?.sessionId || null;
+                    updateRecordingInfo(`录音状态：进行中 (session: ${recordingSessionId || ""})`);
+                    setOutput(result);
+                } else {
+                    logError(result?.message || "启动录音失败");
+                }
+            } catch (err) {
+                logError(err instanceof Error ? err.message : String(err));
+            }
+        });
+
+        statusRecordingButton.addEventListener("click", async () => {
+            if (!recordingSessionId) {
+                logError("请先开始录音");
+                return;
+            }
+            try {
+                const result = await window.BuckyApi.getRecordingStatus(recordingSessionId);
+                if (result?.code === 0) {
+                    const status = result.data?.status || "unknown";
+                    const duration = result.data?.durationMs ?? 0;
+                    updateRecordingInfo(`录音状态：${status} (duration: ${duration}ms)`);
+                    setOutput(result);
+                } else {
+                    logError(result?.message || "查询录音状态失败");
+                }
+            } catch (err) {
+                logError(err instanceof Error ? err.message : String(err));
+            }
+        });
+
+        stopRecordingButton.addEventListener("click", async () => {
+            if (!recordingSessionId) {
+                logError("请先开始录音");
+                return;
+            }
+            try {
+                const result = await window.BuckyApi.stopRecording(recordingSessionId);
+                if (result?.code === 0) {
+                    const url = result.data?.url || "";
+                    setRecordingUrl(url);
+                    updateRecordingInfo("录音状态：已停止");
+                    setOutput(result);
+                } else {
+                    logError(result?.message || "停止录音失败");
+                }
+            } catch (err) {
+                logError(err instanceof Error ? err.message : String(err));
+            }
+        });
+
+        cancelRecordingButton.addEventListener("click", async () => {
+            if (!recordingSessionId) {
+                logError("请先开始录音");
+                return;
+            }
+            try {
+                const result = await window.BuckyApi.cancelRecording(recordingSessionId);
+                recordingSessionId = null;
+                setRecordingUrl("");
+                updateRecordingInfo("录音状态：已取消");
+                setOutput(result);
+            } catch (err) {
+                logError(err instanceof Error ? err.message : String(err));
+            }
         });
 
     </script>

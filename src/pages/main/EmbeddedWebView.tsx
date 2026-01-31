@@ -7,6 +7,13 @@ const EmbeddedWebView: React.FC = () => {
     const { t } = useI18n();
     const { iframeRef, defaultActionHandlers } = useBuckyIframeActions();
 
+    const iframeSrc = React.useMemo(() => {
+        const base = import.meta.env.DEV ? "http://localhost:1420" : "tauri://localhost";
+        const isAndroid = /Android/i.test(navigator.userAgent || "");
+        const host = import.meta.env.DEV && isAndroid ? "http://10.0.2.2:1420" : base;
+        return `${host}/test_api.html`;
+    }, []);
+
     useIframeBridge({ iframeRef, handlers: defaultActionHandlers });
 
     return (
@@ -26,7 +33,8 @@ const EmbeddedWebView: React.FC = () => {
                     <iframe
                         ref={iframeRef}
                         title="embedded-webview"
-                        src="http://localhost:1420/test_api.html"
+                        src={iframeSrc}
+                        allow="microphone"
                         style={{ width: "100%", height: "100%", border: "none" }}
                     />
                 </div>

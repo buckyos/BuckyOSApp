@@ -37,6 +37,7 @@ mod config;
 mod did;
 mod error;
 mod network;
+mod recorder;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -47,6 +48,7 @@ pub fn run() {
         .plugin(logging_plugin())
         .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(tauri_plugin_http::init())
+        .manage(recorder::RecorderManager::new())
         .invoke_handler(tauri::generate_handler![
             greet,
             did::generate_mnemonic,
@@ -69,6 +71,12 @@ pub fn run() {
             applist::get_applist,
             network::local_ipv4_list,
             config::get_sn_api_host,
+            recorder::recording_check_permission,
+            recorder::recording_request_permission,
+            recorder::recording_start,
+            recorder::recording_stop,
+            recorder::recording_cancel,
+            recorder::recording_status,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -57,6 +57,49 @@ rust {
     rootDirRel = "../../../"
 }
 
+val hostTag = run {
+    val osName = System.getProperty("os.name").lowercase()
+    when {
+        osName.contains("windows") -> "windows-x86_64"
+        osName.contains("mac") -> "darwin-x86_64"
+        osName.contains("linux") -> "linux-x86_64"
+        else -> "linux-x86_64"
+    }
+}
+
+tasks.register("copyCxxShared") {
+    doLast {
+        val ndkDir = try {
+            android.ndkDirectory
+        } catch (ex: Exception) {
+            val envNdk = System.getenv("ANDROID_NDK_HOME")?.let { File(it) }
+            if (envNdk != null && envNdk.exists()) {
+                envNdk
+            } else {
+                throw GradleException("NDK is not installed. Please install NDK via Android Studio and set ANDROID_NDK_HOME.", ex)
+            }
+        }
+        val toolchainRoot = File(ndkDir, "toolchains/llvm/prebuilt/$hostTag/sysroot/usr/lib")
+        val mappings = listOf(
+            "armeabi-v7a" to "arm-linux-androideabi",
+            "arm64-v8a" to "aarch64-linux-android",
+            "x86" to "i686-linux-android",
+            "x86_64" to "x86_64-linux-android"
+        )
+        mappings.forEach { (abi, triple) ->
+            val source = File(toolchainRoot, "$triple/libc++_shared.so")
+            if (!source.exists()) return@forEach
+            val destDir = File(projectDir, "src/main/jniLibs/$abi")
+            destDir.mkdirs()
+            source.copyTo(File(destDir, "libc++_shared.so"), overwrite = true)
+        }
+    }
+}
+
+tasks.named("preBuild") {
+    dependsOn("copyCxxShared")
+}
+
 dependencies {
     implementation("androidx.webkit:webkit:1.14.0")
     implementation("androidx.appcompat:appcompat:1.7.1")
