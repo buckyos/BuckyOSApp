@@ -6,9 +6,6 @@
 
 1. 只要页面运行在 BuckyOS Runtime（嵌入式 iframe 或独立 WebView），程序会自动向页面注入 `window.BuckyApi`。
 
-   - 若使用录音能力，宿主侧 iframe 需设置 `allow="microphone"`，否则无法获取麦克风权限。
-   - iOS 需在宿主 App 的 `Info.plist` 中配置 `NSMicrophoneUsageDescription`。
-
 2. 判断是否在 BuckyOS Runtime 环境中的方式：`if (window.BuckyApi)`。
 
 3. 在需要调用的地方使用 Promise 接口，如：
@@ -86,53 +83,6 @@
   - `8` (Busy)：当前已有签名请求在进行中，请稍后再发起新的请求。
 
 > **提示**：`signJsonWithActiveDid` 为交互式请求，可能等待用户输入较长时间。第三方页面需避免连续发送多次请求。
-
-### `BuckyApi.startRecording(options?: { maxDurationMs?: number }): Promise<{ code, message?, data?: { sessionId: string; mimeType: string } }>`
-
-- **说明**：请求宿主开始录音，并返回录音会话 ID。
-- **参数**：
-  - `maxDurationMs`（可选）：最大录音时长（毫秒），到时自动停止。
-- **成功 data**：`{ sessionId: string; mimeType: string }`（当前原生输出为 `audio/wav`）
-- **典型错误码**：
-  - `2` (NativeError)：不支持录音、麦克风权限被拒绝或初始化失败。
-  - `8` (Busy)：已有录音在进行中。
-
-> **提示**：移动端需在系统权限中允许麦克风访问，否则会返回权限错误。
-
-### `BuckyApi.getRecordingStatus(sessionId: string): Promise<{ code, message?, data?: { status: "idle" | "recording" | "stopping" | "stopped"; durationMs: number; hasResult: boolean; mimeType?: string; size?: number } }>`
-
-- **说明**：查询指定录音会话的当前状态。
-- **参数**：`sessionId` —— 录音会话 ID。
-- **成功 data**：
-  - `status`：录音状态。
-  - `durationMs`：当前已录制时长。
-  - `hasResult`：是否已有录音结果可获取。
-  - `mimeType`、`size`：若已生成录音结果则返回。
-- **典型错误码**：
-  - `2` (NativeError)：会话 ID 无效或录音状态异常。
-
-### `BuckyApi.stopRecording(sessionId: string): Promise<{ code, message?, data?: { filePath: string; url: string; mimeType: string; durationMs: number; size: number; sampleRate?: number; channels?: number } }>`
-
-- **说明**：停止录音并返回录音数据。
-- **参数**：`sessionId` —— 录音会话 ID。
-- **成功 data**：
-  - `filePath`：原生录音文件路径。
-  - `url`：可直接在 iframe 中播放的 URL。
-  - `mimeType`、`durationMs`、`size`：录音元信息。
-  - `sampleRate`、`channels`：可选的采样率与声道信息。
-- **典型错误码**：
-  - `2` (NativeError)：会话 ID 无效或录音已结束。
-
-> **提示**：`url` 为本地文件映射 URL，可直接用于 `<audio src>`. 
-
-> **提示**：原生录音会生成 WAV 文件，体积相对较大，建议及时上传/转码。
-
-### `BuckyApi.cancelRecording(sessionId: string): Promise<{ code, message? }>`
-
-- **说明**：取消录音并丢弃数据。
-- **参数**：`sessionId` —— 录音会话 ID。
-- **典型错误码**：
-  - `2` (NativeError)：会话 ID 无效或录音状态异常。
 
 ## 与宿主程序的交互
 

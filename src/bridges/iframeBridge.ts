@@ -8,7 +8,6 @@ import { createRoot, Root } from "react-dom/client";
 import { BuckyErrorCodes } from "./buckyErrorCodes";
 import { parseCommandError } from "../utils/commandError";
 import { CommandErrorCodes } from "../constants/commandErrorCodes";
-import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 
 export type IframeActionHandler = (payload: any) => unknown | Promise<unknown>;
 
@@ -56,18 +55,6 @@ type SignState = {
     payloadsToSign: JsonSignPayload[];
 };
 
-type RecordingStatus = "idle" | "recording" | "stopping" | "stopped";
-
-type RecordingResult = {
-    filePath: string;
-    url: string;
-    mimeType: string;
-    durationMs: number;
-    size: number;
-    sampleRate?: number;
-    channels?: number;
-};
-
 export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HTMLIFrameElement | null> }) {
     const { t } = useI18n();
     const { activeDid } = useDidContext();
@@ -83,159 +70,11 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
     const resolverRef = React.useRef<((result: any) => void) | null>(null);
     const portalContainerRef = React.useRef<HTMLDivElement | null>(null);
     const portalRootRef = React.useRef<Root | null>(null);
-    const recordingStatusRef = React.useRef<RecordingStatus>("idle");
-    const recordingSessionRef = React.useRef<string | null>(null);
-    const recordingStartedAtRef = React.useRef<number | null>(null);
-    const recordingLastResultRef = React.useRef<RecordingResult | null>(null);
 
     const publicKey = React.useMemo(() => {
         const wallet = activeDid?.bucky_wallets?.[0];
         return wallet?.public_key ? wallet.public_key : null;
     }, [activeDid?.bucky_wallets, activeDid?.id]);
-
-    const ensureRecordingPermission = React.useCallback(async () => {
-        const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || "");
-        if (!isMobile) return true;
-        if (!navigator.mediaDevices?.getUserMedia) return true;
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            stream.getTracks().forEach((track) => track.stop());
-            return true;
-        } catch {
-            return false;
-        }
-    }, []);
-
-    const resolveMimeType = React.useCallback((filePath: string) => {
-        if (filePath.endsWith(".m4a")) return "audio/mp4";
-        if (filePath.endsWith(".wav")) return "audio/wav";
-        if (filePath.endsWith(".aac")) return "audio/aac";
-        return "application/octet-stream";
-    }, []);
-
-    const getRecordingStatus = React.useCallback(async (payload: { sessionId?: string }) => {
-        const sessionId = payload?.sessionId;
-        if (!sessionId || sessionId !== recordingSessionRef.current) {
-            return { code: BuckyErrorCodes.NativeError, message: "Invalid recording session." };
-        }
-        try {
-            const status = await invoke<{ state: "idle" | "recording" | "paused"; durationMs: number }>(
-                "recording_status",
-                { request: { sessionId } },
-            );
-            const startedAt = recordingStartedAtRef.current;
-            const durationMs = startedAt ? Math.max(0, Date.now() - startedAt) : 0;
-            const last = recordingLastResultRef.current;
-            const mappedStatus: RecordingStatus = status.state === "recording" || status.state === "paused"
-                ? "recording"
-                : last
-                    ? "stopped"
-                    : "idle";
-            recordingStatusRef.current = mappedStatus;
-            return {
-                code: BuckyErrorCodes.Success,
-                data: {
-                    status: mappedStatus,
-                    durationMs: status.durationMs ?? (mappedStatus === "stopped" ? last?.durationMs ?? durationMs : durationMs),
-                    hasResult: Boolean(last),
-                    mimeType: last?.mimeType,
-                    size: last?.size,
-                },
-            };
-        } catch (error) {
-            const { message } = parseCommandError(error);
-            return { code: BuckyErrorCodes.NativeError, message };
-        }
-    }, []);
-
-    const startRecording = React.useCallback(async (payload: { maxDurationMs?: number }) => {
-        if (recordingStatusRef.current === "recording" || recordingStatusRef.current === "stopping") {
-            return { code: BuckyErrorCodes.Busy, message: "Recording already in progress." };
-        }
-        const hasPermission = await ensureRecordingPermission();
-        if (!hasPermission) {
-            return { code: BuckyErrorCodes.NativeError, message: "Microphone permission denied." };
-        }
-        try {
-            const maxDurationMs = payload?.maxDurationMs && payload.maxDurationMs > 0
-                ? payload.maxDurationMs
-                : 0;
-            const response = await invoke<{ sessionId: string; mimeType: string }>("recording_start", {
-                request: { maxDurationMs },
-            });
-            recordingStatusRef.current = "recording";
-            recordingSessionRef.current = response.sessionId;
-            recordingStartedAtRef.current = Date.now();
-            recordingLastResultRef.current = null;
-            return {
-                code: BuckyErrorCodes.Success,
-                data: {
-                    sessionId: response.sessionId,
-                    mimeType: response.mimeType,
-                },
-            };
-        } catch (error) {
-            const { message } = parseCommandError(error);
-            return { code: BuckyErrorCodes.NativeError, message };
-        }
-    }, [ensureRecordingPermission]);
-
-    const stopRecording = React.useCallback(async (payload: { sessionId?: string }) => {
-        const sessionId = payload?.sessionId;
-        if (!sessionId || sessionId !== recordingSessionRef.current) {
-            return { code: BuckyErrorCodes.NativeError, message: "Invalid recording session." };
-        }
-        try {
-            recordingStatusRef.current = "stopping";
-            const result = await invoke<{
-                filePath: string;
-                durationMs: number;
-                fileSize: number;
-                sampleRate?: number;
-                channels?: number;
-            }>("recording_stop", { request: { sessionId } });
-            const url = convertFileSrc(result.filePath);
-            const recordingResult: RecordingResult = {
-                filePath: result.filePath,
-                url,
-                mimeType: resolveMimeType(result.filePath),
-                durationMs: result.durationMs,
-                size: result.fileSize,
-                sampleRate: result.sampleRate,
-                channels: result.channels,
-            };
-            recordingStatusRef.current = "stopped";
-            recordingLastResultRef.current = recordingResult;
-            return { code: BuckyErrorCodes.Success, data: recordingResult };
-        } catch (error) {
-            const { message } = parseCommandError(error);
-            recordingStatusRef.current = "idle";
-            return { code: BuckyErrorCodes.NativeError, message };
-        }
-    }, [resolveMimeType]);
-
-    const cancelRecording = React.useCallback(async (payload: { sessionId?: string }) => {
-        const sessionId = payload?.sessionId;
-        if (!sessionId || sessionId !== recordingSessionRef.current) {
-            return { code: BuckyErrorCodes.NativeError, message: "Invalid recording session." };
-        }
-        if (recordingStatusRef.current !== "recording") {
-            recordingStatusRef.current = "idle";
-            recordingLastResultRef.current = null;
-            return { code: BuckyErrorCodes.Cancelled, message: "Recording cancelled." };
-        }
-        try {
-            recordingStatusRef.current = "stopping";
-            await invoke("recording_cancel", { request: { sessionId } });
-            recordingStatusRef.current = "idle";
-            recordingLastResultRef.current = null;
-            return { code: BuckyErrorCodes.Cancelled, message: "Recording cancelled." };
-        } catch (error) {
-            const { message } = parseCommandError(error);
-            recordingStatusRef.current = "idle";
-            return { code: BuckyErrorCodes.NativeError, message };
-        }
-    }, []);
 
     const actionHandlers = React.useMemo(() => ({
         getPublicKey: () => {
@@ -309,11 +148,7 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
                 };
             });
         },
-        startRecording,
-        getRecordingStatus,
-        stopRecording,
-        cancelRecording,
-    }), [publicKey, t, activeDid, signInProgress, passwordDialog.open, startRecording, getRecordingStatus, stopRecording, cancelRecording]);
+    }), [publicKey, t, activeDid, signInProgress, passwordDialog.open]);
 
     const closeDialog = React.useCallback(() => {
         setPasswordDialog((prev) => ({ ...prev, open: false, value: "", error: "", payloadsToSign: [] }));

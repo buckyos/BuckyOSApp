@@ -6,7 +6,7 @@
     const pending = new Map();
     let counter = 0;
     const DEFAULT_TIMEOUT = 10_000;
-    const NO_TIMEOUT_ACTIONS = new Set(["signJsonWithActiveDid", "startRecording", "stopRecording"]);
+    const NO_TIMEOUT_ACTIONS = new Set(["signJsonWithActiveDid"]);
 
     function buildId() {
         return `bucky_${Date.now()}_${counter++}`;
@@ -53,18 +53,6 @@
         },
         signJsonWithActiveDid(payloads) {
             return callNative("signJsonWithActiveDid", { payloads });
-        },
-        startRecording(options) {
-            return callNative("startRecording", options || {});
-        },
-        getRecordingStatus(sessionId) {
-            return callNative("getRecordingStatus", { sessionId });
-        },
-        stopRecording(sessionId) {
-            return callNative("stopRecording", { sessionId });
-        },
-        cancelRecording(sessionId) {
-            return callNative("cancelRecording", { sessionId });
         },
     };
 })();
