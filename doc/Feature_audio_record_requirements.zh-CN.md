@@ -181,3 +181,12 @@ API（Tauri Command）
 开放问题
 - 是否允许 export_recording_file 导出到用户指定路径（各平台权限差异）。
 - TTL 的具体时长（默认 7 天）是否允许由 WebView 配置。
+
+------ review -----
+用下面的Review提示词可以得到一些意见，基本和我自己看的相同：
+```
+计划在android的buckyos app sdk里提供如下SDK给开发者使用，review 一下:
+```
+
+https://gemini.google.com/share/533b068dad53
+
