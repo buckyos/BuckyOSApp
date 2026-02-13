@@ -566,8 +566,10 @@ pub fn generate_zone_boot_config_jwt(
 
 #[cfg(test)]
 mod tests {
+    #[cfg(feature = "wry-runtime-tests")]
     use super::domain::DEFAULT_BTC_ADDRESS_TYPE;
     use super::*;
+    #[cfg(feature = "wry-runtime-tests")]
     use tauri::test::mock_app;
 
     #[test]
@@ -589,6 +591,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "wry-runtime-tests")]
     fn test_create_did_flow() {
         let app = mock_app()
             .plugin(tauri_plugin_store::Builder::default().build())
@@ -647,6 +650,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "wry-runtime-tests")]
     fn test_extend_wallets() {
         let app = mock_app()
             .plugin(tauri_plugin_store::Builder::default().build())

@@ -3,6 +3,25 @@ import { useI18n } from "../i18n";
 import { useDidContext } from "../features/did/DidContext";
 import InputDialog from "../components/ui/InputDialog";
 import { JsonSignPayload, signJsonWithActiveDid } from "../features/did/api";
+import {
+    cancelRecording,
+    checkRecordingReadiness,
+    exportRecordingFile,
+    getPlaybackStatus,
+    getRecordingFileInfo,
+    getRecordingPermissions,
+    getRecordingStatus,
+    getRecordingUrl,
+    pauseRecording,
+    playRecording,
+    readRecordingFile,
+    requestRecordingPermissions,
+    resumeRecording,
+    startRecording,
+    markAudioInterruptionBegin,
+    stopPlayback,
+    stopRecording,
+} from "../features/audio/api";
 import { fetchSnStatus, getCachedSnStatus } from "../features/sn/snStatusManager";
 import { createRoot, Root } from "react-dom/client";
 import { BuckyErrorCodes } from "./buckyErrorCodes";
@@ -147,6 +166,117 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
                     resolve(result);
                 };
             });
+        },
+        startRecording: async (payload: {
+            sample_rate?: number;
+            channels?: 1 | 2;
+            bit_rate?: number;
+            format?: "m4a" | "wav";
+            tag?: string;
+        }) => {
+            const data = await startRecording({
+                sample_rate: payload?.sample_rate,
+                channels: payload?.channels,
+                bit_rate: payload?.bit_rate,
+                format: payload?.format,
+                tag: payload?.tag,
+            });
+            return { code: BuckyErrorCodes.Success, data };
+        },
+        pauseRecording: async (payload: { record_id?: string }) => {
+            if (!payload?.record_id) {
+                return { code: BuckyErrorCodes.NativeError, message: "record_id required" };
+            }
+            const data = await pauseRecording(payload.record_id);
+            return { code: BuckyErrorCodes.Success, data };
+        },
+        resumeRecording: async (payload: { record_id?: string }) => {
+            if (!payload?.record_id) {
+                return { code: BuckyErrorCodes.NativeError, message: "record_id required" };
+            }
+            const data = await resumeRecording(payload.record_id);
+            return { code: BuckyErrorCodes.Success, data };
+        },
+        stopRecording: async (payload: { record_id?: string }) => {
+            if (!payload?.record_id) {
+                return { code: BuckyErrorCodes.NativeError, message: "record_id required" };
+            }
+            const data = await stopRecording(payload.record_id);
+            return { code: BuckyErrorCodes.Success, data };
+        },
+        cancelRecording: async (payload: { record_id?: string }) => {
+            if (!payload?.record_id) {
+                return { code: BuckyErrorCodes.NativeError, message: "record_id required" };
+            }
+            const data = await cancelRecording(payload.record_id);
+            return { code: BuckyErrorCodes.Success, data };
+        },
+        getRecordingStatus: async () => {
+            const data = await getRecordingStatus();
+            return { code: BuckyErrorCodes.Success, data };
+        },
+        getRecordingFileInfo: async (payload: { record_id?: string }) => {
+            if (!payload?.record_id) {
+                return { code: BuckyErrorCodes.NativeError, message: "record_id required" };
+            }
+            const data = await getRecordingFileInfo(payload.record_id);
+            return { code: BuckyErrorCodes.Success, data };
+        },
+        readRecordingFile: async (payload: { record_id?: string; offset?: number; length?: number }) => {
+            if (!payload?.record_id) {
+                return { code: BuckyErrorCodes.NativeError, message: "record_id required" };
+            }
+            const data = await readRecordingFile(
+                payload.record_id,
+                payload.offset ?? 0,
+                payload.length ?? 4096
+            );
+            return { code: BuckyErrorCodes.Success, data };
+        },
+        getRecordingUrl: async (payload: { record_id?: string }) => {
+            if (!payload?.record_id) {
+                return { code: BuckyErrorCodes.NativeError, message: "record_id required" };
+            }
+            const data = await getRecordingUrl(payload.record_id);
+            return { code: BuckyErrorCodes.Success, data };
+        },
+        exportRecordingFile: async (payload: { record_id?: string; target_path?: string }) => {
+            if (!payload?.record_id || !payload?.target_path) {
+                return { code: BuckyErrorCodes.NativeError, message: "record_id and target_path required" };
+            }
+            const data = await exportRecordingFile(payload.record_id, payload.target_path);
+            return { code: BuckyErrorCodes.Success, data };
+        },
+        playRecording: async (payload: { record_id?: string }) => {
+            if (!payload?.record_id) {
+                return { code: BuckyErrorCodes.NativeError, message: "record_id required" };
+            }
+            const data = await playRecording(payload.record_id);
+            return { code: BuckyErrorCodes.Success, data };
+        },
+        stopPlayback: async () => {
+            const data = await stopPlayback();
+            return { code: BuckyErrorCodes.Success, data };
+        },
+        getPlaybackStatus: async () => {
+            const data = await getPlaybackStatus();
+            return { code: BuckyErrorCodes.Success, data };
+        },
+        getRecordingPermissions: async () => {
+            const data = await getRecordingPermissions();
+            return { code: BuckyErrorCodes.Success, data };
+        },
+        requestRecordingPermissions: async () => {
+            const data = await requestRecordingPermissions();
+            return { code: BuckyErrorCodes.Success, data };
+        },
+        checkRecordingReadiness: async () => {
+            const data = await checkRecordingReadiness();
+            return { code: BuckyErrorCodes.Success, data };
+        },
+        markAudioInterruptionBegin: async (payload: { reason?: string }) => {
+            const data = await markAudioInterruptionBegin(payload?.reason ?? "test_interrupt");
+            return { code: BuckyErrorCodes.Success, data };
         },
     }), [publicKey, t, activeDid, signInProgress, passwordDialog.open]);
 

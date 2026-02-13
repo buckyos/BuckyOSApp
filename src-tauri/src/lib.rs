@@ -1,4 +1,6 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
+use tauri::Manager;
+
 #[tauri::command]
 fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
@@ -33,6 +35,7 @@ fn logging_plugin<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
 }
 
 mod applist;
+mod audio;
 mod config;
 mod did;
 mod error;
@@ -40,13 +43,23 @@ mod network;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    #[allow(unused_mut)]
+    let mut builder = tauri::Builder::default()
+        .register_uri_scheme_protocol("buckyos-record", audio::handle_recording_uri_scheme)
+        .manage(audio::AudioRecordState::default())
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_log::Builder::new().build())
         .plugin(bucky_runtime_plugin())
         .plugin(logging_plugin())
         .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(tauri_plugin_http::init())
+        .setup(|app| {
+            audio::initialize_audio_recording(
+                app.state::<audio::AudioRecordState>(),
+                app.handle().clone(),
+            );
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             greet,
             did::generate_mnemonic,
@@ -69,7 +82,31 @@ pub fn run() {
             applist::get_applist,
             network::local_ipv4_list,
             config::get_sn_api_host,
-        ])
+            audio::start_recording,
+            audio::pause_recording,
+            audio::resume_recording,
+            audio::stop_recording,
+            audio::cancel_recording,
+            audio::get_recording_status,
+            audio::get_recording_file_info,
+            audio::read_recording_file,
+            audio::get_recording_url,
+            audio::export_recording_file,
+            audio::play_recording,
+            audio::stop_playback,
+            audio::get_playback_status,
+            audio::get_recording_permissions,
+            audio::request_recording_permissions,
+            audio::check_recording_readiness,
+            audio::mark_audio_interruption_begin,
+        ]);
+
+    #[cfg(target_os = "android")]
+    {
+        builder = builder.plugin(audio::android_bridge::init());
+    }
+
+    builder
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

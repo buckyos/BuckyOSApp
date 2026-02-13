@@ -42,8 +42,17 @@ zeroize = "1.7"
 jsonwebtoken = { version = "9", default-features = false, features = ["use_pem"] }
 if-addrs = "*"
 tauri-plugin-http = "2"
+hound = "3.5"
+base64 = "0.22"
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
+fs2 = "0.4"
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+cpal = "0.15"
+rodio = "0.20"
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem
 # DO NOT REMOVE!!
 custom-protocol = ["tauri/custom-protocol"]
+wry-runtime-tests = []
