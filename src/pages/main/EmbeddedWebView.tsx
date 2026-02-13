@@ -6,6 +6,7 @@ import { useIframeBridge, useBuckyIframeActions } from "../../bridges/iframeBrid
 const EmbeddedWebView: React.FC = () => {
     const { t } = useI18n();
     const { iframeRef, defaultActionHandlers } = useBuckyIframeActions();
+    const testPageUrl = `${window.location.origin}/test_api.html`;
 
     useIframeBridge({ iframeRef, handlers: defaultActionHandlers });
 
@@ -26,7 +27,7 @@ const EmbeddedWebView: React.FC = () => {
                     <iframe
                         ref={iframeRef}
                         title="embedded-webview"
-                        src="http://localhost:1420/test_api.html"
+                        src={testPageUrl}
                         style={{ width: "100%", height: "100%", border: "none" }}
                     />
                 </div>

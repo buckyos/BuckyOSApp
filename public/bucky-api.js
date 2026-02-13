@@ -21,6 +21,10 @@
 
     function callNative(action, payload) {
         return new Promise((resolve, reject) => {
+            if (!window.parent || window.parent === window) {
+                reject(new Error(`BuckyApi bridge unavailable: ${action}`));
+                return;
+            }
             const id = buildId();
             const timeout = NO_TIMEOUT_ACTIONS.has(action) ? null : DEFAULT_TIMEOUT;
             const timer = timeout
@@ -53,6 +57,57 @@
         },
         signJsonWithActiveDid(payloads) {
             return callNative("signJsonWithActiveDid", { payloads });
+        },
+        startRecording(options) {
+            return callNative("startRecording", options || {});
+        },
+        pauseRecording(record_id) {
+            return callNative("pauseRecording", { record_id });
+        },
+        resumeRecording(record_id) {
+            return callNative("resumeRecording", { record_id });
+        },
+        stopRecording(record_id) {
+            return callNative("stopRecording", { record_id });
+        },
+        cancelRecording(record_id) {
+            return callNative("cancelRecording", { record_id });
+        },
+        getRecordingStatus() {
+            return callNative("getRecordingStatus", {});
+        },
+        getRecordingFileInfo(record_id) {
+            return callNative("getRecordingFileInfo", { record_id });
+        },
+        readRecordingFile(record_id, offset, length) {
+            return callNative("readRecordingFile", { record_id, offset, length });
+        },
+        getRecordingUrl(record_id) {
+            return callNative("getRecordingUrl", { record_id });
+        },
+        exportRecordingFile(record_id, target_path) {
+            return callNative("exportRecordingFile", { record_id, target_path });
+        },
+        playRecording(record_id) {
+            return callNative("playRecording", { record_id });
+        },
+        stopPlayback() {
+            return callNative("stopPlayback", {});
+        },
+        getPlaybackStatus() {
+            return callNative("getPlaybackStatus", {});
+        },
+        getRecordingPermissions() {
+            return callNative("getRecordingPermissions", {});
+        },
+        requestRecordingPermissions() {
+            return callNative("requestRecordingPermissions", {});
+        },
+        checkRecordingReadiness() {
+            return callNative("checkRecordingReadiness", {});
+        },
+        markAudioInterruptionBegin(reason) {
+            return callNative("markAudioInterruptionBegin", { reason });
         },
     };
 })();

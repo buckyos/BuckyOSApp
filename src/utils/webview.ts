@@ -63,8 +63,14 @@ export async function openWebView<T = unknown>(
     onClosed?: WebViewClosedCallback<T>
 ) {
     let target = url.trim();
-    if (!/^https?:\/\//i.test(target)) {
-        target = `https://${target}`;
+    if (target.startsWith("/")) {
+        target = `${window.location.origin}${target}`;
+    } else if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(target)) {
+        if (/^(localhost|127\.0\.0\.1)(:\d+)?/i.test(target)) {
+            target = `http://${target}`;
+        } else {
+            target = `https://${target}`;
+        }
     }
     let resolvedTitle = title?.trim();
     if (!resolvedTitle) {

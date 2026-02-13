@@ -2,7 +2,7 @@ import React from "react";
 import { useSearchParams } from "react-router-dom";
 import { useIframeBridge, useBuckyIframeActions } from "../bridges/iframeBridge";
 
-const DEFAULT_URL = "http://localhost:1420/test_api.html";
+const DEFAULT_URL = `${window.location.origin}/test_api.html`;
 
 const WebContainer: React.FC = () => {
     const [searchParams] = useSearchParams();

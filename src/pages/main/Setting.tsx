@@ -12,7 +12,7 @@ import { parseCommandError } from "../../utils/commandError";
 import { CommandErrorCodes } from "../../constants/commandErrorCodes";
 import { SunMoon, Globe, Users, ShieldCheck, Trash2, ExternalLink, Monitor } from "lucide-react";
 
-const defaultOpenUrl = "http://localhost:1420/test_api.html";
+const defaultOpenUrl = `${window.location.origin}/test_api.html`;
 
 const Setting: React.FC = () => {
     const navigate = useNavigate();
@@ -129,8 +129,14 @@ const Setting: React.FC = () => {
             return;
         }
         let url = raw;
-        if (!/^https?:\/\//i.test(url)) {
-            url = `https://${url}`;
+        if (url.startsWith("/")) {
+            url = `${window.location.origin}${url}`;
+        } else if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(url)) {
+            if (/^(localhost|127\.0\.0\.1)(:\d+)?/i.test(url)) {
+                url = `http://${url}`;
+            } else {
+                url = `https://${url}`;
+            }
         }
         try {
             setOpenUrlError("");
