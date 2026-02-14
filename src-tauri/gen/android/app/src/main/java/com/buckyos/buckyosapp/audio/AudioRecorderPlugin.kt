@@ -3,6 +3,7 @@ package com.buckyos.buckyosapp.audio
 import android.Manifest
 import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
@@ -165,6 +166,8 @@ class AudioRecorderPlugin(private val activity: Activity) : Plugin(activity) {
                 start()
             }
 
+            startRecordingForegroundService()
+
             isRecording = true
             isPaused = false
             isInterrupted = false
@@ -228,6 +231,7 @@ class AudioRecorderPlugin(private val activity: Activity) : Plugin(activity) {
             ret.put("channels", currentChannels)
 
             cleanupRecording()
+            stopRecordingForegroundService()
             return ret
         } finally {
             isStopping = false
@@ -332,11 +336,18 @@ class AudioRecorderPlugin(private val activity: Activity) : Plugin(activity) {
             return
         }
 
-        ActivityCompat.requestPermissions(
-            activity,
-            arrayOf(Manifest.permission.RECORD_AUDIO),
-            REQUEST_RECORD_AUDIO,
-        )
+        val permissions = mutableListOf(Manifest.permission.RECORD_AUDIO)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val notifyGranted = ContextCompat.checkSelfPermission(
+                activity,
+                Manifest.permission.POST_NOTIFICATIONS,
+            ) == PackageManager.PERMISSION_GRANTED
+            if (!notifyGranted) {
+                permissions.add(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+
+        ActivityCompat.requestPermissions(activity, permissions.toTypedArray(), REQUEST_RECORD_AUDIO)
 
         Handler(Looper.getMainLooper()).postDelayed({
             val nowGranted = ContextCompat.checkSelfPermission(activity, Manifest.permission.RECORD_AUDIO) ==
@@ -411,12 +422,27 @@ class AudioRecorderPlugin(private val activity: Activity) : Plugin(activity) {
         mediaRecorder = null
     }
 
+    private fun startRecordingForegroundService() {
+        val intent = Intent(activity, AudioRecordingForegroundService::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            activity.startForegroundService(intent)
+        } else {
+            activity.startService(intent)
+        }
+    }
+
+    private fun stopRecordingForegroundService() {
+        val intent = Intent(activity, AudioRecordingForegroundService::class.java)
+        activity.stopService(intent)
+    }
+
     fun dispose() {
         maxDurationHandler = null
         try {
             mediaRecorder?.release()
         } catch (_: Exception) {
         }
+        stopRecordingForegroundService()
         stopPlaybackInternal()
     }
 }
