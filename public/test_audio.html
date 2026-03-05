@@ -182,7 +182,6 @@
                 <button id="run-all-button" class="action-button">Run E2E</button>
                 <button id="open-list-button" class="action-button">Open Recording List</button>
             </div>
-            <audio id="record-audio" controls></audio>
         </div>
     </div>
 
@@ -191,7 +190,6 @@
         const outputBox = document.getElementById("output-box");
         const recordIdInput = document.getElementById("record-id-input");
         const exportPathInput = document.getElementById("export-path-input");
-        const audioEl = document.getElementById("record-audio");
 
         const permGetButton = document.getElementById("perm-get-button");
         const permReqButton = document.getElementById("perm-req-button");
@@ -231,10 +229,6 @@
 
         async function playInHtmlAudio(recordId) {
             const result = await window.BuckyApi.getRecordingUrl(recordId);
-            if (result?.code === 0 && result?.data?.url) {
-                audioEl.src = result.data.url;
-                await audioEl.play().catch(() => undefined);
-            }
             return result;
         }
 
