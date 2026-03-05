@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8" />
@@ -26,29 +26,35 @@
         }
 
         .container {
-            width: min(560px, 100%);
+            width: min(640px, 100%);
             display: flex;
             flex-direction: column;
             gap: 12px;
         }
 
         .io-box {
-            border-radius: 22px;
+            border-radius: 18px;
             border: 1px solid #dfe3ea;
             background: #f8f9fb;
-            padding: 16px;
+            padding: 14px;
         }
 
         .section-title {
-            margin: 4px 0 10px;
+            margin: 0 0 10px;
             font-size: 14px;
             color: #334155;
             font-weight: 700;
         }
 
+        .hint {
+            margin: 0 0 10px;
+            font-size: 13px;
+            color: #64748b;
+        }
+
         .field-row {
             display: grid;
-            grid-template-columns: 120px 1fr;
+            grid-template-columns: 88px 1fr;
             gap: 8px;
             align-items: center;
             margin-bottom: 8px;
@@ -61,6 +67,7 @@
             border: 1px solid #cfd7e6;
             padding: 0 10px;
             font-size: 14px;
+            background: #fff;
         }
 
         .actions {
@@ -71,15 +78,21 @@
 
         .action-button {
             flex: 1 1 auto;
-            min-width: 100px;
-            height: 40px;
+            min-width: 112px;
+            height: 38px;
             border-radius: 10px;
             border: 1px solid #cfd7e6;
             background: #fff;
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 600;
             color: #0f172a;
             cursor: pointer;
+        }
+
+        .action-button.primary {
+            background: #1d4ed8;
+            border-color: #1d4ed8;
+            color: #fff;
         }
 
         textarea {
@@ -87,8 +100,8 @@
             border: none;
             background: transparent;
             resize: none;
-            min-height: 220px;
-            font-size: 15px;
+            min-height: 140px;
+            font-size: 14px;
             line-height: 1.5;
             color: #0f172a;
         }
@@ -99,12 +112,12 @@
         }
 
         .highlight {
-            animation: pulse 0.5s;
+            animation: pulse 0.45s;
         }
 
         @keyframes pulse {
             from {
-                box-shadow: 0 0 0 0 rgba(0, 122, 255, 0.4);
+                box-shadow: 0 0 0 0 rgba(0, 122, 255, 0.35);
             }
 
             to {
@@ -112,7 +125,7 @@
             }
         }
 
-        @media (max-width: 480px) {
+        @media (max-width: 560px) {
             body {
                 padding: 8px;
             }
@@ -122,13 +135,13 @@
                 gap: 10px;
             }
 
-            .actions {
-                gap: 6px;
-            }
-
             .action-button {
                 flex: 1 1 45%;
                 min-width: 0;
+            }
+
+            .field-row {
+                grid-template-columns: 72px 1fr;
             }
         }
     </style>
@@ -137,39 +150,39 @@
 <body>
     <div class="container">
         <div class="io-box">
-            <div class="section-title">录音测试</div>
+            <textarea id="output-box" placeholder="Output" readonly></textarea>
+        </div>
+
+        <div class="io-box">
+            <div class="section-title">Audio Debug</div>
+            <p class="hint">Recommended flow: Check Ready -> Start -> Stop -> open Recording List for playback. "Read 2KB" is only for low-level file debug.</p>
             <div class="field-row">
                 <label for="record-id-input">Record ID</label>
-                <input id="record-id-input" placeholder="start 后自动填充" />
+                <input id="record-id-input" placeholder="Auto-filled after Start, or paste from Recording List" />
             </div>
             <div class="field-row">
-                <label for="export-path-input">导出路径</label>
-                <input id="export-path-input" placeholder="例如 C:/Users/xxx/Desktop/demo.wav" />
+                <label for="export-path-input">Export Path</label>
+                <input id="export-path-input" placeholder="e.g. C:/Users/xxx/Desktop/demo.wav" />
             </div>
             <div class="actions">
                 <button id="perm-get-button" class="action-button">Get Perm</button>
                 <button id="perm-req-button" class="action-button">Request Perm</button>
                 <button id="ready-check-button" class="action-button">Check Ready</button>
-                <button id="rec-start-button" class="action-button">Start</button>
+                <button id="rec-start-button" class="action-button primary">Start</button>
                 <button id="rec-pause-button" class="action-button">Pause</button>
                 <button id="rec-resume-button" class="action-button">Resume</button>
                 <button id="rec-stop-button" class="action-button">Stop</button>
                 <button id="rec-cancel-button" class="action-button">Cancel</button>
                 <button id="rec-status-button" class="action-button">Rec Status</button>
                 <button id="rec-info-button" class="action-button">File Info</button>
-                <button id="rec-read-button" class="action-button">Read 2KB</button>
+                <button id="rec-read-button" class="action-button">Read 2KB (Debug)</button>
                 <button id="rec-url-button" class="action-button">Get URL</button>
                 <button id="rec-export-button" class="action-button">Export</button>
                 <button id="interrupt-button" class="action-button">Interrupt</button>
-                <button id="play-start-button" class="action-button">Play Native</button>
-                <button id="play-stop-button" class="action-button">Stop Native</button>
-                <button id="play-status-button" class="action-button">Play Status</button>
                 <button id="run-all-button" class="action-button">Run E2E</button>
+                <button id="open-list-button" class="action-button">Open Recording List</button>
             </div>
             <audio id="record-audio" controls></audio>
-        </div>
-        <div class="io-box">
-            <textarea id="output-box" placeholder="输出内容" readonly></textarea>
         </div>
     </div>
 
@@ -179,6 +192,7 @@
         const recordIdInput = document.getElementById("record-id-input");
         const exportPathInput = document.getElementById("export-path-input");
         const audioEl = document.getElementById("record-audio");
+
         const permGetButton = document.getElementById("perm-get-button");
         const permReqButton = document.getElementById("perm-req-button");
         const readyCheckButton = document.getElementById("ready-check-button");
@@ -193,37 +207,44 @@
         const recUrlButton = document.getElementById("rec-url-button");
         const recExportButton = document.getElementById("rec-export-button");
         const interruptButton = document.getElementById("interrupt-button");
-        const playStartButton = document.getElementById("play-start-button");
-        const playStopButton = document.getElementById("play-stop-button");
-        const playStatusButton = document.getElementById("play-status-button");
         const runAllButton = document.getElementById("run-all-button");
+        const openListButton = document.getElementById("open-list-button");
 
-        const logError = (msg) => {
-            if (!outputBox) return;
-            outputBox.value = msg;
-            outputBox.classList.remove("highlight");
-            void outputBox.offsetWidth;
-            outputBox.classList.add("highlight");
-        };
-
-        const logResult = (title, payload) => {
-            outputBox.value = `${title}\n${JSON.stringify(payload, null, 2)}`;
-            outputBox.classList.remove("highlight");
-            void outputBox.offsetWidth;
-            outputBox.classList.add("highlight");
-        };
-
-        const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
         const getRecordId = () => recordIdInput.value.trim();
+        const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+        function highlight(el) {
+            el.classList.remove("highlight");
+            void el.offsetWidth;
+            el.classList.add("highlight");
+        }
+
+        function logResult(title, payload) {
+            outputBox.value = `${title}\n${JSON.stringify(payload, null, 2)}`;
+            highlight(outputBox);
+        }
+
+        function logError(err) {
+            outputBox.value = err;
+            highlight(outputBox);
+        }
+
+        async function playInHtmlAudio(recordId) {
+            const result = await window.BuckyApi.getRecordingUrl(recordId);
+            if (result?.code === 0 && result?.data?.url) {
+                audioEl.src = result.data.url;
+                await audioEl.play().catch(() => undefined);
+            }
+            return result;
+        }
 
         if (!window.BuckyApi) {
-            logError("BuckyApi 未注入：请在 App 内嵌页面打开 test_audio.html");
+            logError("BuckyApi unavailable: open test_audio.html inside embedded app page");
         }
 
         permGetButton.addEventListener("click", async () => {
             try {
-                const result = await window.BuckyApi.getRecordingPermissions();
-                logResult("getRecordingPermissions", result);
+                logResult("getRecordingPermissions", await window.BuckyApi.getRecordingPermissions());
             } catch (err) {
                 logError(err instanceof Error ? err.message : String(err));
             }
@@ -231,8 +252,7 @@
 
         permReqButton.addEventListener("click", async () => {
             try {
-                const result = await window.BuckyApi.requestRecordingPermissions();
-                logResult("requestRecordingPermissions", result);
+                logResult("requestRecordingPermissions", await window.BuckyApi.requestRecordingPermissions());
             } catch (err) {
                 logError(err instanceof Error ? err.message : String(err));
             }
@@ -240,8 +260,7 @@
 
         readyCheckButton.addEventListener("click", async () => {
             try {
-                const result = await window.BuckyApi.checkRecordingReadiness();
-                logResult("checkRecordingReadiness", result);
+                logResult("checkRecordingReadiness", await window.BuckyApi.checkRecordingReadiness());
             } catch (err) {
                 logError(err instanceof Error ? err.message : String(err));
             }
@@ -261,8 +280,7 @@
 
         recPauseButton.addEventListener("click", async () => {
             try {
-                const result = await window.BuckyApi.pauseRecording(getRecordId());
-                logResult("pauseRecording", result);
+                logResult("pauseRecording", await window.BuckyApi.pauseRecording(getRecordId()));
             } catch (err) {
                 logError(err instanceof Error ? err.message : String(err));
             }
@@ -270,8 +288,7 @@
 
         recResumeButton.addEventListener("click", async () => {
             try {
-                const result = await window.BuckyApi.resumeRecording(getRecordId());
-                logResult("resumeRecording", result);
+                logResult("resumeRecording", await window.BuckyApi.resumeRecording(getRecordId()));
             } catch (err) {
                 logError(err instanceof Error ? err.message : String(err));
             }
@@ -297,8 +314,7 @@
 
         recStatusButton.addEventListener("click", async () => {
             try {
-                const result = await window.BuckyApi.getRecordingStatus();
-                logResult("getRecordingStatus", result);
+                logResult("getRecordingStatus", await window.BuckyApi.getRecordingStatus());
             } catch (err) {
                 logError(err instanceof Error ? err.message : String(err));
             }
@@ -306,8 +322,7 @@
 
         recInfoButton.addEventListener("click", async () => {
             try {
-                const result = await window.BuckyApi.getRecordingFileInfo(getRecordId());
-                logResult("getRecordingFileInfo", result);
+                logResult("getRecordingFileInfo", await window.BuckyApi.getRecordingFileInfo(getRecordId()));
             } catch (err) {
                 logError(err instanceof Error ? err.message : String(err));
             }
@@ -332,10 +347,7 @@
 
         recUrlButton.addEventListener("click", async () => {
             try {
-                const result = await window.BuckyApi.getRecordingUrl(getRecordId());
-                if (result?.code === 0 && result?.data?.url) {
-                    audioEl.src = result.data.url;
-                }
+                const result = await playInHtmlAudio(getRecordId());
                 logResult("getRecordingUrl", result);
             } catch (err) {
                 logError(err instanceof Error ? err.message : String(err));
@@ -344,8 +356,10 @@
 
         recExportButton.addEventListener("click", async () => {
             try {
-                const result = await window.BuckyApi.exportRecordingFile(getRecordId(), exportPathInput.value.trim());
-                logResult("exportRecordingFile", result);
+                logResult(
+                    "exportRecordingFile",
+                    await window.BuckyApi.exportRecordingFile(getRecordId(), exportPathInput.value.trim())
+                );
             } catch (err) {
                 logError(err instanceof Error ? err.message : String(err));
             }
@@ -353,35 +367,7 @@
 
         interruptButton.addEventListener("click", async () => {
             try {
-                const result = await window.BuckyApi.markAudioInterruptionBegin("test_interrupt");
-                logResult("markAudioInterruptionBegin", result);
-            } catch (err) {
-                logError(err instanceof Error ? err.message : String(err));
-            }
-        });
-
-        playStartButton.addEventListener("click", async () => {
-            try {
-                const result = await window.BuckyApi.playRecording(getRecordId());
-                logResult("playRecording", result);
-            } catch (err) {
-                logError(err instanceof Error ? err.message : String(err));
-            }
-        });
-
-        playStopButton.addEventListener("click", async () => {
-            try {
-                const result = await window.BuckyApi.stopPlayback();
-                logResult("stopPlayback", result);
-            } catch (err) {
-                logError(err instanceof Error ? err.message : String(err));
-            }
-        });
-
-        playStatusButton.addEventListener("click", async () => {
-            try {
-                const result = await window.BuckyApi.getPlaybackStatus();
-                logResult("getPlaybackStatus", result);
+                logResult("markAudioInterruptionBegin", await window.BuckyApi.markAudioInterruptionBegin("test_interrupt"));
             } catch (err) {
                 logError(err instanceof Error ? err.message : String(err));
             }
@@ -408,24 +394,15 @@
                 }
                 recordIdInput.value = recordId;
 
-                await sleep(800);
+                await sleep(700);
                 push("pauseRecording", await window.BuckyApi.pauseRecording(recordId));
-                await sleep(300);
+                await sleep(250);
                 push("resumeRecording", await window.BuckyApi.resumeRecording(recordId));
                 await sleep(900);
 
-                const stopped = await window.BuckyApi.stopRecording(recordId);
-                push("stopRecording", stopped);
-
-                const urlResult = await window.BuckyApi.getRecordingUrl(recordId);
+                push("stopRecording", await window.BuckyApi.stopRecording(recordId));
+                const urlResult = await playInHtmlAudio(recordId);
                 push("getRecordingUrl", urlResult);
-                if (urlResult?.code === 0 && urlResult?.data?.url) {
-                    audioEl.src = urlResult.data.url;
-                }
-
-                push("playRecording", await window.BuckyApi.playRecording(recordId));
-                await sleep(800);
-                push("stopPlayback", await window.BuckyApi.stopPlayback());
                 push("getPlaybackStatus", await window.BuckyApi.getPlaybackStatus());
 
                 logResult("Run E2E (done)", logs);
@@ -433,6 +410,10 @@
                 push("error", err instanceof Error ? err.message : String(err));
                 logResult("Run E2E (error)", logs);
             }
+        });
+
+        openListButton.addEventListener("click", () => {
+            window.location.href = "/test_audio_list.html";
         });
     </script>
 </body>

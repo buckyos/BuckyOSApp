@@ -33,6 +33,18 @@ export interface RecordingFileInfo {
   created_at: number;
 }
 
+export interface RecordingListItem {
+  record_id: string;
+  file_name: string;
+  state: RecordingState;
+  format: string;
+  created_at: number;
+  updated_at: number;
+  duration_ms?: number | null;
+  size_bytes: number;
+  file_exists: boolean;
+}
+
 export interface ApiErrorPayload {
   code: string;
   message: string;

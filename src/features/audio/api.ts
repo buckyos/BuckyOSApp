@@ -4,6 +4,7 @@ import type {
   PlaybackStatus,
   ReadinessStatus,
   RecordingFileInfo,
+  RecordingListItem,
   RecordingStatus,
   StartRecordingOptions,
 } from "./types";
@@ -49,6 +50,11 @@ export async function cancelRecording(recordId: string) {
 
 export async function getRecordingStatus() {
   const result = await invoke<ApiResult<RecordingStatus>>("get_recording_status");
+  return unwrap(result);
+}
+
+export async function listRecordings() {
+  const result = await invoke<ApiResult<RecordingListItem[]>>("list_recordings");
   return unwrap(result);
 }
 

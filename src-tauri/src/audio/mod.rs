@@ -193,6 +193,19 @@ pub struct RecordingFileInfo {
 }
 
 #[derive(Clone, Serialize)]
+pub struct RecordingListItem {
+    record_id: String,
+    file_name: String,
+    state: RecordingState,
+    format: String,
+    created_at: u64,
+    updated_at: u64,
+    duration_ms: Option<u64>,
+    size_bytes: u64,
+    file_exists: bool,
+}
+
+#[derive(Clone, Serialize)]
 pub struct RecordingFileChunk {
     chunk_base64: String,
     offset: u64,
@@ -922,6 +935,42 @@ pub fn get_recording_status(
 }
 
 #[tauri::command]
+pub fn list_recordings(state: State<'_, AudioRecordState>) -> ApiResult<Vec<RecordingListItem>> {
+    let guard = match state.inner.lock() {
+        Ok(guard) => guard,
+        Err(err) => return ApiResult::err(ERR_INTERNAL_ERROR, err.to_string()),
+    };
+
+    let mut records: Vec<&StoredRecording> = guard.recordings.values().collect();
+    records.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+
+    let list = records
+        .into_iter()
+        .map(|record| {
+            let path = PathBuf::from(&record.file_path);
+            let metadata = fs::metadata(&path).ok();
+            let size_bytes = metadata.as_ref().map_or(0, |m| m.len());
+            RecordingListItem {
+                record_id: record.record_id.clone(),
+                file_name: path
+                    .file_name()
+                    .map(|v| v.to_string_lossy().to_string())
+                    .unwrap_or_else(|| format!("{}.{}", record.record_id, record.format)),
+                state: record.state.clone(),
+                format: record.format.clone(),
+                created_at: record.created_at,
+                updated_at: record.updated_at,
+                duration_ms: record.duration_ms,
+                size_bytes,
+                file_exists: metadata.is_some(),
+            }
+        })
+        .collect();
+
+    ApiResult::ok(list)
+}
+
+#[tauri::command]
 pub fn get_recording_file_info(
     state: State<'_, AudioRecordState>,
     record_id: String,
@@ -1023,7 +1072,7 @@ pub fn handle_recording_uri_scheme<R: tauri::Runtime>(
         );
     };
 
-    let file_path = {
+    let (file_path, content_type) = {
         let guard = match state.inner.lock() {
             Ok(guard) => guard,
             Err(_) => {
@@ -1043,7 +1092,16 @@ pub fn handle_recording_uri_scheme<R: tauri::Runtime>(
                 &[],
             );
         };
-        PathBuf::from(&record.file_path)
+
+        let content_type = if record.format.eq_ignore_ascii_case("m4a")
+            || record.format.eq_ignore_ascii_case("mp4")
+        {
+            "audio/mp4"
+        } else {
+            "audio/wav"
+        };
+
+        (PathBuf::from(&record.file_path), content_type)
     };
 
     let mut file = match File::open(&file_path) {
@@ -1108,7 +1166,7 @@ pub fn handle_recording_uri_scheme<R: tauri::Runtime>(
 
         return build_http_response(
             tauri::http::StatusCode::PARTIAL_CONTENT,
-            "audio/wav",
+            content_type,
             bytes,
             &[
                 (tauri::http::header::ACCEPT_RANGES, "bytes".to_string()),
@@ -1132,7 +1190,7 @@ pub fn handle_recording_uri_scheme<R: tauri::Runtime>(
 
     build_http_response(
         tauri::http::StatusCode::OK,
-        "audio/wav",
+        content_type,
         bytes,
         &[(tauri::http::header::ACCEPT_RANGES, "bytes".to_string())],
     )

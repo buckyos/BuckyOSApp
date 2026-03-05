@@ -88,6 +88,7 @@ pub fn run() {
             audio::stop_recording,
             audio::cancel_recording,
             audio::get_recording_status,
+            audio::list_recordings,
             audio::get_recording_file_info,
             audio::read_recording_file,
             audio::get_recording_url,
