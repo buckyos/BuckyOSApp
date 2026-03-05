@@ -11,6 +11,7 @@ import {
     getRecordingFileInfo,
     getRecordingPermissions,
     getRecordingStatus,
+    listRecordings,
     getRecordingUrl,
     pauseRecording,
     playRecording,
@@ -213,6 +214,10 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
         },
         getRecordingStatus: async () => {
             const data = await getRecordingStatus();
+            return { code: BuckyErrorCodes.Success, data };
+        },
+        listRecordings: async () => {
+            const data = await listRecordings();
             return { code: BuckyErrorCodes.Success, data };
         },
         getRecordingFileInfo: async (payload: { record_id?: string }) => {

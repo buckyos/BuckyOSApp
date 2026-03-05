@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Recording List</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #fff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+        }
+
+        .container {
+            width: min(680px, 100%);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .io-box {
+            border-radius: 18px;
+            border: 1px solid #dfe3ea;
+            background: #f8f9fb;
+            padding: 14px;
+        }
+
+        .title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .section-title {
+            margin: 0;
+            font-size: 16px;
+            color: #334155;
+            font-weight: 700;
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .action-button {
+            height: 36px;
+            padding: 0 12px;
+            border-radius: 10px;
+            border: 1px solid #cfd7e6;
+            background: #fff;
+            font-size: 14px;
+            font-weight: 600;
+            color: #0f172a;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .audio-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 68vh;
+            overflow: auto;
+            padding-right: 2px;
+        }
+
+        .audio-item {
+            border: 1px solid #d7deea;
+            background: #fff;
+            border-radius: 10px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            cursor: pointer;
+        }
+
+        .audio-file-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: #0f172a;
+            line-height: 1.35;
+            word-break: break-all;
+        }
+
+        .audio-id {
+            font-size: 12px;
+            color: #64748b;
+            word-break: break-all;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        }
+
+        .audio-meta {
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        audio {
+            width: 100%;
+            margin-top: 2px;
+        }
+
+        textarea {
+            width: 100%;
+            border: none;
+            background: transparent;
+            resize: none;
+            min-height: 110px;
+            font-size: 14px;
+            line-height: 1.5;
+            color: #0f172a;
+        }
+
+        @media (max-width: 560px) {
+            body {
+                padding: 8px;
+            }
+
+            .container {
+                width: 100%;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="io-box">
+            <div class="title-row">
+                <h1 class="section-title">Recording Files</h1>
+                <div class="actions">
+                    <button id="refresh-button" class="action-button">Refresh</button>
+                    <a href="/test_audio.html" class="action-button">Back to Audio Test</a>
+                </div>
+            </div>
+            <div id="audio-list" class="audio-list"></div>
+        </div>
+
+        <div class="io-box">
+            <textarea id="output-box" placeholder="Output" readonly></textarea>
+        </div>
+    </div>
+
+    <script src="/bucky-api.js"></script>
+    <script>
+        const outputBox = document.getElementById("output-box");
+        const listEl = document.getElementById("audio-list");
+        const refreshButton = document.getElementById("refresh-button");
+        const audioUrlCache = new Map();
+
+        function logResult(title, payload) {
+            outputBox.value = `${title}\n${JSON.stringify(payload, null, 2)}`;
+        }
+
+        function formatDate(ms) {
+            if (!ms) return "-";
+            const d = new Date(ms);
+            if (Number.isNaN(d.getTime())) return String(ms);
+            return d.toLocaleString();
+        }
+
+        function formatDuration(ms) {
+            if (typeof ms !== "number") return "-";
+            if (ms < 1000) return `${ms}ms`;
+            return `${(ms / 1000).toFixed(2)} s`;
+        }
+
+        function formatSize(bytes) {
+            if (!bytes) return "0 B";
+            const units = ["B", "KB", "MB", "GB"];
+            let v = bytes;
+            let i = 0;
+            while (v >= 1024 && i < units.length - 1) {
+                v /= 1024;
+                i += 1;
+            }
+            return `${v.toFixed(i === 0 ? 0 : 2)} ${units[i]}`;
+        }
+
+        function base64ToBytes(base64) {
+            const binary = atob(base64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i += 1) {
+                bytes[i] = binary.charCodeAt(i);
+            }
+            return bytes;
+        }
+
+        function resolveMimeCandidates(format) {
+            const value = String(format || "").toLowerCase();
+            if (value === "m4a" || value === "mp4") {
+                return [
+                    "audio/mp4; codecs=\"mp4a.40.2\"",
+                    "audio/mp4",
+                    "audio/m4a",
+                    "audio/x-m4a",
+                    "video/mp4",
+                    "application/octet-stream",
+                    "",
+                ];
+            }
+            return ["audio/wav", "audio/x-wav", "application/octet-stream", ""];
+        }
+
+        function pickBlobMime(format) {
+            const probe = document.createElement("audio");
+            for (const candidate of resolveMimeCandidates(format)) {
+                if (!candidate) return "";
+                if (probe.canPlayType(candidate)) return candidate;
+            }
+            return "";
+        }
+
+        async function ensureRecordingBlobUrl(item) {
+            if (audioUrlCache.has(item.record_id)) {
+                return audioUrlCache.get(item.record_id).url;
+            }
+
+            const chunks = [];
+            let offset = 0;
+            const length = 256 * 1024;
+
+            while (true) {
+                const result = await window.BuckyApi.readRecordingFile(item.record_id, offset, length);
+                if (result?.code !== 0 || !result?.data) {
+                    throw new Error(result?.message || "readRecordingFile failed");
+                }
+
+                chunks.push(base64ToBytes(result.data.chunk_base64 || ""));
+                const readLength = Number(result.data.length || 0);
+                offset += readLength;
+
+                if (result.data.eof || readLength <= 0) {
+                    break;
+                }
+            }
+
+            let totalBytes = 0;
+            for (const c of chunks) totalBytes += c.length;
+
+            const mime = pickBlobMime(item.format);
+            const blob = mime ? new Blob(chunks, { type: mime }) : new Blob(chunks);
+            const url = URL.createObjectURL(blob);
+            audioUrlCache.set(item.record_id, { url, mime, totalBytes });
+            return url;
+        }
+
+        function getNativeRecordingUrl(recordId) {
+            return `buckyos-record://localhost/recording/${recordId}`;
+        }
+
+        async function ensurePlayerSource(item, player, forceBlob) {
+            if (!forceBlob && player.src) return;
+
+            if (forceBlob) {
+                const blobUrl = await ensureRecordingBlobUrl(item);
+                player.src = blobUrl;
+                player.load();
+                return;
+            }
+
+            player.src = getNativeRecordingUrl(item.record_id);
+            player.load();
+        }
+
+        async function refreshList() {
+            try {
+                for (const cached of audioUrlCache.values()) {
+                    URL.revokeObjectURL(cached.url);
+                }
+                audioUrlCache.clear();
+
+                const result = await window.BuckyApi.listRecordings();
+                if (result?.code !== 0) {
+                    logResult("listRecordings", result);
+                    return;
+                }
+
+                const items = Array.isArray(result.data) ? result.data : [];
+                if (!items.length) {
+                    listEl.innerHTML = "<div class=\"audio-meta\">No recordings found.</div>";
+                    return;
+                }
+
+                listEl.innerHTML = "";
+                for (const item of items) {
+                    const card = document.createElement("div");
+                    card.className = "audio-item";
+                    card.title = item.record_id;
+
+                    const name = document.createElement("div");
+                    name.className = "audio-file-name";
+                    name.textContent = item.file_name || `${item.record_id}.${item.format}`;
+
+                    const id = document.createElement("div");
+                    id.className = "audio-id";
+                    id.textContent = item.record_id;
+
+                    const meta = document.createElement("div");
+                    meta.className = "audio-meta";
+                    meta.textContent = `State: ${item.state} | Format: ${item.format} | Duration: ${formatDuration(item.duration_ms)} | Size: ${formatSize(item.size_bytes)}`;
+
+                    const created = document.createElement("div");
+                    created.className = "audio-meta";
+                    created.textContent = `Created: ${formatDate(item.created_at)}`;
+
+                    const player = document.createElement("audio");
+                    player.controls = true;
+                    player.preload = "metadata";
+                    player.src = "";
+
+                    card.appendChild(name);
+                    card.appendChild(id);
+                    card.appendChild(meta);
+                    card.appendChild(created);
+                    card.appendChild(player);
+
+                    let forceBlobNextTime = false;
+                    let blobFallbackApplied = false;
+
+                    if (item.file_exists) {
+                        player.src = getNativeRecordingUrl(item.record_id);
+                        player.load();
+                    }
+
+                    const startPlay = async () => {
+                        if (!item.file_exists) return;
+                        try {
+                            await ensurePlayerSource(item, player, forceBlobNextTime);
+                            await player.play();
+                        } catch (err) {
+                            try {
+                                forceBlobNextTime = true;
+                                await ensurePlayerSource(item, player, true);
+                                await player.play();
+                            } catch (retryErr) {
+                                const cached = audioUrlCache.get(item.record_id);
+                                outputBox.value = [
+                                    retryErr instanceof Error ? retryErr.message : String(retryErr),
+                                    `record_id=${item.record_id}`,
+                                    `format=${item.format}`,
+                                    `mime=${cached?.mime || "(none)"}`,
+                                    `bytes=${cached?.totalBytes || 0}`,
+                                    `src=${player.currentSrc || player.src || "(empty)"}`,
+                                ].join("\n");
+                            }
+                        }
+                    };
+
+                    card.addEventListener("click", async (event) => {
+                        if (event.target instanceof Element && event.target.closest("audio")) return;
+                        await startPlay();
+                    });
+
+                    player.addEventListener("click", async () => {
+                        if (!player.src && item.file_exists) {
+                            await startPlay();
+                        }
+                    });
+
+                    player.addEventListener("error", async () => {
+                        if (!item.file_exists || blobFallbackApplied) return;
+                        forceBlobNextTime = true;
+                        try {
+                            await ensurePlayerSource(item, player, true);
+                            blobFallbackApplied = true;
+                        } catch (err) {
+                            outputBox.value = err instanceof Error ? err.message : String(err);
+                        }
+                    });
+
+                    player.addEventListener("play", async () => {
+                        if (!player.src && item.file_exists) {
+                            try {
+                                const blobUrl = await ensureRecordingBlobUrl(item);
+                                player.src = blobUrl;
+                                await player.play();
+                            } catch (err) {
+                                outputBox.value = err instanceof Error ? err.message : String(err);
+                            }
+                        }
+                    });
+
+                    listEl.appendChild(card);
+                }
+            } catch (err) {
+                outputBox.value = err instanceof Error ? err.message : String(err);
+            }
+        }
+
+        if (!window.BuckyApi) {
+            outputBox.value = "BuckyApi unavailable: open test_audio_list.html inside embedded app page";
+        }
+
+        refreshButton.addEventListener("click", refreshList);
+        refreshList();
+    </script>
+</body>
+
+</html>

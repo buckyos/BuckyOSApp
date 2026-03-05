@@ -76,6 +76,9 @@
         getRecordingStatus() {
             return callNative("getRecordingStatus", {});
         },
+        listRecordings() {
+            return callNative("listRecordings", {});
+        },
         getRecordingFileInfo(record_id) {
             return callNative("getRecordingFileInfo", { record_id });
         },
