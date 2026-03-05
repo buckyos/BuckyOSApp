@@ -1,12 +1,20 @@
 import React from "react";
+import { useSearchParams } from "react-router-dom";
 import MobileHeader from "../../components/ui/MobileHeader";
 import { useI18n } from "../../i18n";
 import { useIframeBridge, useBuckyIframeActions } from "../../bridges/iframeBridge";
 
 const EmbeddedWebView: React.FC = () => {
     const { t } = useI18n();
+    const [searchParams] = useSearchParams();
     const { iframeRef, defaultActionHandlers } = useBuckyIframeActions();
-    const testPageUrl = `${window.location.origin}/test_api.html`;
+    const testPageUrl = React.useMemo(() => {
+        const rawSrc = searchParams.get("src")?.trim();
+        if (!rawSrc) return `${window.location.origin}/test_api.html`;
+        if (rawSrc.startsWith("/")) return `${window.location.origin}${rawSrc}`;
+        if (/^[a-z][a-z0-9+.-]*:\/\//i.test(rawSrc)) return rawSrc;
+        return `${window.location.origin}/${rawSrc.replace(/^\/+/, "")}`;
+    }, [searchParams]);
 
     useIframeBridge({ iframeRef, handlers: defaultActionHandlers });
 

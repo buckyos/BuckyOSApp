@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Audio Test</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        :root {
+            color-scheme: light;
+        }
+
+        body {
+            margin: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #fff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+        }
+
+        .container {
+            width: min(560px, 100%);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .io-box {
+            border-radius: 22px;
+            border: 1px solid #dfe3ea;
+            background: #f8f9fb;
+            padding: 16px;
+        }
+
+        .section-title {
+            margin: 4px 0 10px;
+            font-size: 14px;
+            color: #334155;
+            font-weight: 700;
+        }
+
+        .field-row {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .field-row input {
+            width: 100%;
+            height: 36px;
+            border-radius: 8px;
+            border: 1px solid #cfd7e6;
+            padding: 0 10px;
+            font-size: 14px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .action-button {
+            flex: 1 1 auto;
+            min-width: 100px;
+            height: 40px;
+            border-radius: 10px;
+            border: 1px solid #cfd7e6;
+            background: #fff;
+            font-size: 15px;
+            font-weight: 600;
+            color: #0f172a;
+            cursor: pointer;
+        }
+
+        textarea {
+            width: 100%;
+            border: none;
+            background: transparent;
+            resize: none;
+            min-height: 220px;
+            font-size: 15px;
+            line-height: 1.5;
+            color: #0f172a;
+        }
+
+        audio {
+            width: 100%;
+            margin-top: 8px;
+        }
+
+        .highlight {
+            animation: pulse 0.5s;
+        }
+
+        @keyframes pulse {
+            from {
+                box-shadow: 0 0 0 0 rgba(0, 122, 255, 0.4);
+            }
+
+            to {
+                box-shadow: 0 0 0 10px rgba(0, 122, 255, 0);
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 8px;
+            }
+
+            .container {
+                width: 100%;
+                gap: 10px;
+            }
+
+            .actions {
+                gap: 6px;
+            }
+
+            .action-button {
+                flex: 1 1 45%;
+                min-width: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="io-box">
+            <div class="section-title">录音测试</div>
+            <div class="field-row">
+                <label for="record-id-input">Record ID</label>
+                <input id="record-id-input" placeholder="start 后自动填充" />
+            </div>
+            <div class="field-row">
+                <label for="export-path-input">导出路径</label>
+                <input id="export-path-input" placeholder="例如 C:/Users/xxx/Desktop/demo.wav" />
+            </div>
+            <div class="actions">
+                <button id="perm-get-button" class="action-button">Get Perm</button>
+                <button id="perm-req-button" class="action-button">Request Perm</button>
+                <button id="ready-check-button" class="action-button">Check Ready</button>
+                <button id="rec-start-button" class="action-button">Start</button>
+                <button id="rec-pause-button" class="action-button">Pause</button>
+                <button id="rec-resume-button" class="action-button">Resume</button>
+                <button id="rec-stop-button" class="action-button">Stop</button>
+                <button id="rec-cancel-button" class="action-button">Cancel</button>
+                <button id="rec-status-button" class="action-button">Rec Status</button>
+                <button id="rec-info-button" class="action-button">File Info</button>
+                <button id="rec-read-button" class="action-button">Read 2KB</button>
+                <button id="rec-url-button" class="action-button">Get URL</button>
+                <button id="rec-export-button" class="action-button">Export</button>
+                <button id="interrupt-button" class="action-button">Interrupt</button>
+                <button id="play-start-button" class="action-button">Play Native</button>
+                <button id="play-stop-button" class="action-button">Stop Native</button>
+                <button id="play-status-button" class="action-button">Play Status</button>
+                <button id="run-all-button" class="action-button">Run E2E</button>
+            </div>
+            <audio id="record-audio" controls></audio>
+        </div>
+        <div class="io-box">
+            <textarea id="output-box" placeholder="输出内容" readonly></textarea>
+        </div>
+    </div>
+
+    <script src="/bucky-api.js"></script>
+    <script>
+        const outputBox = document.getElementById("output-box");
+        const recordIdInput = document.getElementById("record-id-input");
+        const exportPathInput = document.getElementById("export-path-input");
+        const audioEl = document.getElementById("record-audio");
+        const permGetButton = document.getElementById("perm-get-button");
+        const permReqButton = document.getElementById("perm-req-button");
+        const readyCheckButton = document.getElementById("ready-check-button");
+        const recStartButton = document.getElementById("rec-start-button");
+        const recPauseButton = document.getElementById("rec-pause-button");
+        const recResumeButton = document.getElementById("rec-resume-button");
+        const recStopButton = document.getElementById("rec-stop-button");
+        const recCancelButton = document.getElementById("rec-cancel-button");
+        const recStatusButton = document.getElementById("rec-status-button");
+        const recInfoButton = document.getElementById("rec-info-button");
+        const recReadButton = document.getElementById("rec-read-button");
+        const recUrlButton = document.getElementById("rec-url-button");
+        const recExportButton = document.getElementById("rec-export-button");
+        const interruptButton = document.getElementById("interrupt-button");
+        const playStartButton = document.getElementById("play-start-button");
+        const playStopButton = document.getElementById("play-stop-button");
+        const playStatusButton = document.getElementById("play-status-button");
+        const runAllButton = document.getElementById("run-all-button");
+
+        const logError = (msg) => {
+            if (!outputBox) return;
+            outputBox.value = msg;
+            outputBox.classList.remove("highlight");
+            void outputBox.offsetWidth;
+            outputBox.classList.add("highlight");
+        };
+
+        const logResult = (title, payload) => {
+            outputBox.value = `${title}\n${JSON.stringify(payload, null, 2)}`;
+            outputBox.classList.remove("highlight");
+            void outputBox.offsetWidth;
+            outputBox.classList.add("highlight");
+        };
+
+        const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+        const getRecordId = () => recordIdInput.value.trim();
+
+        if (!window.BuckyApi) {
+            logError("BuckyApi 未注入：请在 App 内嵌页面打开 test_audio.html");
+        }
+
+        permGetButton.addEventListener("click", async () => {
+            try {
+                const result = await window.BuckyApi.getRecordingPermissions();
+                logResult("getRecordingPermissions", result);
+            } catch (err) {
+                logError(err instanceof Error ? err.message : String(err));
+            }
+        });
+
+        permReqButton.addEventListener("click", async () => {
+            try {
+                const result = await window.BuckyApi.requestRecordingPermissions();
+                logResult("requestRecordingPermissions", result);
+            } catch (err) {
+                logError(err instanceof Error ? err.message : String(err));
+            }
+        });
+
+        readyCheckButton.addEventListener("click", async () => {
+            try {
+                const result = await window.BuckyApi.checkRecordingReadiness();
+                logResult("checkRecordingReadiness", result);
+            } catch (err) {
+                logError(err instanceof Error ? err.message : String(err));
+            }
+        });
+
+        recStartButton.addEventListener("click", async () => {
+            try {
+                const result = await window.BuckyApi.startRecording({ sample_rate: 44100, channels: 1, format: "wav" });
+                if (result?.code === 0 && result?.data?.record_id) {
+                    recordIdInput.value = result.data.record_id;
+                }
+                logResult("startRecording", result);
+            } catch (err) {
+                logError(err instanceof Error ? err.message : String(err));
+            }
+        });
+
+        recPauseButton.addEventListener("click", async () => {
+            try {
+                const result = await window.BuckyApi.pauseRecording(getRecordId());
+                logResult("pauseRecording", result);
+            } catch (err) {
+                logError(err instanceof Error ? err.message : String(err));
+            }
+        });
+
+        recResumeButton.addEventListener("click", async () => {
+            try {
+                const result = await window.BuckyApi.resumeRecording(getRecordId());
+                logResult("resumeRecording", result);
+            } catch (err) {
+                logError(err instanceof Error ? err.message : String(err));
+            }
+        });
+
+        recStopButton.addEventListener("click", async () => {
+            try {
+                const result = await window.BuckyApi.stopRecording(getRecordId());
+                logResult("stopRecording", result);
+            } catch (err) {
+                logError(err instanceof Error ? err.message : String(err));
+            }
+        });
+
+        recCancelButton.addEventListener("click", async () => {
+            try {
+                const result = await window.BuckyApi.cancelRecording(getRecordId());
+                logResult("cancelRecording", result);
+            } catch (err) {
+                logError(err instanceof Error ? err.message : String(err));
+            }
+        });
+
+        recStatusButton.addEventListener("click", async () => {
+            try {
+                const result = await window.BuckyApi.getRecordingStatus();
+                logResult("getRecordingStatus", result);
+            } catch (err) {
+                logError(err instanceof Error ? err.message : String(err));
+            }
+        });
+
+        recInfoButton.addEventListener("click", async () => {
+            try {
+                const result = await window.BuckyApi.getRecordingFileInfo(getRecordId());
+                logResult("getRecordingFileInfo", result);
+            } catch (err) {
+                logError(err instanceof Error ? err.message : String(err));
+            }
+        });
+
+        recReadButton.addEventListener("click", async () => {
+            try {
+                const result = await window.BuckyApi.readRecordingFile(getRecordId(), 0, 2048);
+                logResult("readRecordingFile(0,2048)", {
+                    ...result,
+                    data: result?.data
+                        ? {
+                            ...result.data,
+                            chunk_base64: `${String(result.data.chunk_base64 || "").slice(0, 120)}...`,
+                        }
+                        : result?.data,
+                });
+            } catch (err) {
+                logError(err instanceof Error ? err.message : String(err));
+            }
+        });
+
+        recUrlButton.addEventListener("click", async () => {
+            try {
+                const result = await window.BuckyApi.getRecordingUrl(getRecordId());
+                if (result?.code === 0 && result?.data?.url) {
+                    audioEl.src = result.data.url;
+                }
+                logResult("getRecordingUrl", result);
+            } catch (err) {
+                logError(err instanceof Error ? err.message : String(err));
+            }
+        });
+
+        recExportButton.addEventListener("click", async () => {
+            try {
+                const result = await window.BuckyApi.exportRecordingFile(getRecordId(), exportPathInput.value.trim());
+                logResult("exportRecordingFile", result);
+            } catch (err) {
+                logError(err instanceof Error ? err.message : String(err));
+            }
+        });
+
+        interruptButton.addEventListener("click", async () => {
+            try {
+                const result = await window.BuckyApi.markAudioInterruptionBegin("test_interrupt");
+                logResult("markAudioInterruptionBegin", result);
+            } catch (err) {
+                logError(err instanceof Error ? err.message : String(err));
+            }
+        });
+
+        playStartButton.addEventListener("click", async () => {
+            try {
+                const result = await window.BuckyApi.playRecording(getRecordId());
+                logResult("playRecording", result);
+            } catch (err) {
+                logError(err instanceof Error ? err.message : String(err));
+            }
+        });
+
+        playStopButton.addEventListener("click", async () => {
+            try {
+                const result = await window.BuckyApi.stopPlayback();
+                logResult("stopPlayback", result);
+            } catch (err) {
+                logError(err instanceof Error ? err.message : String(err));
+            }
+        });
+
+        playStatusButton.addEventListener("click", async () => {
+            try {
+                const result = await window.BuckyApi.getPlaybackStatus();
+                logResult("getPlaybackStatus", result);
+            } catch (err) {
+                logError(err instanceof Error ? err.message : String(err));
+            }
+        });
+
+        runAllButton.addEventListener("click", async () => {
+            const logs = [];
+            const push = (step, payload) => logs.push({ step, payload });
+
+            try {
+                const ready = await window.BuckyApi.checkRecordingReadiness();
+                push("checkRecordingReadiness", ready);
+                if (ready?.code !== 0 || !ready?.data?.ready) {
+                    logResult("Run E2E (stopped)", logs);
+                    return;
+                }
+
+                const started = await window.BuckyApi.startRecording({ sample_rate: 44100, channels: 1, format: "wav" });
+                push("startRecording", started);
+                const recordId = started?.data?.record_id;
+                if (!recordId) {
+                    logResult("Run E2E (failed)", logs);
+                    return;
+                }
+                recordIdInput.value = recordId;
+
+                await sleep(800);
+                push("pauseRecording", await window.BuckyApi.pauseRecording(recordId));
+                await sleep(300);
+                push("resumeRecording", await window.BuckyApi.resumeRecording(recordId));
+                await sleep(900);
+
+                const stopped = await window.BuckyApi.stopRecording(recordId);
+                push("stopRecording", stopped);
+
+                const urlResult = await window.BuckyApi.getRecordingUrl(recordId);
+                push("getRecordingUrl", urlResult);
+                if (urlResult?.code === 0 && urlResult?.data?.url) {
+                    audioEl.src = urlResult.data.url;
+                }
+
+                push("playRecording", await window.BuckyApi.playRecording(recordId));
+                await sleep(800);
+                push("stopPlayback", await window.BuckyApi.stopPlayback());
+                push("getPlaybackStatus", await window.BuckyApi.getPlaybackStatus());
+
+                logResult("Run E2E (done)", logs);
+            } catch (err) {
+                push("error", err instanceof Error ? err.message : String(err));
+                logResult("Run E2E (error)", logs);
+            }
+        });
+    </script>
+</body>
+
+</html>

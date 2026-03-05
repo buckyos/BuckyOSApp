@@ -137,6 +137,7 @@ export default {
         theme_dark: "Dark",
         language: "Language",
         embedded_webview: "Embedded Webview",
+        test_audio: "Audio Test",
         embedded_webview_title: "Embedded Webview",
         embedded_webview_no_key: "No active DID public key is available.",
         embedded_webview_sign_empty: "Please enter content to sign.",

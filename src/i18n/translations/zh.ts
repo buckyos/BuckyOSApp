@@ -136,6 +136,7 @@ export default {
         theme_dark: "深色",
         language: "语言",
         embedded_webview: "嵌入式 webview",
+        test_audio: "录音测试",
         embedded_webview_title: "嵌入式 webview",
         embedded_webview_no_key: "暂无可用的 DID 公钥",
         embedded_webview_sign_empty: "请输入需要签名的内容。",
