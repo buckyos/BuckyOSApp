@@ -179,6 +179,7 @@
                 <button id="rec-url-button" class="action-button">Get URL</button>
                 <button id="rec-export-button" class="action-button">Export</button>
                 <button id="interrupt-button" class="action-button">Interrupt</button>
+                <button id="interrupt-end-button" class="action-button">Interrupt End</button>
                 <button id="run-all-button" class="action-button">Run E2E</button>
                 <button id="open-list-button" class="action-button">Open Recording List</button>
             </div>
@@ -205,11 +206,30 @@
         const recUrlButton = document.getElementById("rec-url-button");
         const recExportButton = document.getElementById("rec-export-button");
         const interruptButton = document.getElementById("interrupt-button");
+        const interruptEndButton = document.getElementById("interrupt-end-button");
         const runAllButton = document.getElementById("run-all-button");
         const openListButton = document.getElementById("open-list-button");
 
         const getRecordId = () => recordIdInput.value.trim();
         const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+        const query = new URLSearchParams(window.location.search);
+        const directInvokeAvailable = Boolean(window.__TAURI_INTERNALS__ && typeof window.__TAURI_INTERNALS__.invoke === "function");
+        const autoMode = query.get("autorun")?.trim() || (directInvokeAvailable ? "record-smoke" : "");
+
+        const sessionStartedAt = new Date().toISOString();
+        let logLines = [];
+
+        const onApiEvent = (type) => (payload) => {
+            appendLog(type, payload);
+        };
+
+        const eventHandlers = {
+            recordingState: window.BuckyApi?.onEvent("recording_state_changed", onApiEvent("recording_state_changed")),
+            playbackState: window.BuckyApi?.onEvent("playback_state_changed", onApiEvent("playback_state_changed")),
+            recordingError: window.BuckyApi?.onEvent("recording_error", onApiEvent("recording_error")),
+            interruptBegin: window.BuckyApi?.onEvent("audio_interruption_begin", onApiEvent("audio_interruption_begin")),
+            interruptEnd: window.BuckyApi?.onEvent("audio_interruption_end", onApiEvent("audio_interruption_end")),
+        };
 
         function highlight(el) {
             el.classList.remove("highlight");
@@ -217,14 +237,62 @@
             el.classList.add("highlight");
         }
 
-        function logResult(title, payload) {
-            outputBox.value = `${title}\n${JSON.stringify(payload, null, 2)}`;
+        function renderLogs() {
+            outputBox.value = logLines.join("\n\n");
+            outputBox.scrollTop = outputBox.scrollHeight;
             highlight(outputBox);
         }
 
+        function appendLog(title, payload) {
+            logLines.push(`[${new Date().toLocaleTimeString()}] ${title}\n${JSON.stringify(payload, null, 2)}`);
+            renderLogs();
+            console.log(`[test_audio] ${title}`, payload);
+        }
+
+        function logResult(title, payload) {
+            appendLog(title, payload);
+        }
+
         function logError(err) {
-            outputBox.value = err;
-            highlight(outputBox);
+            appendLog("error", { message: err });
+            console.error("[test_audio] error", err);
+        }
+
+        async function runRecordingSmoke() {
+            const logs = [];
+            const push = (step, payload) => {
+                const entry = { step, payload };
+                logs.push(entry);
+                appendLog(`record-smoke:${step}`, payload);
+            };
+
+            try {
+                push("getRecordingPermissions", await window.BuckyApi.getRecordingPermissions());
+                const ready = await window.BuckyApi.checkRecordingReadiness();
+                push("checkRecordingReadiness", ready);
+                if (ready?.code !== 0 || !ready?.data?.ready) {
+                    logResult("Auto Run (stopped)", logs);
+                    return;
+                }
+
+                const started = await window.BuckyApi.startRecording({ sample_rate: 44100, channels: 1, format: "wav" });
+                push("startRecording", started);
+                const recordId = started?.data?.record_id;
+                if (!recordId) {
+                    logResult("Auto Run (failed)", logs);
+                    return;
+                }
+
+                recordIdInput.value = recordId;
+                await sleep(1200);
+                push("getRecordingStatus", await window.BuckyApi.getRecordingStatus());
+                push("stopRecording", await window.BuckyApi.stopRecording(recordId));
+                push("getRecordingFileInfo", await window.BuckyApi.getRecordingFileInfo(recordId));
+                logResult("Auto Run (done)", logs);
+            } catch (err) {
+                push("error", err instanceof Error ? err.message : String(err));
+                logResult("Auto Run (error)", logs);
+            }
         }
 
         async function playInHtmlAudio(recordId) {
@@ -232,8 +300,25 @@
             return result;
         }
 
+        appendLog("environment", {
+            href: window.location.href,
+            sessionStartedAt,
+            autoMode,
+            directInvokeAvailable,
+            hasTauriInternals: Boolean(window.__TAURI_INTERNALS__),
+            embedded: Boolean(window.parent && window.parent !== window),
+            buckyApiAvailable: Boolean(window.BuckyApi),
+            userAgent: window.navigator.userAgent,
+        });
+
         if (!window.BuckyApi) {
             logError("BuckyApi unavailable: open test_audio.html inside embedded app page");
+        } else {
+            console.log("[test_audio] environment", {
+                autoMode,
+                directInvokeAvailable,
+                embedded: window.parent && window.parent !== window,
+            });
         }
 
         permGetButton.addEventListener("click", async () => {
@@ -367,6 +452,14 @@
             }
         });
 
+        interruptEndButton.addEventListener("click", async () => {
+            try {
+                logResult("markAudioInterruptionEnd", await window.BuckyApi.markAudioInterruptionEnd());
+            } catch (err) {
+                logError(err instanceof Error ? err.message : String(err));
+            }
+        });
+
         runAllButton.addEventListener("click", async () => {
             const logs = [];
             const push = (step, payload) => logs.push({ step, payload });
@@ -409,6 +502,12 @@
         openListButton.addEventListener("click", () => {
             window.location.href = "/test_audio_list.html";
         });
+
+        if (autoMode === "record-smoke" && window.BuckyApi) {
+            window.setTimeout(() => {
+                void runRecordingSmoke();
+            }, 400);
+        }
     </script>
 </body>
 

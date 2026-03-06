@@ -125,3 +125,8 @@ export async function markAudioInterruptionBegin(reason = "test") {
   });
   return unwrap(result);
 }
+
+export async function markAudioInterruptionEnd() {
+  const result = await invoke<ApiResult<{ state: string }>>("mark_audio_interruption_end", {});
+  return unwrap(result);
+}

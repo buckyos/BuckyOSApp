@@ -58,6 +58,10 @@ pub fn run() {
                 app.state::<audio::AudioRecordState>(),
                 app.handle().clone(),
             );
+            #[cfg(all(target_os = "ios", debug_assertions))]
+            if option_env!("BUCKY_IOS_STARTUP_SMOKE") == Some("1") {
+                audio::spawn_ios_startup_smoke(app.handle().clone());
+            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -100,11 +104,17 @@ pub fn run() {
             audio::request_recording_permissions,
             audio::check_recording_readiness,
             audio::mark_audio_interruption_begin,
+            audio::mark_audio_interruption_end,
         ]);
 
     #[cfg(target_os = "android")]
     {
         builder = builder.plugin(audio::android_bridge::init());
+    }
+
+    #[cfg(target_os = "ios")]
+    {
+        builder = builder.plugin(audio::ios_bridge::init());
     }
 
     builder

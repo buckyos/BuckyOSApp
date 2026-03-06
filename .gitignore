@@ -24,3 +24,10 @@ dist-ssr
 *.sw?
 rust-analyzer
 build_log/
+
+# Local debug artifacts
+tmp_ios_*.png
+
+# Swift/iOS plugin local build artifacts
+src-tauri/ios/AudioPlugin/.build/
+src-tauri/ios/AudioPlugin/.swiftpm/

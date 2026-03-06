@@ -1,4 +1,5 @@
 import React from "react";
+import { listen } from "@tauri-apps/api/event";
 import { useI18n } from "../i18n";
 import { useDidContext } from "../features/did/DidContext";
 import InputDialog from "../components/ui/InputDialog";
@@ -18,6 +19,7 @@ import {
     readRecordingFile,
     requestRecordingPermissions,
     resumeRecording,
+    markAudioInterruptionEnd,
     startRecording,
     markAudioInterruptionBegin,
     stopPlayback,
@@ -90,6 +92,56 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
     const resolverRef = React.useRef<((result: any) => void) | null>(null);
     const portalContainerRef = React.useRef<HTMLDivElement | null>(null);
     const portalRootRef = React.useRef<Root | null>(null);
+
+    const postEventToIframe = React.useCallback((eventName: string, payload: unknown) => {
+        const iframeWindow = iframeRef.current?.contentWindow;
+        if (!iframeWindow) return;
+        iframeWindow.postMessage(
+            {
+                kind: "bucky-api-event",
+                event: eventName,
+                payload,
+            },
+            "*"
+        );
+    }, []);
+
+    React.useEffect(() => {
+        let mounted = true;
+        const unlisteners: Array<() => void> = [];
+        const eventNames = [
+            "recording_state_changed",
+            "recording_error",
+            "playback_state_changed",
+            "audio_interruption_begin",
+            "audio_interruption_end",
+        ];
+
+        const setupListeners = async () => {
+            for (const eventName of eventNames) {
+                const unlisten = await listen<unknown>(eventName, (evt) => {
+                    if (!mounted) return;
+                    postEventToIframe(eventName, evt.payload);
+                });
+                if (!mounted) {
+                    unlisten();
+                } else {
+                    unlisteners.push(unlisten);
+                }
+            }
+        };
+
+        void setupListeners().catch((error) => {
+            console.warn("[BuckyIframe] failed to subscribe to audio events", error);
+        });
+
+        return () => {
+            mounted = false;
+            while (unlisteners.length) {
+                unlisteners.pop()?.();
+            }
+        };
+    }, [iframeRef, postEventToIframe]);
 
     const publicKey = React.useMemo(() => {
         const wallet = activeDid?.bucky_wallets?.[0];
@@ -281,6 +333,10 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
         },
         markAudioInterruptionBegin: async (payload: { reason?: string }) => {
             const data = await markAudioInterruptionBegin(payload?.reason ?? "test_interrupt");
+            return { code: BuckyErrorCodes.Success, data };
+        },
+        markAudioInterruptionEnd: async () => {
+            const data = await markAudioInterruptionEnd();
             return { code: BuckyErrorCodes.Success, data };
         },
     }), [publicKey, t, activeDid, signInProgress, passwordDialog.open]);
