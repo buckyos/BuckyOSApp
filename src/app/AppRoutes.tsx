@@ -5,6 +5,7 @@ import DidFlowRoutes from "../features/did/DidFlowRoutes";
 import MainRoutes from "./MainRoutes";
 import WebContainer from "../pages/WebContainer";
 import { DidProvider } from "../features/did/DidContext";
+import AudioSmokePage from "../pages/AudioSmokePage";
 
 function InitialGate() {
     const navigate = useNavigate();
@@ -33,6 +34,7 @@ export default function AppRoutes() {
             <div className="container">
                 <InitialGate />
                 <Routes>
+                    <Route path="/audio-smoke" element={<AudioSmokePage />} />
                     <Route
                         path="/main/*"
                         element={(

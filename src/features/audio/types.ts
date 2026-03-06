@@ -60,7 +60,7 @@ export interface StartRecordingOptions {
   sample_rate?: number;
   channels?: 1 | 2;
   bit_rate?: number;
-  format?: "m4a" | "wav";
+  format?: "m4a" | "wav" | "caf";
   tag?: string;
 }
 

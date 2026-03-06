@@ -1,8 +1,8 @@
 name: buckyosapp
 options:
-  bundleIdPrefix: com.tauri-test.app
+  bundleIdPrefix: com.buckyos.buckyosapp
   deploymentTarget:
-    iOS: 13.0
+    iOS: 14.0
 fileGroups: [../../src]
 configs:
   debug: debug
@@ -10,8 +10,8 @@ configs:
 settingGroups:
   app:
     base:
-      PRODUCT_NAME: tauri-test
-      PRODUCT_BUNDLE_IDENTIFIER: com.tauri-test.app
+      PRODUCT_NAME: BuckyOS
+      PRODUCT_BUNDLE_IDENTIFIER: com.buckyos.buckyosapp
 targetTemplates:
   app:
     type: application
@@ -52,7 +52,8 @@ targets:
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
         CFBundleShortVersionString: 0.1.0
-        CFBundleVersion: 0.1.0
+        CFBundleVersion: "0.1.0"
+        NSMicrophoneUsageDescription: BuckyOS needs microphone access to record audio notes.
     entitlements:
       path: buckyosapp_iOS/buckyosapp_iOS.entitlements
     scheme:

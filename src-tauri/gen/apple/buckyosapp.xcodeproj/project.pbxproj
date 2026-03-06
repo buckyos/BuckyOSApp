@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 63;
+	objectVersion = 77;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -13,6 +13,7 @@
 		58D1081EF14A00A21680312C /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 25850A9A1B82F85CE7E4E15F /* QuartzCore.framework */; };
 		5A990D116EA011B2B9152EA5 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 518EF9A2ED424548E4A1B401 /* UIKit.framework */; };
 		740B542CF10A35D63D94BA26 /* assets in Resources */ = {isa = PBXBuildFile; fileRef = 1891DC2413EEC8C1122E4F21 /* assets */; };
+		80BA1D43651C6FA7A7E3869D /* libapp.a in Resources */ = {isa = PBXBuildFile; fileRef = 9F53B47BA4777E3FCA234F5D /* libapp.a */; };
 		8AD8CD726F2CFEE5CE3B6D07 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 48DA69B43F3756AF0306BABA /* Assets.xcassets */; };
 		97486CCF47E27F44B7CE2DB6 /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9301CC2E82190683A3DC9F41 /* WebKit.framework */; };
 		A6918BC413BC48336AC84571 /* main.mm in Sources */ = {isa = PBXBuildFile; fileRef = EF85978FAFE77EBE9156B3B6 /* main.mm */; };
@@ -22,23 +23,41 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0BB1A5E7A8A6F601BC50CAF1 /* applist.rs */ = {isa = PBXFileReference; path = applist.rs; sourceTree = "<group>"; };
 		16B78C47AAD0F40E2349AD8B /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		1891DC2413EEC8C1122E4F21 /* assets */ = {isa = PBXFileReference; lastKnownFileType = folder; path = assets; sourceTree = SOURCE_ROOT; };
 		222F0A7213E80F80DDA33AFC /* libapp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libapp.a; sourceTree = "<group>"; };
 		25850A9A1B82F85CE7E4E15F /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
-		25FFB50B16BA1317A30585A0 /* main.rs */ = {isa = PBXFileReference; lastKnownFileType = text; path = main.rs; sourceTree = "<group>"; };
+		25FFB50B16BA1317A30585A0 /* main.rs */ = {isa = PBXFileReference; path = main.rs; sourceTree = "<group>"; };
+		31332E6F8D9977D0494331D7 /* network.rs */ = {isa = PBXFileReference; path = network.rs; sourceTree = "<group>"; };
+		3CDEC10A8326CA4594E729B2 /* config.rs */ = {isa = PBXFileReference; path = config.rs; sourceTree = "<group>"; };
 		48DA69B43F3756AF0306BABA /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		518EF9A2ED424548E4A1B401 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
+		5950145A0D417AE70F50FE34 /* error.rs */ = {isa = PBXFileReference; path = error.rs; sourceTree = "<group>"; };
+		5FE40DDB5C1643D9CB9541E2 /* did_cli.rs */ = {isa = PBXFileReference; path = did_cli.rs; sourceTree = "<group>"; };
+		65C8C076DD57F6F14E2E9B7C /* mod.rs */ = {isa = PBXFileReference; path = mod.rs; sourceTree = "<group>"; };
+		773171620EE4FE88154117AC /* mod.rs */ = {isa = PBXFileReference; path = mod.rs; sourceTree = "<group>"; };
+		788A0643B765FF8784A2D66E /* identity.rs */ = {isa = PBXFileReference; path = identity.rs; sourceTree = "<group>"; };
 		89AB093DB996480AE5C6E91C /* bindings.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bindings.h; sourceTree = "<group>"; };
+		8AFD496032CF7455AFCE91AE /* derive.rs */ = {isa = PBXFileReference; path = derive.rs; sourceTree = "<group>"; };
 		8EFF38B806B0A59F4DFFFDED /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
 		9301CC2E82190683A3DC9F41 /* WebKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WebKit.framework; path = System/Library/Frameworks/WebKit.framework; sourceTree = SDKROOT; };
+		9426DEB72D6F1DD21AF63E6F /* store.rs */ = {isa = PBXFileReference; path = store.rs; sourceTree = "<group>"; };
+		9F53B47BA4777E3FCA234F5D /* libapp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libapp.a; sourceTree = "<group>"; };
 		AA02550476A5A9ECC760632B /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
 		AC13EB8E8CB2F5394A18FA5B /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
-		DE34A3BF08D382F9ACFD3679 /* buckyosapp_iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; name = buckyosapp_iOS.app; path = "tauri-test.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		AF620D9A945DD24EFD946A2E /* mod.rs */ = {isa = PBXFileReference; path = mod.rs; sourceTree = "<group>"; };
+		DAF5BACBD2C36CFEB4C89FCA /* commands.rs */ = {isa = PBXFileReference; path = commands.rs; sourceTree = "<group>"; };
+		DE34A3BF08D382F9ACFD3679 /* buckyosapp_iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = buckyosapp_iOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E3E342194B671CF4B65C5DF5 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		E49EDAA38547B91851FC4322 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
+		E8C49E184B4E7038FFAA4E62 /* crypto.rs */ = {isa = PBXFileReference; path = crypto.rs; sourceTree = "<group>"; };
 		EF85978FAFE77EBE9156B3B6 /* main.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = main.mm; sourceTree = "<group>"; };
-		F4214A3EDA25D4AF2DB56AC0 /* lib.rs */ = {isa = PBXFileReference; lastKnownFileType = text; path = lib.rs; sourceTree = "<group>"; };
+		EFB6573D4D4D78E4E444D848 /* mod.rs */ = {isa = PBXFileReference; path = mod.rs; sourceTree = "<group>"; };
+		F35ADC3E0BA6083604FC815D /* domain.rs */ = {isa = PBXFileReference; path = domain.rs; sourceTree = "<group>"; };
+		F4214A3EDA25D4AF2DB56AC0 /* lib.rs */ = {isa = PBXFileReference; path = lib.rs; sourceTree = "<group>"; };
+		F50778F0D84B9650EB0D334F /* ios_bridge.rs */ = {isa = PBXFileReference; path = ios_bridge.rs; sourceTree = "<group>"; };
+		FD623127F4EDEFF60563A8C0 /* android_bridge.rs */ = {isa = PBXFileReference; path = android_bridge.rs; sourceTree = "<group>"; };
 		FDF46AE392FA14F0B8171D80 /* buckyosapp_iOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = buckyosapp_iOS.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -64,6 +83,7 @@
 		1C6921C707F11E92E7B8BC31 /* Externals */ = {
 			isa = PBXGroup;
 			children = (
+				7CEC0E9C88AE7F73F63FC127 /* arm64 */,
 			);
 			path = Externals;
 			sourceTree = "<group>";
@@ -108,6 +128,24 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
+		440017170C39970E32C04AC9 /* audio */ = {
+			isa = PBXGroup;
+			children = (
+				FD623127F4EDEFF60563A8C0 /* android_bridge.rs */,
+				F50778F0D84B9650EB0D334F /* ios_bridge.rs */,
+				EFB6573D4D4D78E4E444D848 /* mod.rs */,
+			);
+			path = audio;
+			sourceTree = "<group>";
+		};
+		63ECB0CBB5E52D03ACA97948 /* debug */ = {
+			isa = PBXGroup;
+			children = (
+				9F53B47BA4777E3FCA234F5D /* libapp.a */,
+			);
+			path = debug;
+			sourceTree = "<group>";
+		};
 		6625EB2668DB33B80C400276 /* buckyosapp */ = {
 			isa = PBXGroup;
 			children = (
@@ -117,14 +155,61 @@
 			path = buckyosapp;
 			sourceTree = "<group>";
 		};
+		7CEC0E9C88AE7F73F63FC127 /* arm64 */ = {
+			isa = PBXGroup;
+			children = (
+				63ECB0CBB5E52D03ACA97948 /* debug */,
+			);
+			path = arm64;
+			sourceTree = "<group>";
+		};
 		B28CFAE0F8E878B3C6CE15E5 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				3CDEC10A8326CA4594E729B2 /* config.rs */,
+				5FE40DDB5C1643D9CB9541E2 /* did_cli.rs */,
+				5950145A0D417AE70F50FE34 /* error.rs */,
 				F4214A3EDA25D4AF2DB56AC0 /* lib.rs */,
 				25FFB50B16BA1317A30585A0 /* main.rs */,
+				CDAC60F125A28359AD077E2F /* applist */,
+				440017170C39970E32C04AC9 /* audio */,
+				DD4F73EC5683266D1E030E17 /* did */,
+				C5D3365435B19ED32F441FD2 /* network */,
 			);
 			name = src;
 			path = ../../src;
+			sourceTree = "<group>";
+		};
+		C5D3365435B19ED32F441FD2 /* network */ = {
+			isa = PBXGroup;
+			children = (
+				773171620EE4FE88154117AC /* mod.rs */,
+				31332E6F8D9977D0494331D7 /* network.rs */,
+			);
+			path = network;
+			sourceTree = "<group>";
+		};
+		CDAC60F125A28359AD077E2F /* applist */ = {
+			isa = PBXGroup;
+			children = (
+				0BB1A5E7A8A6F601BC50CAF1 /* applist.rs */,
+				65C8C076DD57F6F14E2E9B7C /* mod.rs */,
+			);
+			path = applist;
+			sourceTree = "<group>";
+		};
+		DD4F73EC5683266D1E030E17 /* did */ = {
+			isa = PBXGroup;
+			children = (
+				DAF5BACBD2C36CFEB4C89FCA /* commands.rs */,
+				E8C49E184B4E7038FFAA4E62 /* crypto.rs */,
+				8AFD496032CF7455AFCE91AE /* derive.rs */,
+				F35ADC3E0BA6083604FC815D /* domain.rs */,
+				788A0643B765FF8784A2D66E /* identity.rs */,
+				AF620D9A945DD24EFD946A2E /* mod.rs */,
+				9426DEB72D6F1DD21AF63E6F /* store.rs */,
+			);
+			path = did;
 			sourceTree = "<group>";
 		};
 		E46DA02F9B0984B392E8734E /* Products */ = {
@@ -148,6 +233,13 @@
 				3BA3178C97A5B2EBB293C80E /* Frameworks */,
 				E46DA02F9B0984B392E8734E /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		"TEMP_15E32159-F574-4B6E-B6CB-2E55BC37294A" /* x86_64 */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = x86_64;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -181,9 +273,10 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+				};
 			};
 			buildConfigurationList = 684142F28B9C43163C18A67B /* Build configuration list for PBXProject "buckyosapp" */;
-			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -192,6 +285,8 @@
 			);
 			mainGroup = F17E24991DA16CCA38EE3399;
 			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = E46DA02F9B0984B392E8734E /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -208,6 +303,7 @@
 				8AD8CD726F2CFEE5CE3B6D07 /* Assets.xcassets in Resources */,
 				BB3B79B909EC7701DE8AF0B4 /* LaunchScreen.storyboard in Resources */,
 				740B542CF10A35D63D94BA26 /* assets in Resources */,
+				80BA1D43651C6FA7A7E3869D /* libapp.a in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -233,7 +329,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "source ~/.zshrc\nnpm run -- tauri ios xcode-script -v --platform ${PLATFORM_DISPLAY_NAME:?} --sdk-root ${SDKROOT:?} --framework-search-paths \"${FRAMEWORK_SEARCH_PATHS:?}\" --header-search-paths \"${HEADER_SEARCH_PATHS:?}\" --gcc-preprocessor-definitions \"${GCC_PREPROCESSOR_DEFINITIONS:-}\" --configuration ${CONFIGURATION:?} ${FORCE_COLOR} ${ARCHS:?}\n";
+			shellScript = "npm run -- tauri ios xcode-script -v --platform ${PLATFORM_DISPLAY_NAME:?} --sdk-root ${SDKROOT:?} --framework-search-paths \"${FRAMEWORK_SEARCH_PATHS:?}\" --header-search-paths \"${HEADER_SEARCH_PATHS:?}\" --gcc-preprocessor-definitions \"${GCC_PREPROCESSOR_DEFINITIONS:-}\" --configuration ${CONFIGURATION:?} ${FORCE_COLOR} ${ARCHS:?}";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -253,7 +349,9 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
-				ARCHS = arm64;
+				ARCHS = (
+					arm64,
+				);
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = buckyosapp_iOS/buckyosapp_iOS.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
@@ -268,22 +366,10 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				"LIBRARY_SEARCH_PATHS[arch=arm64]" = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/Externals/arm64/$(CONFIGURATION)",
-					"$(SDKROOT)/usr/lib/swift",
-					"$(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME)",
-					"$(TOOLCHAIN_DIR)/usr/lib/swift-5.0/$(PLATFORM_NAME)",
-				);
-				"LIBRARY_SEARCH_PATHS[arch=x86_64]" = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/Externals/x86_64/$(CONFIGURATION)",
-					"$(SDKROOT)/usr/lib/swift",
-					"$(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME)",
-					"$(TOOLCHAIN_DIR)/usr/lib/swift-5.0/$(PLATFORM_NAME)",
-				);
+				"LIBRARY_SEARCH_PATHS[arch=arm64]" = "$(inherited) $(PROJECT_DIR)/Externals/arm64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME) $(TOOLCHAIN_DIR)/usr/lib/swift-5.0/$(PLATFORM_NAME)";
+				"LIBRARY_SEARCH_PATHS[arch=x86_64]" = "$(inherited) $(PROJECT_DIR)/Externals/x86_64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME) $(TOOLCHAIN_DIR)/usr/lib/swift-5.0/$(PLATFORM_NAME)";
 				PRODUCT_BUNDLE_IDENTIFIER = com.buckyos.buckyosapp;
-				PRODUCT_NAME = "buckyosapp";
+				PRODUCT_NAME = "BuckyOS";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VALID_ARCHS = arm64;
@@ -294,7 +380,9 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
-				ARCHS = arm64;
+				ARCHS = (
+					arm64,
+				);
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = buckyosapp_iOS/buckyosapp_iOS.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
@@ -309,22 +397,10 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				"LIBRARY_SEARCH_PATHS[arch=arm64]" = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/Externals/arm64/$(CONFIGURATION)",
-					"$(SDKROOT)/usr/lib/swift",
-					"$(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME)",
-					"$(TOOLCHAIN_DIR)/usr/lib/swift-5.0/$(PLATFORM_NAME)",
-				);
-				"LIBRARY_SEARCH_PATHS[arch=x86_64]" = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/Externals/x86_64/$(CONFIGURATION)",
-					"$(SDKROOT)/usr/lib/swift",
-					"$(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME)",
-					"$(TOOLCHAIN_DIR)/usr/lib/swift-5.0/$(PLATFORM_NAME)",
-				);
+				"LIBRARY_SEARCH_PATHS[arch=arm64]" = "$(inherited) $(PROJECT_DIR)/Externals/arm64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME) $(TOOLCHAIN_DIR)/usr/lib/swift-5.0/$(PLATFORM_NAME)";
+				"LIBRARY_SEARCH_PATHS[arch=x86_64]" = "$(inherited) $(PROJECT_DIR)/Externals/x86_64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME) $(TOOLCHAIN_DIR)/usr/lib/swift-5.0/$(PLATFORM_NAME)";
 				PRODUCT_BUNDLE_IDENTIFIER = com.buckyos.buckyosapp;
-				PRODUCT_NAME = "buckyosapp";
+				PRODUCT_NAME = "BuckyOS";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VALID_ARCHS = arm64;
@@ -376,7 +452,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -438,7 +514,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;

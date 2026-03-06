@@ -3,10 +3,7 @@ use std::{
     fs::{self, File},
     io::{Read, Seek, SeekFrom},
     path::{Path, PathBuf},
-    sync::{
-        atomic::AtomicU64,
-        mpsc, Arc, Mutex,
-    },
+    sync::{atomic::AtomicU64, mpsc, Arc, Mutex},
     thread,
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
@@ -20,6 +17,8 @@ use ulid::Ulid;
 
 #[cfg(target_os = "android")]
 pub mod android_bridge;
+#[cfg(target_os = "ios")]
+pub mod ios_bridge;
 
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
@@ -142,6 +141,16 @@ pub enum PermissionState {
 impl Default for PermissionState {
     fn default() -> Self {
         Self::Prompt
+    }
+}
+
+impl PermissionState {
+    fn as_str(&self) -> &'static str {
+        match self {
+            Self::Granted => "granted",
+            Self::Denied => "denied",
+            Self::Prompt => "prompt",
+        }
     }
 }
 
@@ -351,6 +360,81 @@ pub fn initialize_audio_recording(state: State<'_, AudioRecordState>, app: AppHa
     spawn_cleanup_loop(app);
 }
 
+#[cfg(all(target_os = "ios", debug_assertions))]
+pub fn spawn_ios_startup_smoke(app: AppHandle) {
+    thread::spawn(move || {
+        log::info!("[audio-smoke] scheduling iOS startup smoke");
+        thread::sleep(Duration::from_secs(2));
+
+        let state = app.state::<AudioRecordState>();
+
+        let permissions = request_recording_permissions(app.clone(), state);
+        log::info!(
+            "[audio-smoke] request_recording_permissions => {}",
+            serde_json::to_string(&permissions)
+                .unwrap_or_else(|err| format!("{{\"serialize_error\":\"{err}\"}}"))
+        );
+        if !permissions.ok {
+            return;
+        }
+
+        let state = app.state::<AudioRecordState>();
+        let readiness = check_recording_readiness(app.clone(), state);
+        log::info!(
+            "[audio-smoke] check_recording_readiness => {}",
+            serde_json::to_string(&readiness)
+                .unwrap_or_else(|err| format!("{{\"serialize_error\":\"{err}\"}}"))
+        );
+        let Some(readiness_data) = readiness.data.clone() else {
+            return;
+        };
+        if !readiness_data.ready {
+        log::error!("[audio-smoke] recording not ready: {:?}", readiness_data.reason);
+            return;
+        }
+
+        let state = app.state::<AudioRecordState>();
+        let started = start_recording(app.clone(), state, None);
+        log::info!(
+            "[audio-smoke] start_recording => {}",
+            serde_json::to_string(&started)
+                .unwrap_or_else(|err| format!("{{\"serialize_error\":\"{err}\"}}"))
+        );
+        let Some(started_data) = started.data.clone() else {
+            return;
+        };
+
+        thread::sleep(Duration::from_secs(2));
+
+        let state = app.state::<AudioRecordState>();
+        let status = get_recording_status(app.clone(), state);
+        log::info!(
+            "[audio-smoke] get_recording_status => {}",
+            serde_json::to_string(&status)
+                .unwrap_or_else(|err| format!("{{\"serialize_error\":\"{err}\"}}"))
+        );
+
+        let state = app.state::<AudioRecordState>();
+        let stopped = stop_recording(app.clone(), state, started_data.record_id.clone());
+        log::info!(
+            "[audio-smoke] stop_recording => {}",
+            serde_json::to_string(&stopped)
+                .unwrap_or_else(|err| format!("{{\"serialize_error\":\"{err}\"}}"))
+        );
+        if !stopped.ok {
+            return;
+        }
+
+        let state = app.state::<AudioRecordState>();
+        let file_info = get_recording_file_info(state, started_data.record_id);
+        log::info!(
+            "[audio-smoke] get_recording_file_info => {}",
+            serde_json::to_string(&file_info)
+                .unwrap_or_else(|err| format!("{{\"serialize_error\":\"{err}\"}}"))
+        );
+    });
+}
+
 #[tauri::command]
 pub fn start_recording(
     app: AppHandle,
@@ -459,10 +543,120 @@ pub fn start_recording(
 
     #[cfg(target_os = "ios")]
     {
-        let _ = app;
-        let _ = state;
-        let _ = options;
-        return ApiResult::err(ERR_PLATFORM_UNAVAILABLE, "ios_runtime_not_implemented");
+        log::info!("[audio] start_recording requested on ios");
+        let default_options = StartRecordingOptions {
+            sample_rate: Some(44_100),
+            channels: Some(1),
+            bit_rate: Some(128_000),
+            format: Some("caf".to_string()),
+            tag: None,
+        };
+        let options = options.unwrap_or(default_options);
+        let requested_format = options
+            .format
+            .clone()
+            .unwrap_or_else(|| "caf".to_string())
+            .to_ascii_lowercase();
+        let recording_extension = match requested_format.as_str() {
+            "m4a" => "m4a",
+            "wav" => "wav",
+            _ => "caf",
+        };
+
+        if let Some(err) = ensure_ready_to_record(&app, &state) {
+            log::warn!("[audio] start_recording rejected on ios: not ready");
+            return err;
+        }
+
+        let record_id = Ulid::new().to_string();
+        let file_path = match build_recording_file_path(&app, &record_id, recording_extension) {
+            Ok(path) => path,
+            Err(err) => return ApiResult::err(ERR_IO_ERROR, err.to_string()),
+        };
+
+        let sample_rate = options.sample_rate.unwrap_or(44_100);
+        let channels = options.channels.unwrap_or(1);
+        let bit_rate = options.bit_rate.unwrap_or(128_000);
+
+        if let Err(err) = ios_bridge::start_recording(
+            &app,
+            ios_bridge::StartRecordingPayload {
+                output_path: file_path.to_string_lossy().to_string(),
+                record_id: record_id.clone(),
+                format: recording_extension.to_string(),
+                sample_rate,
+                channels,
+                bit_rate,
+            },
+        ) {
+            log::error!("[audio] ios_bridge::start_recording failed: {err}");
+            return ApiResult::err(ERR_PLATFORM_UNAVAILABLE, err);
+        }
+
+        let (control_tx, control_rx) = mpsc::channel::<RecorderControl>();
+        let _ = control_rx;
+        let samples_written = Arc::new(AtomicU64::new(0));
+        let _ = samples_written;
+        let now = now_millis();
+        let mut guard = match state.inner.lock() {
+            Ok(guard) => guard,
+            Err(err) => return ApiResult::err(ERR_INTERNAL_ERROR, err.to_string()),
+        };
+
+        let stored = StoredRecording {
+            record_id: record_id.clone(),
+            file_path: file_path.to_string_lossy().to_string(),
+            format: recording_extension.to_string(),
+            sample_rate,
+            channels,
+            bit_rate: Some(bit_rate),
+            created_at: now,
+            updated_at: now,
+            duration_ms: None,
+            tag: options.tag.clone(),
+            state: RecordingState::Recording,
+            last_error: None,
+        };
+
+        guard.last_status = RecordingStatus {
+            state: RecordingState::Recording,
+            record_id: Some(record_id.clone()),
+            start_time: Some(now),
+            elapsed_ms: 0,
+            file_path: None,
+            file_format: Some(recording_extension.to_string()),
+            sample_rate: Some(sample_rate),
+            channels: Some(channels),
+            bit_rate: Some(bit_rate),
+            last_error: None,
+        };
+        guard.recordings.insert(record_id.clone(), stored);
+        guard.active_session = Some(ActiveSession {
+            record_id: record_id.clone(),
+            file_path: file_path.clone(),
+            control_tx,
+            worker: None,
+            samples_written: Arc::new(AtomicU64::new(0)),
+            started_at: Instant::now(),
+            started_at_epoch_ms: now,
+            paused_started_at: None,
+            total_paused_ms: 0,
+            sample_rate,
+            channels,
+            bit_rate: Some(bit_rate),
+            format: recording_extension.to_string(),
+        });
+
+        if let Err(err) = save_index_to_disk(&app, &guard.recordings) {
+            log::warn!("save index failed on start(ios): {err}");
+        }
+        emit_recording_state_changed(&app, &record_id, RecordingState::Recording);
+        log::info!("[audio] start_recording succeeded on ios record_id={record_id}");
+
+        return ApiResult::ok(StartRecordingOutput {
+            record_id: record_id.clone(),
+            file_url: Some(file_url_from_path(&file_path)),
+        });
     }
 
     #[cfg(not(any(target_os = "android", target_os = "ios")))]
@@ -625,13 +819,22 @@ pub fn pause_recording(
                 return ApiResult::err(ERR_INVALID_STATE, err);
             }
         }
-        #[cfg(not(target_os = "android"))]
+        #[cfg(target_os = "ios")]
+        {
+            if let Err(err) = ios_bridge::pause_recording(&app) {
+                return ApiResult::err(ERR_INVALID_STATE, err);
+            }
+            if session.paused_started_at.is_none() {
+                session.paused_started_at = Some(Instant::now());
+            }
+        }
+        #[cfg(not(any(target_os = "android", target_os = "ios")))]
         {
             if let Err(err) = session.control_tx.send(RecorderControl::Pause) {
                 return ApiResult::err(ERR_INTERNAL_ERROR, err.to_string());
             }
+            session.paused_started_at = Some(Instant::now());
         }
-        session.paused_started_at = Some(Instant::now());
         elapsed_ms(session)
     };
 
@@ -686,7 +889,18 @@ pub fn resume_recording(
                 return ApiResult::err(ERR_INVALID_STATE, err);
             }
         }
-        #[cfg(not(target_os = "android"))]
+        #[cfg(target_os = "ios")]
+        {
+            if let Err(err) = ios_bridge::resume_recording(&app) {
+                return ApiResult::err(ERR_INVALID_STATE, err);
+            }
+            if let Some(paused_started_at) = session.paused_started_at.take() {
+                session.total_paused_ms = session
+                    .total_paused_ms
+                    .saturating_add(paused_started_at.elapsed().as_millis() as u64);
+            }
+        }
+        #[cfg(not(any(target_os = "android", target_os = "ios")))]
         {
             if let Err(err) = session.control_tx.send(RecorderControl::Resume) {
                 return ApiResult::err(ERR_INTERNAL_ERROR, err.to_string());
@@ -733,6 +947,7 @@ pub fn stop_recording(
     state: State<'_, AudioRecordState>,
     record_id: String,
 ) -> ApiResult<StopRecordingOutput> {
+    log::info!("[audio] stop_recording requested record_id={record_id}");
     let mut guard = match state.inner.lock() {
         Ok(guard) => guard,
         Err(err) => return ApiResult::err(ERR_INTERNAL_ERROR, err.to_string()),
@@ -768,7 +983,23 @@ pub fn stop_recording(
             Err(err) => return ApiResult::err(ERR_IO_ERROR, err),
         };
 
-    #[cfg(not(target_os = "android"))]
+    #[cfg(target_os = "ios")]
+    let (duration_ms, file_size, sample_rate, channels, final_path) =
+        match ios_bridge::stop_recording(&app) {
+            Ok(result) => (
+                result.duration_ms,
+                result.file_size,
+                result.sample_rate,
+                result.channels,
+                PathBuf::from(result.file_path),
+            ),
+            Err(err) => {
+                log::error!("[audio] ios_bridge::stop_recording failed: {err}");
+                return ApiResult::err(ERR_IO_ERROR, err);
+            }
+        };
+
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
     {
         if let Err(err) = session.control_tx.send(RecorderControl::Stop) {
             return ApiResult::err(ERR_INTERNAL_ERROR, err.to_string());
@@ -778,20 +1009,20 @@ pub fn stop_recording(
         }
     }
 
-    #[cfg(not(target_os = "android"))]
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
     let duration_ms = duration_ms_from_samples(
         session.samples_written.load(Ordering::SeqCst),
         session.sample_rate,
         session.channels,
     );
 
-    #[cfg(not(target_os = "android"))]
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
     let file_size: u64 = 0;
-    #[cfg(not(target_os = "android"))]
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
     let sample_rate = session.sample_rate;
-    #[cfg(not(target_os = "android"))]
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
     let channels = session.channels;
-    #[cfg(not(target_os = "android"))]
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
     let final_path = session.file_path.clone();
 
     session.file_path = final_path.clone();
@@ -830,6 +1061,12 @@ pub fn stop_recording(
         log::warn!("save index failed on stop: {err}");
     }
     emit_recording_state_changed(&app, &record_id, RecordingState::Finished);
+    log::info!(
+        "[audio] stop_recording succeeded record_id={} duration_ms={} path={}",
+        record_id,
+        duration_ms,
+        final_path.to_string_lossy()
+    );
 
     ApiResult::ok(StopRecordingOutput {
         state: RecordingState::Finished,
@@ -861,7 +1098,13 @@ pub fn cancel_recording(
     {
         let _ = android_bridge::stop_recording(&app);
     }
-    #[cfg(not(target_os = "android"))]
+    #[cfg(target_os = "ios")]
+    {
+        if let Err(err) = ios_bridge::stop_recording(&app) {
+            log::warn!("ios stop recording failed on cancel: {err}");
+        }
+    }
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
     {
         let _ = session.control_tx.send(RecorderControl::Cancel);
         if let Some(worker) = session.worker.take() {
@@ -913,21 +1156,103 @@ pub fn get_recording_status(
         if let Ok(status) = android_bridge::get_status(&app) {
             let active_record_id = guard.active_session.as_ref().map(|s| s.record_id.clone());
             if let Some(active_record_id) = active_record_id {
-                guard.last_status.elapsed_ms = status.duration_ms;
-                guard.last_status.state = match status.state.as_str() {
+                let previous_state = guard.last_status.state.clone();
+                let next_state = match status.state.as_str() {
                     "recording" => RecordingState::Recording,
                     "paused" => RecordingState::Paused,
                     "interrupted" => RecordingState::Interrupted,
                     _ => guard.last_status.state.clone(),
                 };
+
+                guard.last_status.elapsed_ms = status.duration_ms;
+                guard.last_status.state = next_state.clone();
                 if let Some(path) = status.output_path {
                     guard.last_status.file_path = Some(path);
                 }
-                guard.last_status.record_id = Some(active_record_id);
+                guard.last_status.record_id = Some(active_record_id.clone());
+
+                if previous_state != next_state {
+                    emit_recording_state_changed(&app, &active_record_id, next_state.clone());
+                    if previous_state == RecordingState::Recording
+                        && next_state == RecordingState::Interrupted
+                    {
+                        let _ = app.emit(
+                            "audio_interruption_begin",
+                            AudioInterruptionBeginEvent {
+                                record_id: active_record_id.clone(),
+                                reason: "audio_session_interruption_began".to_string(),
+                            },
+                        );
+                    }
+                    if previous_state == RecordingState::Interrupted
+                        && next_state == RecordingState::Paused
+                    {
+                        let _ = app.emit(
+                            "audio_interruption_end",
+                            AudioInterruptionEndEvent {
+                                record_id: active_record_id.clone(),
+                            },
+                        );
+                    }
+                }
             }
         }
     }
-    #[cfg(not(target_os = "android"))]
+    #[cfg(target_os = "ios")]
+    {
+        if let Ok(status) = ios_bridge::get_status(&app) {
+            log::info!(
+                "[audio] ios get_status state={} duration_ms={} output_path={:?}",
+                status.state,
+                status.duration_ms,
+                status.output_path
+            );
+            let active_record_id = guard.active_session.as_ref().map(|s| s.record_id.clone());
+            if let Some(active_record_id) = active_record_id {
+                let previous_state = guard.last_status.state.clone();
+                let next_state = match status.state.as_str() {
+                    "recording" => RecordingState::Recording,
+                    "paused" => RecordingState::Paused,
+                    "interrupted" => RecordingState::Interrupted,
+                    _ => guard.last_status.state.clone(),
+                };
+
+                guard.last_status.elapsed_ms = status.duration_ms;
+                guard.last_status.state = next_state.clone();
+                if let Some(path) = status.output_path {
+                    guard.last_status.file_path = Some(path);
+                }
+                guard.last_status.record_id = Some(active_record_id.clone());
+
+                if previous_state != next_state {
+                    emit_recording_state_changed(&app, &active_record_id, next_state.clone());
+                    if previous_state == RecordingState::Recording
+                        && next_state == RecordingState::Interrupted
+                    {
+                        let _ = app.emit(
+                            "audio_interruption_begin",
+                            AudioInterruptionBeginEvent {
+                                record_id: active_record_id.clone(),
+                                reason: "audio_session_interruption_began".to_string(),
+                            },
+                        );
+                    }
+                    if previous_state == RecordingState::Interrupted
+                        && next_state == RecordingState::Paused
+                    {
+                        let _ = app.emit(
+                            "audio_interruption_end",
+                            AudioInterruptionEndEvent {
+                                record_id: active_record_id.clone(),
+                            },
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
     if let Some(session) = guard.active_session.as_ref() {
         guard.last_status.elapsed_ms = elapsed_ms(session);
     }
@@ -1097,6 +1422,8 @@ pub fn handle_recording_uri_scheme<R: tauri::Runtime>(
             || record.format.eq_ignore_ascii_case("mp4")
         {
             "audio/mp4"
+        } else if record.format.eq_ignore_ascii_case("caf") {
+            "audio/x-caf"
         } else {
             "audio/wav"
         };
@@ -1260,7 +1587,27 @@ pub fn play_recording(
         });
     }
 
-    #[cfg(not(target_os = "android"))]
+    #[cfg(target_os = "ios")]
+    {
+        if let Err(err) = ios_bridge::play_recording(&app, record.file_path.clone()) {
+            return ApiResult::err(ERR_PLATFORM_UNAVAILABLE, err);
+        }
+        guard.playback.state = PlaybackStatus::Playing;
+        guard.playback.record_id = Some(record_id.clone());
+        let _ = app.emit(
+            "playback_state_changed",
+            PlaybackStateChangedEvent {
+                record_id: Some(record_id.clone()),
+                state: PlaybackStatus::Playing,
+            },
+        );
+        return ApiResult::ok(PlaybackStatusOutput {
+            state: PlaybackStatus::Playing,
+            record_id: Some(record_id),
+        });
+    }
+
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
     {
         let file_path = record.file_path.clone();
         let (playback_tx, playback_rx) = mpsc::channel::<PlaybackControl>();
@@ -1321,7 +1668,14 @@ pub fn stop_playback(
         }
     }
 
-    #[cfg(not(target_os = "android"))]
+    #[cfg(target_os = "ios")]
+    {
+        if let Err(err) = ios_bridge::stop_playback(&app) {
+            return ApiResult::err(ERR_INTERNAL_ERROR, err);
+        }
+    }
+
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
     {
         let mut worker_to_join: Option<thread::JoinHandle<()>> = None;
         let mut guard = match state.inner.lock() {
@@ -1392,6 +1746,29 @@ pub fn get_playback_status(
             });
         }
     }
+
+    #[cfg(target_os = "ios")]
+    {
+        if let Ok(status) = ios_bridge::get_playback_status(&app) {
+            let mut guard = match state.inner.lock() {
+                Ok(guard) => guard,
+                Err(err) => return ApiResult::err(ERR_INTERNAL_ERROR, err.to_string()),
+            };
+            guard.playback.state = if status.state == "playing" {
+                PlaybackStatus::Playing
+            } else {
+                PlaybackStatus::Idle
+            };
+            if guard.playback.state == PlaybackStatus::Idle {
+                guard.playback.record_id = None;
+            }
+            return ApiResult::ok(PlaybackStatusOutput {
+                state: guard.playback.state.clone(),
+                record_id: guard.playback.record_id.clone(),
+            });
+        }
+    }
+
     let guard = match state.inner.lock() {
         Ok(guard) => guard,
         Err(err) => return ApiResult::err(ERR_INTERNAL_ERROR, err.to_string()),
@@ -1428,6 +1805,22 @@ pub fn get_recording_permissions(
             return ApiResult::ok(guard.permissions.clone());
         }
     }
+    #[cfg(target_os = "ios")]
+    {
+        if let Ok(p) = ios_bridge::check_permission(&app) {
+            guard.permissions = PermissionPayload {
+                mic: if p.granted {
+                    PermissionState::Granted
+                } else if p.can_request {
+                    PermissionState::Prompt
+                } else {
+                    PermissionState::Denied
+                },
+                background: PermissionState::Prompt,
+            };
+            return ApiResult::ok(guard.permissions.clone());
+        }
+    }
     guard.permissions = detect_permissions_runtime(&app);
     ApiResult::ok(guard.permissions.clone())
 }
@@ -1437,33 +1830,74 @@ pub fn request_recording_permissions(
     app: AppHandle,
     state: State<'_, AudioRecordState>,
 ) -> ApiResult<PermissionPayload> {
-    let mut guard = match state.inner.lock() {
-        Ok(guard) => guard,
-        Err(err) => return ApiResult::err(ERR_INTERNAL_ERROR, err.to_string()),
-    };
     #[cfg(target_os = "android")]
     {
-        match android_bridge::request_permission(&app) {
-            Ok(p) => {
-                guard.permissions = PermissionPayload {
-                    mic: if p.granted {
-                        PermissionState::Granted
-                    } else if p.can_request {
-                        PermissionState::Prompt
-                    } else {
-                        PermissionState::Denied
-                    },
-                    background: PermissionState::Prompt,
-                };
-            }
+        let updated = match android_bridge::request_permission(&app) {
+            Ok(p) => PermissionPayload {
+                mic: if p.granted {
+                    PermissionState::Granted
+                } else if p.can_request {
+                    PermissionState::Prompt
+                } else {
+                    PermissionState::Denied
+                },
+                background: PermissionState::Prompt,
+            },
             Err(err) => return ApiResult::err(ERR_INTERNAL_ERROR, err),
-        }
+        };
+
+        let mut guard = match state.inner.lock() {
+            Ok(guard) => guard,
+            Err(err) => return ApiResult::err(ERR_INTERNAL_ERROR, err.to_string()),
+        };
+        guard.permissions = updated;
+        return ApiResult::ok(guard.permissions.clone());
     }
-    #[cfg(not(target_os = "android"))]
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
     {
+        let mut guard = match state.inner.lock() {
+            Ok(guard) => guard,
+            Err(err) => return ApiResult::err(ERR_INTERNAL_ERROR, err.to_string()),
+        };
         guard.permissions = request_permissions_runtime(&app);
+        return ApiResult::ok(guard.permissions.clone());
     }
-    ApiResult::ok(guard.permissions.clone())
+    #[cfg(target_os = "ios")]
+    {
+        log::info!("[audio] request_recording_permissions requested on ios");
+        let updated = match ios_bridge::request_permission(&app) {
+            Ok(p) => PermissionPayload {
+                mic: if p.granted {
+                    PermissionState::Granted
+                } else if p.can_request {
+                    PermissionState::Prompt
+                } else {
+                    PermissionState::Denied
+                },
+                background: PermissionState::Prompt,
+            },
+            Err(err) => {
+                log::error!("[audio] request_recording_permissions failed on ios: {err}");
+                return ApiResult::err(ERR_INTERNAL_ERROR, err);
+            }
+        };
+
+        let mut guard = match state.inner.lock() {
+            Ok(guard) => guard,
+            Err(err) => return ApiResult::err(ERR_INTERNAL_ERROR, err.to_string()),
+        };
+        guard.permissions = updated;
+        log::info!(
+            "[audio] request_recording_permissions completed on ios: mic={}",
+            guard.permissions.mic.as_str()
+        );
+        return ApiResult::ok(guard.permissions.clone());
+    }
+
+    #[allow(unreachable_code)]
+    {
+        ApiResult::err(ERR_INTERNAL_ERROR, "unsupported_platform")
+    }
 }
 
 #[tauri::command]
@@ -1491,13 +1925,22 @@ pub fn check_recording_readiness(
         None
     };
 
-    ApiResult::ok(ReadinessOutput {
+    let output = ReadinessOutput {
         ready,
         mic: guard.permissions.mic.clone(),
         background: guard.permissions.background.clone(),
         free_space_bytes,
         reason,
-    })
+    };
+    log::info!(
+        "[audio] check_recording_readiness ready={} mic={} background={} free_space_bytes={} reason={:?}",
+        output.ready,
+        output.mic.as_str(),
+        output.background.as_str(),
+        output.free_space_bytes,
+        output.reason
+    );
+    ApiResult::ok(output)
 }
 
 #[tauri::command]
@@ -1526,7 +1969,13 @@ pub fn mark_audio_interruption_begin(
                 return ApiResult::err(ERR_INTERNAL_ERROR, err);
             }
         }
-        #[cfg(not(target_os = "android"))]
+        #[cfg(target_os = "ios")]
+        {
+            if let Err(err) = ios_bridge::pause_recording(&app) {
+                return ApiResult::err(ERR_INTERNAL_ERROR, err);
+            }
+        }
+        #[cfg(not(any(target_os = "android", target_os = "ios")))]
         {
             if let Err(err) = session.control_tx.send(RecorderControl::Pause) {
                 return ApiResult::err(ERR_INTERNAL_ERROR, err.to_string());
@@ -1555,6 +2004,55 @@ pub fn mark_audio_interruption_begin(
 
     ApiResult::ok(StateOnlyOutput {
         state: RecordingState::Interrupted,
+    })
+}
+
+#[tauri::command]
+pub fn mark_audio_interruption_end(
+    app: AppHandle,
+    state: State<'_, AudioRecordState>,
+) -> ApiResult<StateOnlyOutput> {
+    let mut guard = match state.inner.lock() {
+        Ok(guard) => guard,
+        Err(err) => return ApiResult::err(ERR_INTERNAL_ERROR, err.to_string()),
+    };
+
+    let current_state = guard.last_status.state.clone();
+    if current_state != RecordingState::Interrupted {
+        return ApiResult::err(ERR_INVALID_STATE, "invalid_interrupt_state");
+    }
+
+        let record_id = {
+            let Some(session) = guard.active_session.as_mut() else {
+                return ApiResult::err(ERR_INVALID_STATE, "no_active_session");
+            };
+
+            if let Some(paused_started_at) = session.paused_started_at.take() {
+                session.total_paused_ms = session
+                    .total_paused_ms
+                    .saturating_add(paused_started_at.elapsed().as_millis() as u64);
+            }
+            session.record_id.clone()
+        };
+
+    update_record_state(
+        &mut guard.recordings,
+        &record_id,
+        RecordingState::Paused,
+        None,
+    );
+    guard.last_status.state = RecordingState::Paused;
+
+    let _ = app.emit(
+        "audio_interruption_end",
+        AudioInterruptionEndEvent {
+            record_id: record_id.clone(),
+        },
+    );
+    emit_recording_state_changed(&app, &record_id, RecordingState::Paused);
+
+    ApiResult::ok(StateOnlyOutput {
+        state: RecordingState::Paused,
     })
 }
 
@@ -1873,6 +2371,18 @@ fn ensure_ready_to_record(
     app: &AppHandle,
     state: &State<'_, AudioRecordState>,
 ) -> Option<ApiResult<StartRecordingOutput>> {
+    #[cfg(target_os = "ios")]
+    {
+        if let Ok(permission) = ios_bridge::check_permission(app) {
+            if !permission.granted {
+                return Some(ApiResult::err(
+                    ERR_PERMISSION_DENIED,
+                    "microphone_permission_denied",
+                ));
+            }
+        }
+    }
+
     #[cfg(target_os = "android")]
     {
         if let Ok(permission) = android_bridge::check_permission(app) {
@@ -1917,6 +2427,22 @@ fn ensure_ready_to_record(
 }
 
 fn detect_permissions_runtime(_app: &AppHandle) -> PermissionPayload {
+    #[cfg(target_os = "ios")]
+    {
+        if let Ok(p) = ios_bridge::check_permission(_app) {
+            return PermissionPayload {
+                mic: if p.granted {
+                    PermissionState::Granted
+                } else if p.can_request {
+                    PermissionState::Prompt
+                } else {
+                    PermissionState::Denied
+                },
+                background: PermissionState::Prompt,
+            };
+        }
+    }
+
     let mic = match probe_mic_permission(false) {
         ProbePermissionState::Granted => PermissionState::Granted,
         ProbePermissionState::Denied => PermissionState::Denied,
@@ -1929,6 +2455,22 @@ fn detect_permissions_runtime(_app: &AppHandle) -> PermissionPayload {
 }
 
 fn request_permissions_runtime(_app: &AppHandle) -> PermissionPayload {
+    #[cfg(target_os = "ios")]
+    {
+        if let Ok(p) = ios_bridge::request_permission(_app) {
+            return PermissionPayload {
+                mic: if p.granted {
+                    PermissionState::Granted
+                } else if p.can_request {
+                    PermissionState::Prompt
+                } else {
+                    PermissionState::Denied
+                },
+                background: PermissionState::Prompt,
+            };
+        }
+    }
+
     let mic = match probe_mic_permission(true) {
         ProbePermissionState::Granted => PermissionState::Granted,
         ProbePermissionState::Denied => PermissionState::Denied,
