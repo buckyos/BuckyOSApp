@@ -214,7 +214,7 @@
         const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
         const query = new URLSearchParams(window.location.search);
         const directInvokeAvailable = Boolean(window.__TAURI_INTERNALS__ && typeof window.__TAURI_INTERNALS__.invoke === "function");
-        const autoMode = query.get("autorun")?.trim() || (directInvokeAvailable ? "record-smoke" : "");
+        const autoMode = query.get("autorun")?.trim() || "";
 
         const sessionStartedAt = new Date().toISOString();
         let logLines = [];
