@@ -3,6 +3,13 @@ export default {
         language: {
             en: "English",
             zh: "中文",
+            "zh-TW": "繁体中文",
+            es: "Español",
+            fr: "Français",
+            de: "Deutsch",
+            ko: "한국어",
+            ja: "日本語",
+            ru: "Русский",
             switch_label: "Language",
         },
         account: {
@@ -61,7 +68,7 @@ export default {
         description:
             "Welcome! This wizard will guide you through creating your secure and decentralized identity.",
         app_name: "BuckyOS",
-        subtitle: "Cloud OS for everyone",
+        subtitle: "Personal AIOS for Everyone",
         import_did: "Import DID",
         did_help_link: "What is DID?",
     },

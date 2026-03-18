@@ -1,40 +1,42 @@
-/* Reuse the list look for language selection */
-.lang-list {
+.lang-panel {
     display: flex;
     flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+    padding: 18px 16px;
+    border-radius: 18px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
 }
 
-.lang-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    position: relative;
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    border-radius: 0 !important;
-    appearance: none;
-    -webkit-appearance: none;
-    padding: 16px 4px !important;
-    color: var(--app-text) !important;
-    border-bottom: 1px solid var(--border) !important;
-    text-align: left;
-}
-
-.lang-item svg {
+.lang-field-label {
+    font-size: 13px;
     color: var(--muted-text);
 }
 
-.lang-check {
+.lang-select-wrap {
+    position: relative;
+}
+
+.lang-select {
+    width: 100%;
+    height: 46px;
+    padding: 0 42px 0 14px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: var(--app-bg);
+    color: var(--app-text);
+    font-size: 16px;
+    appearance: none;
+    -webkit-appearance: none;
+    outline: none;
+}
+
+.lang-select-icon {
     position: absolute;
-    right: 4px;
     top: 50%;
+    right: 14px;
     transform: translateY(-50%);
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     pointer-events: none;
+    color: var(--muted-text);
 }

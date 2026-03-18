@@ -1,9 +1,10 @@
 import React from "react";
-import { Sun, Moon, Globe } from "lucide-react";
+import { Sun, Moon, Globe, ChevronDown } from "lucide-react";
 import { useI18n } from "../../i18n";
 import GradientButton from "../../components/ui/GradientButton";
 import { getTheme, toggleTheme, initTheme } from "../../theme";
 import appIcon from "../../assets/app-icon.png";
+import { getLocaleOptions, type Locale } from "../../i18n/config";
 
 interface WelcomeProps {
     onStart: () => void;
@@ -13,7 +14,7 @@ interface WelcomeProps {
 
 const Welcome: React.FC<WelcomeProps> = ({ onStart, onImport, onShowDidInfo }) => {
     const { t, locale, setLocale } = useI18n();
-    const isZh = locale === "zh";
+    const localeOptions = getLocaleOptions();
     React.useEffect(() => {
         // ensure theme applied on first load of welcome page
         initTheme();
@@ -22,18 +23,16 @@ const Welcome: React.FC<WelcomeProps> = ({ onStart, onImport, onShowDidInfo }) =
     return (
         <div className="did-container" style={{ position: "relative", paddingTop: 12, overflow: "hidden" }}>
             {/* Decorations */}
-            <div style={{ position: "absolute", top: 14, left: 14, zIndex: 2, display: "flex", gap: 10 }}>
-                {/* Language pill */}
-                <button
-                    onClick={() => setLocale(isZh ? "en" : "zh")}
+            <div style={{ position: "absolute", top: 14, left: 14, zIndex: 2 }}>
+                <div
                     className="soft-btn"
                     style={{
+                        position: "relative",
                         display: "flex",
                         alignItems: "center",
-                        gap: 8,
-                        width: 108,
+                        width: 160,
                         height: 36,
-                        padding: "0 14px",
+                        padding: 0,
                         lineHeight: 1,
                         borderRadius: 18,
                         background: undefined,
@@ -42,10 +41,42 @@ const Welcome: React.FC<WelcomeProps> = ({ onStart, onImport, onShowDidInfo }) =
                         margin: 0,
                     }}
                 >
-                    <Globe size={18} strokeWidth={2} absoluteStrokeWidth style={{ display: "block" }} />
-                    {/* Show the target language to switch to */}
-                    <span>{isZh ? t("common.language.en") : t("common.language.zh")}</span>
-                </button>
+                    <Globe
+                        size={18}
+                        strokeWidth={2}
+                        absoluteStrokeWidth
+                        style={{ position: "absolute", left: 14, pointerEvents: "none" }}
+                    />
+                    <select
+                        aria-label={t("common.language.switch_label")}
+                        value={locale}
+                        onChange={(e) => setLocale(e.target.value as Locale)}
+                        style={{
+                            width: "100%",
+                            height: "100%",
+                            padding: "0 34px 0 40px",
+                            border: "none",
+                            background: "transparent",
+                            color: "var(--header-icon)",
+                            fontSize: 14,
+                            appearance: "none",
+                            WebkitAppearance: "none",
+                            outline: "none",
+                            cursor: "pointer",
+                        }}
+                    >
+                        {localeOptions.map((option) => (
+                            <option key={option.code} value={option.code}>
+                                {option.label}
+                            </option>
+                        ))}
+                    </select>
+                    <ChevronDown
+                        size={16}
+                        strokeWidth={2}
+                        style={{ position: "absolute", right: 12, pointerEvents: "none" }}
+                    />
+                </div>
             </div>
             <button
                 onClick={() => setTheme(toggleTheme())}

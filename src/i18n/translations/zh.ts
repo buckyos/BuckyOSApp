@@ -3,6 +3,13 @@ export default {
         language: {
             en: "English",
             zh: "中文",
+            "zh-TW": "繁体中文",
+            es: "Español",
+            fr: "Français",
+            de: "Deutsch",
+            ko: "한국어",
+            ja: "日本語",
+            ru: "Русский",
             switch_label: "语言",
         },
         account: {
@@ -60,7 +67,7 @@ export default {
         description:
             "欢迎！本向导将引导您创建安全的去中心化身份。",
         app_name: "BuckyOS",
-        subtitle: "人人可用的云操作系统",
+        subtitle: "人人可用的个人AIOS",
         import_did: "导入 DID",
         did_help_link: "DID 是什么？",
     },
