@@ -1,0 +1,23 @@
+<svg width="380" height="760" viewBox="0 0 380 760" xmlns="http://www.w3.org/2000/svg">
+  <rect width="380" height="760" fill="#ffffff"/>
+  <text x="118" y="84" font-size="22" font-weight="700" fill="#1c2454" font-family="Microsoft YaHei UI, Segoe UI, sans-serif">绑定 SN</text>
+  <text x="60" y="118" font-size="11" fill="#6e7891" font-family="Microsoft YaHei UI, Segoe UI, sans-serif">继续完成创建，绑定名字和 SN</text>
+  <rect x="34" y="148" width="312" height="84" rx="18" fill="#eef0ff"/>
+  <text x="50" y="176" font-size="11" fill="#1c2454" font-family="Microsoft YaHei UI, Segoe UI, sans-serif">名字将绑定到你当前钱包地址</text>
+  <text x="46" y="198" font-size="10.5" fill="#6e7891" font-family="Microsoft YaHei UI, Segoe UI, sans-serif">在这里设置统一密码，后续可同时密码/密钥登录</text>
+  <text x="34" y="270" font-size="12" fill="#4d556e" font-family="Microsoft YaHei UI, Segoe UI, sans-serif">名字</text>
+  <rect x="34" y="286" width="312" height="40" rx="16" fill="#f6f7fc"/>
+  <text x="50" y="311" font-size="13" fill="#9aa2b8" font-family="Microsoft YaHei UI, Segoe UI, sans-serif">请输入至少 7 个字符的名字</text>
+  <text x="34" y="344" font-size="12" fill="#4d556e" font-family="Microsoft YaHei UI, Segoe UI, sans-serif">统一密码</text>
+  <rect x="34" y="360" width="312" height="40" rx="16" fill="#f6f7fc"/>
+  <text x="50" y="385" font-size="13" fill="#9aa2b8" font-family="Microsoft YaHei UI, Segoe UI, sans-serif">用于本地保护、登录与后续续接</text>
+  <text x="34" y="418" font-size="12" fill="#4d556e" font-family="Microsoft YaHei UI, Segoe UI, sans-serif">确认密码</text>
+  <rect x="34" y="434" width="312" height="40" rx="16" fill="#f6f7fc"/>
+  <text x="50" y="459" font-size="13" fill="#9aa2b8" font-family="Microsoft YaHei UI, Segoe UI, sans-serif">再次输入登录密码</text>
+  <text x="34" y="492" font-size="12" fill="#4d556e" font-family="Microsoft YaHei UI, Segoe UI, sans-serif">Active Code</text>
+  <rect x="34" y="508" width="312" height="40" rx="16" fill="#f6f7fc"/>
+  <text x="50" y="533" font-size="13" fill="#9aa2b8" font-family="Microsoft YaHei UI, Segoe UI, sans-serif">请输入邀请码 / 激活码</text>
+  <text x="38" y="572" font-size="11" fill="#24a768" font-family="Microsoft YaHei UI, Segoe UI, sans-serif">名字可用，符合规则</text>
+  <rect x="34" y="644" width="312" height="48" rx="20" fill="#6363f1"/>
+  <text x="130" y="674" font-size="15" font-weight="700" fill="#ffffff" font-family="Microsoft YaHei UI, Segoe UI, sans-serif">完成绑定 SN</text>
+</svg>

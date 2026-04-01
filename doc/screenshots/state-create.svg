@@ -1,0 +1,14 @@
+<svg width="760" height="260" viewBox="0 0 760 260" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="a" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#667085"/></marker></defs>
+  <rect width="760" height="260" fill="#fff"/>
+  <g fill="#eef2ff" stroke="#c7d2fe">
+    <rect x="30" y="40" width="120" height="44" rx="12"/><rect x="190" y="40" width="120" height="44" rx="12"/><rect x="350" y="40" width="120" height="44" rx="12"/><rect x="510" y="40" width="120" height="44" rx="12"/><rect x="270" y="160" width="160" height="44" rx="12" fill="#fee2e2" stroke="#fecaca"/>
+  </g>
+  <g font-family="Microsoft YaHei UI, Segoe UI, sans-serif" font-size="15" fill="#1f2a5a" text-anchor="middle">
+    <text x="90" y="68">未开始创建</text><text x="250" y="68">DID 创建中</text><text x="410" y="68">待绑定 SN</text><text x="570" y="68">已完成创建</text><text x="350" y="188">已放弃创建</text>
+  </g>
+  <g stroke="#667085" stroke-width="2.5" fill="none" marker-end="url(#a)">
+    <path d="M150 62 H190"/><path d="M310 62 H350"/><path d="M470 62 H510"/>
+    <path d="M250 84 V160 H270"/><path d="M410 84 V160 H430"/>
+  </g>
+</svg>

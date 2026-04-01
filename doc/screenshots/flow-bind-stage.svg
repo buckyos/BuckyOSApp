@@ -1,0 +1,13 @@
+<svg width="900" height="180" viewBox="0 0 900 180" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="a" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#667085"/></marker></defs>
+  <rect width="900" height="180" fill="#fff"/>
+  <g fill="#eef2ff" stroke="#c7d2fe">
+    <rect x="20" y="60" width="120" height="44" rx="12"/><rect x="170" y="60" width="120" height="44" rx="12"/><rect x="320" y="60" width="140" height="44" rx="12"/><rect x="490" y="60" width="150" height="44" rx="12"/><rect x="670" y="60" width="180" height="44" rx="12"/>
+  </g>
+  <g font-family="Microsoft YaHei UI, Segoe UI, sans-serif" font-size="15" fill="#1f2a5a" text-anchor="middle">
+    <text x="80" y="88">进入绑定 SN</text><text x="230" y="88">输入名字</text><text x="390" y="88">设置统一密码</text><text x="565" y="88">校验名字 / Code</text><text x="760" y="88">绑定 owner / DID 文档</text>
+  </g>
+  <g stroke="#667085" stroke-width="2.5" fill="none" marker-end="url(#a)">
+    <path d="M140 82 H170"/><path d="M290 82 H320"/><path d="M460 82 H490"/><path d="M640 82 H670"/>
+  </g>
+</svg>
