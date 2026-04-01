@@ -129,6 +129,25 @@
         <a href="https://bilibili.com">跳转到 bilibili</a>
     </div>
     <script>
+        document.addEventListener("contextmenu", (event) => {
+            const path = typeof event.composedPath === "function" ? event.composedPath() : [];
+            const allowNativeContextMenu = path.some((node) => {
+                if (!(node instanceof HTMLElement)) {
+                    return false;
+                }
+
+                return node instanceof HTMLInputElement
+                    || node instanceof HTMLTextAreaElement
+                    || node.isContentEditable;
+            });
+
+            if (allowNativeContextMenu) {
+                return;
+            }
+
+            event.preventDefault();
+        }, true);
+
         const inputBox = document.getElementById("input-box");
         const outputBox = document.getElementById("output-box");
         const publicKeyButton = document.getElementById("public-key-button");
