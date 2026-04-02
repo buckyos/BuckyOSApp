@@ -455,6 +455,23 @@ V1 默认规则：
   - `user.bind_owner_key(public_key)`
   - DID Document 绑定
 
+### 10.0 `pwd_hash` 规则
+
+绑定 SN 阶段提交给 `auth.register` / `auth.login` 的密码字段不是明文密码，而是 `pwd_hash`。
+
+当前规则应与 `buckyos-websdk` 中的 `hashPassword` 保持一致：
+
+- 参考实现：
+  - [account.ts](https://github.com/buckyos/buckyos-websdk/blob/main/src/account.ts)
+- 当前接口文档说明：
+  - [sn_json_rpc.md](/G:/WorkSpace/BuckyOSApp/doc/sn_json_rpc.md)
+
+当前文档口径：
+
+- `pwd_hash` 使用 `hashPassword` 生成
+- `nonce` 当前阶段可以先不传
+- 钱包侧不直接拼装自定义密码摘要逻辑，应复用 SDK 的标准实现
+
 ### 10.1 钱包侧直接使用的 SN 接口
 
 与 SN 相关的接口说明参考：
