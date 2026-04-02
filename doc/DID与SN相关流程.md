@@ -99,8 +99,8 @@
 
 主操作：
 
-- 创建新账户
-- 导入已有 DID
+- 创建账户
+- 导入 DID
 
 页面示意图：
 
@@ -110,7 +110,7 @@
 
 页面目标：
 
-- 承接现有“创建 DID”页的角色，让用户填写创建本地 DID 所需的基础信息。
+- 承接现有“创建 DID”页的角色，用简洁说明帮助用户理解当前步骤。
 - 在不增加理解负担的前提下，告诉用户创建 DID 后还需要继续绑定 SN。
 
 输入项：
@@ -125,6 +125,10 @@
 
 - 助记词是找回本地身份的唯一方式
 - 完成 DID 创建后还需要继续绑定 SN，整次创建才算结束
+- “DID 是什么”说明卡片中提供“详细”入口
+- 点击“详细”后进入当前的 “DID 是什么” 页面
+- “SN 是什么”说明卡片中也提供“详细”入口
+- 点击“详细”后跳转到 [https://sn.buckyos.ai/](https://sn.buckyos.ai/)
 
 建议文案方向：
 
@@ -148,6 +152,8 @@
 - 避免使用“开户”这类偏重术语。
 - 底部按钮使用明确动作名，不使用“下一步：xxx”这种流程式命名。
 - 有页面示意图时，不再额外保留 UI 简图。
+- 在 “DID 是什么” 方框内增加 “详细” 入口，用于跳转到现有 DID 说明页。
+- 在 “SN 是什么” 方框内增加 “详细” 入口，用于跳转到 [https://sn.buckyos.ai/](https://sn.buckyos.ai/)
 
 页面示意图：
 
@@ -244,6 +250,8 @@
 - 名字校验应尽量前置
 - active code 校验应有明确状态反馈
 - 页面不使用“昵称”文案，统一使用“名字”
+- SN 说明区域下方提供“详细”入口
+- 点击“详细”后跳转到 [https://sn.buckyos.ai/](https://sn.buckyos.ai/)
 
 页面示意图：
 
@@ -391,7 +399,7 @@ V1 使用同一个统一密码。
 - 统一密码在“绑定 SN”阶段设置
 - 该密码同时承担：
   - 本地钱包保护与解锁
-  - `register_by_password` 和后续登录
+  - `auth.register` / `auth.login` 所需的 `pwd_hash` 来源
 
 V1 默认规则：
 
@@ -443,9 +451,196 @@ V1 默认规则：
   - 导入 DID
 - 绑定 SN 相关接口
   - 名字合法性与可用性校验
-  - `register_by_password(name, password_hash, active_code)`
-  - 名字与 owner 绑定
+  - `auth.register(name, pwd_hash, active_code)`
+  - `user.bind_owner_key(public_key)`
   - DID Document 绑定
+
+### 10.1 钱包侧直接使用的 SN 接口
+
+与 SN 相关的接口说明参考：
+
+- [sn_json_rpc.md](/G:/WorkSpace/BuckyOSApp/doc/sn_json_rpc.md)
+
+接口文档应以 `sn_json_rpc.md` 中的最新 namespaced 方法名为准，不再在本文档中使用旧的历史方法名。
+
+结合当前钱包侧流程，直接相关的 SN 接口主要有以下几类：
+
+#### 1. `auth.check_username`
+
+用途：
+
+- 在绑定 SN 时校验名字是否可用
+
+当前钱包侧用途：
+
+- 用户在“绑定 SN”页输入名字后做前置校验
+
+推荐 path：
+
+- `/kapi/sn/auth`
+
+当前参数：
+
+- `{ "name": "alice" }`
+
+返回：
+
+- `{ "code": 0, "valid": true }`
+
+兼容关系：
+
+- 旧名 `check_username` -> `auth.check_username`
+
+#### 2. `auth.check_active_code`
+
+用途：
+
+- 校验 active code / 邀请码是否有效
+
+当前钱包侧用途：
+
+- 绑定 SN 前校验邀请码
+
+推荐 path：
+
+- `/kapi/sn/auth`
+
+当前参数：
+
+- `active_code`
+
+返回：
+
+- `{ "code": 0, "valid": true }`
+
+兼容关系：
+
+- 旧名 `check_active_code` -> `auth.check_active_code`
+
+#### 3. `auth.register`
+
+用途：
+
+- 在绑定 SN 阶段先完成账号注册
+
+当前钱包侧用途：
+
+- 在创建流程第二阶段提交名字、密码摘要和 active code
+- 获取后续 `user.bind_owner_key` 所需的 access token
+
+推荐 path：
+
+- `/kapi/sn/auth`
+
+当前参数：
+
+- `name`
+- `pwd_hash`
+- `active_code`
+
+返回：
+
+- `{ "code": 0, "access_token": "...", "refresh_token": "...", "need_bind_owner_key": true }`
+
+说明：
+
+- 这是新的账号注册入口
+- `pwd_hash` 规则见 `sn_json_rpc.md`
+- 当前约定为 `Base64(SHA256(password + username + ".buckyos"))`
+
+#### 4. `user.bind_owner_key`
+
+用途：
+
+- 在 `auth.register` 之后，把当前 DID 对应的 owner 公钥绑定到用户记录
+
+当前钱包侧用途：
+
+- 完成“名字账户”和“当前 DID 公钥”之间的绑定
+
+推荐 path：
+
+- `/kapi/sn/bns`
+
+当前参数：
+
+- `{ "public_key": <jwk-object-or-string> }`
+
+说明：
+
+- 这是绑定 SN 主流程中的第二步
+- 应在拿到 `auth.register` 返回的 access token 后调用
+
+#### 5. `device.get_by_pk`
+
+用途：
+
+- 根据 public key 查询 SN 上是否存在对应身份记录
+
+当前钱包侧用途：
+
+- 首页查询当前 DID 的 SN 状态
+- 绑定 SN 成功后轮询查询是否已生效
+- 导入 DID 时，根据派生出的 public key 查询 SN 记录
+
+推荐 path：
+
+- `/kapi/sn`
+
+当前参数：
+
+- `public_key`
+
+当前钱包侧关注的返回字段：
+
+- `user_name`
+- `zone_config`
+- `found`
+- `reason`
+- `device_name`
+- `device_info`
+- `sn_ips`
+
+说明：
+
+- 对应旧 `get_by_pk`
+- 钱包侧导入 DID、首页 SN 状态查询、绑定后确认都依赖这个接口
+
+### 10.2 与钱包流程的接口对应关系
+
+创建 DID 阶段：
+
+- 不直接依赖 SN 接口
+
+绑定 SN 阶段：
+
+- 名字校验：`auth.check_username`
+- active code 校验：`auth.check_active_code`
+- 提交注册：`auth.register`
+- 绑定 owner 公钥：`user.bind_owner_key`
+- 绑定结果确认：`device.get_by_pk`
+
+导入 DID 阶段：
+
+- 助记词派生公钥后查询：`device.get_by_pk`
+- 若查询结果未返回有效 `user_name`，则导入失败
+- 若查询结果返回有效 `user_name`，则直接使用该名字作为 DID 昵称
+
+### 10.3 当前文档建议
+
+基于当前钱包流程，文档中建议把 SN 接口职责固定为：
+
+- `auth.check_username`
+  - 只负责名字可用性校验
+- `auth.check_active_code`
+  - 只负责邀请码有效性校验
+- `auth.register`
+  - 负责提交名字、`pwd_hash` 和 `active_code`
+- `user.bind_owner_key`
+  - 负责把当前 DID 的 owner 公钥绑定到用户记录
+- `device.get_by_pk`
+  - 作为查询 SN 身份状态的统一入口
+  - 同时服务于首页状态查询、绑定结果确认、导入 DID 校验三类场景
 
 ## 11. 总结
 
