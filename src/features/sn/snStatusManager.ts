@@ -1,6 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { getUserByPublicKey, registerSnUser } from "../../services/sn";
-import { info as logInfo } from "@tauri-apps/plugin-log";
+import { getUserByPublicKey, registerSnAccountWithPassword } from "../../services/sn";
 
 export interface SnStatusRecord {
     info: any;
@@ -9,8 +8,9 @@ export interface SnStatusRecord {
 }
 
 export interface RegisterSnOptions {
-    didId: string;
+    didId?: string;
     username: string;
+    passwordHash: string;
     inviteCode: string;
     publicKeyJwk: string;
     maxPollAttempts?: number;
@@ -69,7 +69,6 @@ export async function setCachedSnStatus(didId: string, record: SnStatusRecord): 
             zone_config: normalized.zoneConfig ?? null,
         },
     });
-    logInfo(`[SN-BIND] setCachedSnStatus: ${didId}, ${normalized.username ?? "null"}, ${normalized.zoneConfig ?? "null"}`);
 }
 
 export async function clearCachedSnStatus(didId: string): Promise<void> {
@@ -82,15 +81,6 @@ export async function fetchSnStatus(didId: string, publicKeyJwk: string): Promis
     const { ok, raw } = await getUserByPublicKey(publicKeyJwk);
     const username = ok && typeof raw?.user_name === "string" ? raw.user_name.trim() : null;
     const zoneConfig = ok && typeof raw?.zone_config === "string" ? raw.zone_config : null;
-    //获取当前的activeDid的nickname
-    let didName = didId;
-    try {
-        const nickname = await invoke<string | null>("current_wallet_nickname");
-        if (nickname) didName = nickname;
-    } catch (err) {
-        console.warn("[SN] failed to load current wallet nickname", err);
-    }
-    logInfo(`[SN-BIND] fetchSnStatus: ${didName}, ${publicKeyJwk}, ${username}, ${zoneConfig}`);
     const record: SnStatusRecord = username
         ? { info: raw, username, zoneConfig }
         : { info: raw ?? null, username: null, zoneConfig: zoneConfig ?? null };
@@ -102,28 +92,21 @@ export async function registerSnAccount(options: RegisterSnOptions): Promise<SnS
     const {
         didId,
         username,
+        passwordHash,
         inviteCode,
         publicKeyJwk,
         maxPollAttempts = 20,
         pollIntervalMs = 2000,
     } = options;
 
-    let didName = didId;
-    try {
-        const nickname = await invoke<string | null>("current_wallet_nickname");
-        if (nickname) didName = nickname;
-    } catch (err) {
-        console.warn("[SN] failed to load current wallet nickname", err);
-    }
-
-    const registration = await registerSnUser({
+    const registration = await registerSnAccountWithPassword({
         userName: username,
+        passwordHash,
         activeCode: inviteCode,
         publicKeyJwk,
     });
-    logInfo(`[SN-BIND] registerSnAccount: ${didName}, ${username}, ${registration ? JSON.stringify(registration) : "null"}`);
     if (!registration.ok) {
-        console.error("[SN-BIND]", "registerSnUser: failed");
+        console.error("[SN-BIND]", "registerSnAccountWithPassword: failed");
         throw new Error("register_sn_user_failed");
     }
 
@@ -158,7 +141,8 @@ export async function registerSnAccount(options: RegisterSnOptions): Promise<SnS
         username: finalUsername,
         zoneConfig,
     };
-    //logInfo(`[SN-BIND] registerSnAccount: ${didName}, ${finalUsername}, ${zoneConfig}`);
-    await setCachedSnStatus(didId, record);
+    if (didId) {
+        await setCachedSnStatus(didId, record);
+    }
     return record;
 }

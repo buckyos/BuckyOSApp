@@ -1,5 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { buckyos } from "buckyos";
 import { useI18n } from "../../../i18n";
 import GradientButton from "../../../components/ui/GradientButton";
 import ConfirmDialog from "../../../components/ui/ConfirmDialog";
@@ -25,6 +26,33 @@ function isValidSnUsername(raw: string): boolean {
     return SN_USERNAME_REGEX.test(name);
 }
 
+const errorHintStyle: React.CSSProperties = {
+    color: "#ef4444",
+    fontSize: 13,
+    marginTop: 4,
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+};
+
+const ErrorHint: React.FC<{ message: string; marginTop?: number }> = ({ message, marginTop = 4 }) => (
+    <div style={{ ...errorHintStyle, marginTop }}>
+        <svg
+            width="14"
+            height="14"
+            viewBox="0 0 20 20"
+            fill="none"
+            aria-hidden="true"
+            style={{ flex: "0 0 auto" }}
+        >
+            <circle cx="10" cy="10" r="8.25" stroke="currentColor" strokeWidth="1.5" />
+            <path d="M10 5.5v5.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+            <circle cx="10" cy="13.8" r="1" fill="currentColor" />
+        </svg>
+        <span>{message}</span>
+    </div>
+);
+
 export interface SnStatusSummary {
     initializing: boolean;
     registered: boolean;
@@ -46,6 +74,8 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
     const [snInfo, setSnInfo] = React.useState<any>(null);
     const [snUsername, setSnUsername] = React.useState<string>("");
     const [snInvite, setSnInvite] = React.useState<string>("");
+    const [password, setPassword] = React.useState<string>("");
+    const [confirmPassword, setConfirmPassword] = React.useState<string>("");
     const [snUserValid, setSnUserValid] = React.useState<boolean | null>(null);
     const [snInviteValid, setSnInviteValid] = React.useState<boolean | null>(null);
     const [checkingUser, setCheckingUser] = React.useState(false);
@@ -240,8 +270,22 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
     }, [snInvite, formVisible]);
 
     const canBind = React.useMemo(() => {
-        return !snBound && snUserValid === true && snInviteValid === true;
-    }, [snBound, snUserValid, snInviteValid]);
+        return (
+            !snBound &&
+            snUserValid === true &&
+            snInviteValid === true &&
+            password.length >= 6 &&
+            confirmPassword.length >= 6 &&
+            password === confirmPassword
+        );
+    }, [snBound, snUserValid, snInviteValid, password, confirmPassword]);
+
+    const passwordError =
+        password.length > 0 && password.length < 6
+            ? t("common.error.password_too_short")
+            : confirmPassword.length > 0 && password !== confirmPassword
+              ? t("common.error.passwords_mismatch")
+              : "";
 
     const doBind = React.useCallback(async () => {
         if (!activeDid) return;
@@ -252,9 +296,11 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
             const didId = activeDid.id;
             const jwk = JSON.stringify(activeDid.bucky_wallets[0].public_key as any);
             const normalizedUsername = snUsername.trim().toLowerCase();
+            const passwordHash = buckyos.hashPassword(normalizedUsername, password);
             const record = await registerSnAccount({
                 didId,
                 username: normalizedUsername,
+                passwordHash,
                 inviteCode: snInvite.trim(),
                 publicKeyJwk: jwk,
             });
@@ -286,7 +332,7 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
         } finally {
             setBindLoading(false);
         }
-    }, [activeDid, bindLoading, snUsername, snInvite, t]);
+    }, [activeDid, bindLoading, snUsername, snInvite, password, t]);
 
     React.useEffect(() => {
         if (!pendingSuccessDialog) return;
@@ -362,10 +408,10 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
                                 </div>
                             )}
                             {!checkingUser && snUserValid === false && (
-                                <div style={{ color: "#ef4444", fontSize: 13, marginTop: 4 }}>{t("sn.username_taken")}</div>
+                                <ErrorHint message={t("sn.username_taken")} />
                             )}
                             {userCheckError && (
-                                <div style={{ color: "#ef4444", fontSize: 13, marginTop: 4 }}>{userCheckError}</div>
+                                <ErrorHint message={userCheckError} />
                             )}
                         </div>
                         <div>
@@ -384,11 +430,33 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
                                 <div style={{ color: "#10b981", fontSize: 13, marginTop: 4 }}>{t("sn.invite_ok")}</div>
                             )}
                             {!checkingInvite && snInviteValid === false && (
-                                <div style={{ color: "#ef4444", fontSize: 13, marginTop: 4 }}>{t("sn.invite_bad")}</div>
+                                <ErrorHint message={t("sn.invite_bad")} />
                             )}
                             {inviteCheckError && (
-                                <div style={{ color: "#ef4444", fontSize: 13, marginTop: 4 }}>{inviteCheckError}</div>
+                                <ErrorHint message={inviteCheckError} />
                             )}
+                        </div>
+                        <div>
+                            <label style={{ fontSize: 14, color: "var(--app-text)" }}>{t("create.password_label")}</label>
+                            <input
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder={t("create.password_placeholder")}
+                                style={{ marginTop: 6 }}
+                            />
+                            {password.length > 0 && password.length < 6 && <ErrorHint message={t("common.error.password_too_short")} />}
+                        </div>
+                        <div>
+                            <label style={{ fontSize: 14, color: "var(--app-text)" }}>{t("create.confirm_label")}</label>
+                            <input
+                                type="password"
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                placeholder={t("create.confirm_password_placeholder")}
+                                style={{ marginTop: 6 }}
+                            />
+                            {confirmPassword.length > 0 && password !== confirmPassword && <ErrorHint message={t("common.error.passwords_mismatch")} />}
                         </div>
                     </div>
                     <div className="sn-page-actions">
@@ -398,8 +466,9 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
                         >
                             {t("sn.bind_confirm")}
                         </GradientButton>
+                        {passwordError && !bindError && <ErrorHint message={passwordError} marginTop={8} />}
                         {bindError && (
-                            <div style={{ color: "#ef4444", fontSize: 13, marginTop: 8 }}>{bindError}</div>
+                            <ErrorHint message={bindError} marginTop={8} />
                         )}
                     </div>
                 </>

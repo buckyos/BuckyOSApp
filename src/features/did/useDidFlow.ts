@@ -1,25 +1,42 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/core";
+import { buckyos } from "buckyos";
 import { useI18n } from "../../i18n";
-import { listDids } from "./api";
-import { fetchSnStatus } from "../sn/snStatusManager";
+import { importDid } from "./api";
+import { fetchSnStatus, registerSnAccount, setCachedSnStatus } from "../sn/snStatusManager";
 import type { DidInfo } from "./types";
 import { parseCommandError } from "../../utils/commandError";
 import { CommandErrorCodes } from "../../constants/commandErrorCodes";
+import { checkBuckyUsername, checkSnActiveCode, getUserByPublicKey } from "../../services/sn";
+import { openWebView } from "../../utils/webview";
+
+function normalizeName(value: string) {
+    return value.trim().toLowerCase();
+}
 
 export function useDidFlow() {
     const navigate = useNavigate();
     const { t } = useI18n();
 
-    const [nickname, setNickname] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
+    const [snName, setSnName] = useState("");
+    const [activeCode, setActiveCode] = useState("");
     const [mnemonic, setMnemonic] = useState<string[]>([]);
     const [confirmedMnemonic, setConfirmedMnemonic] = useState<string[]>([]);
     const [didInfo, setDidInfo] = useState<DidInfo | null>(null);
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+
+    const clearCreateFlowSensitiveState = () => {
+        setPassword("");
+        setConfirmPassword("");
+        setSnName("");
+        setActiveCode("");
+        setMnemonic([]);
+        setConfirmedMnemonic([]);
+    };
 
     const handleGenerateMnemonic = async () => {
         try {
@@ -33,28 +50,87 @@ export function useDidFlow() {
         }
     };
 
-    const handleCreateDid = async () => {
+    const handleBindSnAndCreateDid = async () => {
         if (mnemonic.join(" ") !== confirmedMnemonic.join(" ")) {
             setError(t("common.error.mnemonic_mismatch"));
             return;
         }
+
+        const normalizedName = normalizeName(snName);
+        if (normalizedName.length < 7) {
+            setError(t("sn.error.username_too_short"));
+            return;
+        }
+        if (password !== confirmPassword) {
+            setError(t("common.error.passwords_mismatch"));
+            return;
+        }
+        if (password.length < 6) {
+            setError(t("common.error.password_too_short"));
+            return;
+        }
+        if (!activeCode.trim()) {
+            setError(t("sn.error.active_code_required"));
+            return;
+        }
+
         setError("");
+        setLoading(true);
+
         try {
-            setLoading(true);
-            const info: DidInfo = await invoke("create_did", {
-                nickname,
+            const [usernameValid, activeCodeValid, publicKey] = await Promise.all([
+                checkBuckyUsername(normalizedName),
+                checkSnActiveCode(activeCode.trim()),
+                invoke<Record<string, unknown>>("derive_bucky_public_key", {
+                    mnemonicWords: mnemonic,
+                }),
+            ]);
+
+            if (!usernameValid) {
+                setError(t("sn.username_taken"));
+                return;
+            }
+            if (!activeCodeValid) {
+                setError(t("sn.invite_bad"));
+                return;
+            }
+
+            const publicKeyJwk = JSON.stringify(publicKey);
+            const passwordHash = buckyos.hashPassword(normalizedName, password);
+            const record = await registerSnAccount({
+                username: normalizedName,
+                passwordHash,
+                inviteCode: activeCode.trim(),
+                publicKeyJwk,
+            });
+
+            const createdDid = await invoke<DidInfo>("create_did", {
+                nickname: normalizedName,
                 password,
                 mnemonicWords: mnemonic,
             });
-            setDidInfo(info);
-            navigate("/main/home");
+            await setCachedSnStatus(createdDid.id, record);
+
+            setDidInfo({
+                ...createdDid,
+                nickname: record.username || normalizedName,
+                sn_status: {
+                    username: record.username || normalizedName,
+                },
+            });
+            clearCreateFlowSensitiveState();
+            navigate("/success");
         } catch (err) {
             const { code, message } = parseCommandError(err);
             let translated = message;
             if (code === CommandErrorCodes.NicknameExists || message === "nickname_already_exists") {
-                translated = t("create.error.nickname_exists");
+                translated = t("sn.error.username_exists_local");
+            } else if (message === "register_sn_user_failed") {
+                translated = t("sn.error.register_failed");
+            } else if (message === "sn_bind_timeout") {
+                translated = t("sn.error.poll_timeout");
             } else {
-                translated = t("common.error.create_did_failed", { message });
+                translated = t("sn.error.bind_failed", { message });
             }
             setError(translated);
         } finally {
@@ -63,31 +139,34 @@ export function useDidFlow() {
     };
 
     const handleImportDid = async ({
-        nickname: importNickname,
         password: importPassword,
         mnemonicWords,
     }: {
-        nickname: string;
         password: string;
         mnemonicWords: string[];
     }) => {
         setError("");
         try {
             setLoading(true);
-            const info: DidInfo = await invoke("import_did", {
-                nickname: importNickname,
-                password: importPassword,
+            const publicKey = await invoke<Record<string, unknown>>("derive_bucky_public_key", {
                 mnemonicWords,
             });
-            const wallet = info?.bucky_wallets?.[0];
-            if (wallet?.public_key) {
-                try {
-                    await fetchSnStatus(info.id, JSON.stringify(wallet.public_key as any));
-                } catch (err) {
-                    console.warn("[SN] import DID status check failed", err);
-                }
+            const publicKeyJwk = JSON.stringify(publicKey);
+            const snRecord = await getUserByPublicKey(publicKeyJwk);
+
+            if (!snRecord.ok || typeof snRecord.raw?.user_name !== "string") {
+                setError(t("import.error.sn_not_found"));
+                return;
             }
-            setDidInfo(info);
+
+            const importedDid = await importDid(
+                snRecord.raw.user_name.trim(),
+                importPassword,
+                mnemonicWords
+            );
+
+            await fetchSnStatus(importedDid.id, publicKeyJwk);
+            setDidInfo(importedDid);
             navigate("/main/home");
         } catch (err) {
             const { code, message } = parseCommandError(err);
@@ -119,38 +198,30 @@ export function useDidFlow() {
 
     const goToDidInfo = () => {
         setError("");
-        navigate("/did-info");
+        navigate("/did-info", { state: { backTo: "/create" } });
+    };
+
+    const goToSnInfo = async () => {
+        setError("");
+        try {
+            await openWebView("https://sn.buckyos.ai/", "SN", "sn-intro");
+        } catch (err) {
+            console.error("[WebView] failed to open SN intro", err);
+        }
     };
 
     const goToShowMnemonic = async () => {
-        if (password !== confirmPassword) {
-            setError(t("common.error.passwords_mismatch"));
-            return;
-        }
-        if (password.length < 6) {
-            setError(t("common.error.password_too_short"));
-            return;
-        }
-        // Check nickname uniqueness early on the create page
-        const name = nickname.trim();
-        if (name.length < 5 || name.length > 20) {
-            setError(t("create.error.nickname_length"));
-            return;
-        }
-        if (name) {
-            try {
-                const dids = await listDids();
-                const exists = dids.some((d) => (d.nickname || "").toLowerCase() === name.toLowerCase());
-                if (exists) {
-                    setError(t("create.error.nickname_exists"));
-                    return;
-                }
-            } catch (_) {
-                // ignore network/tauri errors here; allow flow to proceed
-            }
-        }
         setError("");
         handleGenerateMnemonic();
+    };
+
+    const goToBindSn = () => {
+        if (mnemonic.join(" ") !== confirmedMnemonic.join(" ")) {
+            setError(t("common.error.mnemonic_mismatch"));
+            return;
+        }
+        setError("");
+        navigate("/bind-sn");
     };
 
     const goToConfirmMnemonic = () => {
@@ -159,47 +230,46 @@ export function useDidFlow() {
     };
 
     const goToWelcome = () => {
+        clearCreateFlowSensitiveState();
         setError("");
+        setDidInfo(null);
         navigate("/");
     };
 
     const resetFlow = () => {
-        setNickname("");
-        setPassword("");
-        setConfirmPassword("");
-        setMnemonic([]);
-        setConfirmedMnemonic([]);
+        clearCreateFlowSensitiveState();
         setDidInfo(null);
         setError("");
-        navigate("/");
+        navigate("/main/home/ood-activate");
     };
 
     return {
-        // state
-        nickname,
-        setNickname,
         password,
         setPassword,
         confirmPassword,
         setConfirmPassword,
+        snName,
+        setSnName,
+        activeCode,
+        setActiveCode,
         mnemonic,
         confirmedMnemonic,
         setConfirmedMnemonic,
         didInfo,
         error,
         loading,
-        // actions
         goToCreateDid,
         goToShowMnemonic,
         goToConfirmMnemonic,
-        handleCreateDid,
+        goToBindSn,
+        handleBindSnAndCreateDid,
         handleImportDid,
         goToImportDid,
         goToDidInfo,
+        goToSnInfo,
         goToWelcome,
         resetFlow,
     };
 }
 
 export type { DidInfo } from "./types";
-

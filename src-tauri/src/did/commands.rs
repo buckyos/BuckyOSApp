@@ -67,6 +67,27 @@ pub fn validate_mnemonic_words(words: Vec<String>) -> CommandResult<Option<Strin
 }
 
 #[tauri::command]
+pub fn derive_bucky_public_key(mnemonic_words: Vec<String>) -> CommandResult<Value> {
+    if mnemonic_words.is_empty() {
+        return Err(CommandErrors::MnemonicRequired);
+    }
+
+    let decrypted = mnemonic_words.join(" ");
+    let secret_phrase = SecretString::new(decrypted);
+    let mnemonic = Mnemonic::parse_in(Language::English, secret_phrase.expose_secret())?;
+    drop(secret_phrase);
+    let requests = vec![WalletRequest::bucky(1)];
+    let wallets = derive_wallets_with_requests(&mnemonic, "", &requests, None)?;
+
+    wallets
+        .bucky
+        .entries
+        .first()
+        .map(|entry| entry.public_key.clone())
+        .ok_or_else(|| CommandErrors::key_derivation_failed("missing_bucky_public_key"))
+}
+
+#[tauri::command]
 pub fn create_did(
     app_handle: AppHandle,
     nickname: String,
@@ -132,14 +153,6 @@ pub fn import_did(
     let store = open_store(&app_handle)?;
     let mut vault = load_vault(&store)?;
 
-    if vault
-        .dids
-        .iter()
-        .any(|did| did.nickname.eq_ignore_ascii_case(&nickname))
-    {
-        return Err(CommandErrors::NicknameExists);
-    }
-
     if let Some(new_identity) = wallets.bucky.entries.first() {
         if vault.dids.iter().any(|existing| {
             existing
@@ -151,6 +164,14 @@ pub fn import_did(
         }) {
             return Err(CommandErrors::IdentityExists);
         }
+    }
+
+    if vault
+        .dids
+        .iter()
+        .any(|did| did.nickname.eq_ignore_ascii_case(&nickname))
+    {
+        return Err(CommandErrors::NicknameExists);
     }
 
     let record = StoredDid {
