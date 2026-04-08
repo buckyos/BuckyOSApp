@@ -1,5 +1,5 @@
 import React from "react";
-import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
+import { invoke } from "@tauri-apps/api/core";
 import MobileHeader from "../../components/ui/MobileHeader";
 import GradientButton from "../../components/ui/GradientButton";
 import { useI18n } from "../../i18n";
@@ -22,8 +22,12 @@ interface DeviceRecord extends DeviceInfo {
     isSelf?: boolean;
 }
 
-const REQUEST_TIMEOUT = 2500;
-const CONCURRENT_REQUESTS = 50;
+const SCAN_BATCH_SIZE = 64;
+const SCAN_INTERLEAVE_GROUPS = 4;
+
+function hasUsableActiveUrl(value: unknown): value is string {
+    return typeof value === "string" && value.trim().length > 0;
+}
 
 const ScanDevice: React.FC = () => {
     const { t } = useI18n();
@@ -50,39 +54,27 @@ const ScanDevice: React.FC = () => {
         });
     }, []);
 
-    const fetchDeviceInfo = React.useCallback(async (ip: string): Promise<DeviceRecord | null> => {
-        if (!ip) return null;
-        const controller = new AbortController();
-        const timer = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+    const scanDeviceBatch = React.useCallback(async (ips: string[]) => {
+        if (!ips.length) return [];
         try {
-            const response = await tauriFetch(`http://${ip}:3182/device`, {
-                method: "GET",
-                signal: controller.signal,
-            });
-            if (!response.ok) return null;
-            const data = (await response.json()) as DeviceInfo | null;
-            if (!data) return null;
-            return { ...data, ip };
+            const devices = await invoke<DeviceRecord[]>("scan_device_batch", { ips });
+            return devices.filter((device) => device?.ip && hasUsableActiveUrl(device.active_url));
         } catch (err) {
-            console.debug("[ScanDevice] plugin-http fetch failed", { ip, err });
-            return null;
-        } finally {
-            window.clearTimeout(timer);
+            console.debug("[ScanDevice] scan_device_batch failed", { ips, err });
+            return [];
         }
     }, []);
 
     const scanSpecificIps = React.useCallback(
         async (ips: string[]) => {
-            for (const ip of ips) {
-                if (abortRef.current) return;
-                const device = await fetchDeviceInfo(ip);
-                if (device) {
-                    console.info("[ScanDevice] scan result", { ip, device });
-                    addDevice({ ...device, isSelf: selfIpSetRef.current.has(device.ip) });
-                }
+            const devices = await scanDeviceBatch(ips);
+            if (abortRef.current) return;
+            for (const device of devices) {
+                console.info("[ScanDevice] self scan result", { ip: device.ip, device });
+                addDevice({ ...device, isSelf: selfIpSetRef.current.has(device.ip) });
             }
         },
-        [addDevice, fetchDeviceInfo]
+        [addDevice, scanDeviceBatch]
     );
 
     const normalizeCandidateIps = React.useCallback((ips: string[]) => {
@@ -121,6 +113,23 @@ const ScanDevice: React.FC = () => {
         return Array.from(bases);
     }, []);
 
+    const buildScanTargets = React.useCallback((base: string) => {
+        const hosts = Array.from({ length: 254 }, (_, index) => index + 1);
+        const laneSize = Math.ceil(hosts.length / SCAN_INTERLEAVE_GROUPS);
+        const ordered: string[] = [];
+
+        for (let offset = 0; offset < laneSize; offset += 1) {
+            for (let lane = 0; lane < SCAN_INTERLEAVE_GROUPS; lane += 1) {
+                const host = hosts[lane * laneSize + offset];
+                if (host) {
+                    ordered.push(`${base}.${host}`);
+                }
+            }
+        }
+
+        return ordered;
+    }, []);
+
     const scanTargetsConcurrently = React.useCallback(
         async (targets: string[]) => {
             if (!targets.length) return false;
@@ -129,32 +138,23 @@ const ScanDevice: React.FC = () => {
             let index = 0;
             const total = targets.length;
 
-            const processIp = async (ip: string) => {
-                if (abortRef.current) return;
-                try {
-                    const device = await fetchDeviceInfo(ip);
-                    if (device) {
-                        console.info("[ScanDevice] scan result", { ip, device });
-                        addDevice({ ...device, isSelf: selfIpSetRef.current.has(device.ip) });
-                        found = true;
-                    }
-                } finally {
-                    processed += 1;
-                    if (!abortRef.current) {
-                        setProgress(processed / total);
-                    }
-                }
-            };
-
             while (index < total && !abortRef.current) {
-                const batch = targets.slice(index, index + CONCURRENT_REQUESTS);
+                const batch = targets.slice(index, index + SCAN_BATCH_SIZE);
                 index += batch.length;
-                await Promise.all(batch.map(processIp));
+                const devices = await scanDeviceBatch(batch);
+                if (abortRef.current) return found;
+                for (const device of devices) {
+                    console.info("[ScanDevice] scan result", { ip: device.ip, device });
+                    addDevice({ ...device, isSelf: selfIpSetRef.current.has(device.ip) });
+                    found = true;
+                }
+                processed += batch.length;
+                setProgress(processed / total);
             }
 
             return found;
         },
-        [addDevice, fetchDeviceInfo]
+        [addDevice, scanDeviceBatch]
     );
 
     const runScan = React.useCallback(async function runScanImpl() {
@@ -181,11 +181,17 @@ const ScanDevice: React.FC = () => {
             }
             const targets: string[] = [];
             bases.forEach((base) => {
-                for (let i = 1; i <= 255; i += 1) {
-                    targets.push(`${base}.${i}`);
-                }
+                targets.push(...buildScanTargets(base));
             });
-            const found = await scanTargetsConcurrently(targets);
+            const prioritizedTargets = targets.sort((left, right) => {
+                const leftIsLocal = selfIpSetRef.current.has(left);
+                const rightIsLocal = selfIpSetRef.current.has(right);
+                if (leftIsLocal !== rightIsLocal) {
+                    return leftIsLocal ? -1 : 1;
+                }
+                return left.localeCompare(right, undefined, { numeric: true });
+            });
+            const found = await scanTargetsConcurrently(prioritizedTargets);
             if (!abortRef.current) {
                 setProgress(1);
             }
@@ -204,7 +210,7 @@ const ScanDevice: React.FC = () => {
                 runScanImpl();
             }
         }
-    }, [t, normalizeCandidateIps, deriveBaseRanges, scanTargetsConcurrently]);
+    }, [t, normalizeCandidateIps, deriveBaseRanges, buildScanTargets, scanTargetsConcurrently]);
 
     const startScan = React.useCallback(() => {
         if (scanInFlightRef.current) {

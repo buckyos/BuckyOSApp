@@ -1,8 +1,7 @@
 import { buckyos } from "buckyos";
 import { invoke } from "@tauri-apps/api/core";
 
-// SN kRPC client via buckyos-websdk
-const DEFAULT_SN_API_URL = "https://sn.buckyos.ai/kapi/sn";
+const DEFAULT_SN_API_BASE_URL = "https://sn.buckyos.ai/kapi/sn";
 
 let snApiUrlOverride: string | null = null;
 let snApiUrlPromise: Promise<string> | null = null;
@@ -18,7 +17,7 @@ export function setSnApiUrl(url: string) {
 
 type JsonValue = Record<string, any>;
 
-async function getSnApiUrl(): Promise<string> {
+async function getSnApiBaseUrl(): Promise<string> {
     if (snApiUrlPromise) {
         return snApiUrlPromise;
     }
@@ -32,14 +31,26 @@ async function getSnApiUrl(): Promise<string> {
         } catch (err) {
             console.warn("[SN] failed to load host config, fallback to default", err);
         }
-        return DEFAULT_SN_API_URL;
+        return DEFAULT_SN_API_BASE_URL;
     })();
-    console.debug("[SN] get_sn_api_host: done", { snApiUrlPromise });
     return snApiUrlPromise;
 }
 
-async function snCall<T = any>(method: string, params: JsonValue): Promise<T> {
-    const client = new buckyos.kRPCClient(await getSnApiUrl());
+async function getSnRouteUrl(route: "root" | "auth" | "bns"): Promise<string> {
+    const baseUrl = await getSnApiBaseUrl();
+    const normalizedBase = baseUrl.replace(/\/+$/, "");
+    if (route === "root") return normalizedBase;
+    if (normalizedBase.endsWith(`/${route}`)) return normalizedBase;
+    return `${normalizedBase}/${route}`;
+}
+
+async function snCall<T = any>(
+    route: "root" | "auth" | "bns",
+    method: string,
+    params: JsonValue,
+    token?: string | null
+): Promise<T> {
+    const client = new buckyos.kRPCClient(await getSnRouteUrl(route), token ?? null);
     const data = await client.call(method, params);
     return data as T;
 }
@@ -47,8 +58,9 @@ async function snCall<T = any>(method: string, params: JsonValue): Promise<T> {
 export async function checkBuckyUsername(username: string): Promise<boolean> {
     const normalized = normalizeUsername(username);
     if (!normalized) return false;
-    const data = await snCall<{ valid?: boolean; code?: number }>("check_username", { username: normalized });
-    console.debug("[SN] check_username: done", { data });
+    const data = await snCall<{ valid?: boolean; code?: number }>("auth", "auth.check_username", {
+        name: normalized,
+    });
 
     if (typeof data?.valid === "boolean") return data.valid;
     if (typeof data?.code === "number") return data.code === 0;
@@ -56,62 +68,69 @@ export async function checkBuckyUsername(username: string): Promise<boolean> {
 }
 
 export async function checkSnActiveCode(activeCode: string): Promise<boolean> {
-    const data = await snCall<{ valid?: boolean; code?: number }>("check_active_code", { active_code: activeCode });
-    console.debug("[SN] check_active_code: done", { activeCode, data });
+    const data = await snCall<{ valid?: boolean; code?: number }>(
+        "auth",
+        "auth.check_active_code",
+        { active_code: activeCode.trim() }
+    );
 
     if (typeof data?.valid === "boolean") return data.valid;
     return false;
 }
 
-export async function registerSnUser(args: {
+export async function registerSnAccountWithPassword(args: {
     userName: string;
+    passwordHash: string;
     activeCode: string;
-    publicKeyJwk: string; // stringified JWK
-    userDomain?: string | null;
+    publicKeyJwk: string;
 }): Promise<{ ok: boolean; raw: any }> {
     const normalizedUserName = normalizeUsername(args.userName);
-    const params: JsonValue = {
-        user_name: normalizedUserName,
-        active_code: args.activeCode,
-        public_key: args.publicKeyJwk,
+    const registration = await snCall<{
+        code?: number;
+        access_token?: string;
+        refresh_token?: string;
+        need_bind_owner_key?: boolean;
+    }>("auth", "auth.register", {
+        name: normalizedUserName,
+        pwd_hash: args.passwordHash,
+        active_code: args.activeCode.trim(),
+    });
+
+    if ((registration?.code ?? -1) !== 0 || !registration?.access_token) {
+        return { ok: false, raw: registration };
+    }
+
+    const bindResult = await snCall<{ code?: number }>(
+        "bns",
+        "user.bind_owner_key",
+        { public_key: args.publicKeyJwk },
+        registration.access_token
+    );
+
+    return {
+        ok: (bindResult?.code ?? -1) === 0,
+        raw: {
+            registration,
+            bind_owner_key: bindResult,
+        },
     };
-    if (args.userDomain) params["user_domain"] = args.userDomain;
-    const data = await snCall<{ code?: number }>("register_user", params);
-    return { ok: (data?.code ?? -1) === 0, raw: data };
 }
 
 export async function getUserByPublicKey(publicKeyJwk: string): Promise<{ ok: boolean; raw: any }> {
-    console.debug("[SN] get_by_pk: start", { public_key: publicKeyJwk });
-    try {
-        const data = await snCall<{
-            device_info?: string | null;
-            device_name?: string | null;
-            device_sn_ip?: string | null;
-            found?: boolean | null;
-            public_key?: string | null;
-            reason?: string | null;
-            sn_ips?: string[] | null;
-            user_name?: string | null;
-            zone_config?: string | null;
-        }>("get_by_pk", { public_key: publicKeyJwk });
-        /*
-        data:{
-          device_info:null,
-          device_name:"ood1",
-          device_sn_ip:null,
-          found:false,
-          public_key:publicKeyJwk,
-          reason:"user not found",
-          sn_ips:[],
-          user_name:null,
-          zone_config:null,
-        }
-        */
-        console.debug("[SN] get_by_pk: done", { data });
-        return { ok: (data?.user_name !== null), raw: data };
-    } catch (e) {
-        const message = e instanceof Error ? e.message : String(e);
-        console.error("[SN] get_by_pk: error", { message });
-        throw e;
-    }
+    const data = await snCall<{
+        device_info?: string | null;
+        device_name?: string | null;
+        device_sn_ip?: string | null;
+        found?: boolean | null;
+        public_key?: string | null;
+        reason?: string | null;
+        sn_ips?: string[] | null;
+        user_name?: string | null;
+        zone_config?: string | null;
+    }>("root", "device.get_by_pk", { public_key: publicKeyJwk });
+
+    return {
+        ok: typeof data?.user_name === "string" && data.user_name.trim().length > 0,
+        raw: data,
+    };
 }

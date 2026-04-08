@@ -9,10 +9,9 @@ import { getLocaleOptions, type Locale } from "../../i18n/config";
 interface WelcomeProps {
     onStart: () => void;
     onImport: () => void;
-    onShowDidInfo: () => void;
 }
 
-const Welcome: React.FC<WelcomeProps> = ({ onStart, onImport, onShowDidInfo }) => {
+const Welcome: React.FC<WelcomeProps> = ({ onStart, onImport }) => {
     const { t, locale, setLocale } = useI18n();
     const localeOptions = getLocaleOptions();
     React.useEffect(() => {
@@ -140,28 +139,11 @@ const Welcome: React.FC<WelcomeProps> = ({ onStart, onImport, onShowDidInfo }) =
 
             <div className="actions" style={{ gap: 14, display: "flex", flexDirection: "column" }}>
                 <GradientButton onClick={onStart} variant="primary">
-                    {t("common.actions.create_did")}
+                    {t("welcome.create_account")}
                 </GradientButton>
                 <GradientButton variant="secondary" onClick={onImport}>
                     {t("welcome.import_did")}
                 </GradientButton>
-                <button
-                    type="button"
-                    onClick={onShowDidInfo}
-                    style={{
-                        fontSize: 14,
-                        color: "#2563eb",
-                        textAlign: "center",
-                        marginTop: 4,
-                        background: "transparent",
-                        border: "none",
-                        padding: 0,
-                        cursor: "pointer",
-                        textDecoration: "none",
-                    }}
-                >
-                    {t("welcome.did_help_link")}
-                </button>
             </div>
         </div>
     );

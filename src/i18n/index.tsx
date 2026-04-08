@@ -12,7 +12,7 @@ import ru from "./translations/ru";
 
 const LOCALE_STORAGE_KEY = "buckyos.locale";
 
-type Dict = typeof en;
+type Dict = Record<string, any>;
 
 const dictionaries: Record<Locale, Dict> = {
     en,

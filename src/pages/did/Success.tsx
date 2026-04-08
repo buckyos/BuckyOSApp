@@ -10,36 +10,72 @@ interface SuccessProps {
 
 const Success: React.FC<SuccessProps> = ({ didInfo, onDone }) => {
     const { t } = useI18n();
+    const accountName = didInfo?.nickname?.trim() || t("common.account.unnamed");
+
     return (
-        <div className="did-container">
-            <div className="page-header">
-                <div className="page-title">{t("success.title")}</div>
-                <div className="page-subtitle">{t("success.desc")}</div>
-            </div>
-            {didInfo && (
-                <div className="did-info">
-                    <p>
-                        <strong>{t("success.nickname")}</strong> {didInfo.nickname}
-                    </p>
-                    {didInfo.bucky_wallets.map((wallet) => (
-                        <p key={`bucky-${wallet.index}`}>
-                            <strong>{t("success.did")}</strong> #{wallet.index} {wallet.did}
-                        </p>
-                    ))}
-                    {didInfo.btc_addresses.map((item) => (
-                        <p key={`btc-${item.address_type}-${item.index}`}>
-                            <strong>{t("success.btc")}</strong> [{item.address_type}] #{item.index} {item.address}
-                        </p>
-                    ))}
-                    {didInfo.eth_addresses.map((item) => (
-                        <p key={`eth-${item.index}`}>
-                            <strong>{t("success.eth")}</strong> #{item.index} {item.address}
-                        </p>
-                    ))}
+        <div className="did-container" style={{ position: "relative", overflow: "hidden" }}>
+            <div
+                className="page-content"
+                style={{
+                    flex: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    textAlign: "center",
+                    gap: 20,
+                }}
+            >
+                <div
+                    aria-hidden="true"
+                    style={{
+                        width: 88,
+                        height: 88,
+                        borderRadius: 999,
+                        background: "rgba(79,70,229,0.1)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                    }}
+                >
+                    <svg
+                        width="40"
+                        height="40"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="#4f46e5"
+                        strokeWidth="2.2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                    >
+                        <circle cx="12" cy="12" r="9" />
+                        <path d="m8.5 12.5 2.3 2.3 4.7-5.1" />
+                    </svg>
                 </div>
-            )}
-            <div className="actions">
-                <GradientButton onClick={onDone}>{t("common.actions.done")}</GradientButton>
+
+                <div className="page-header" style={{ margin: 0 }}>
+                    <div className="page-title">{t("success.title")}</div>
+                    <div
+                        className="page-subtitle"
+                        style={{
+                            maxWidth: 328,
+                            whiteSpace: "pre-line",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 8,
+                            marginTop: 18,
+                        }}
+                    >
+                        <span>{t("success.desc_primary", { name: accountName })}</span>
+                        <span>{t("success.desc_next_step")}</span>
+                        <span>{t("success.desc_secondary")}</span>
+                    </div>
+                </div>
+
+            </div>
+
+            <div className="actions page-content">
+                <GradientButton onClick={onDone}>{t("success.bind_ood")}</GradientButton>
             </div>
         </div>
     );

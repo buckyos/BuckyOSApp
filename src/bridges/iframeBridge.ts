@@ -1,4 +1,5 @@
 import React from "react";
+import { buckyos } from "buckyos";
 import { useI18n } from "../i18n";
 import { useDidContext } from "../features/did/DidContext";
 import InputDialog from "../components/ui/InputDialog";
@@ -54,6 +55,10 @@ type SignState = {
     loading: boolean;
     payloadsToSign: JsonSignPayload[];
 };
+
+function normalizePwdHashUsername(value: string | null | undefined) {
+    return typeof value === "string" ? value.trim().toLowerCase() : "";
+}
 
 export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HTMLIFrameElement | null> }) {
     const { t } = useI18n();
@@ -162,7 +167,15 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
                 passwordDialog.value,
                 passwordDialog.payloadsToSign
             );
-            resolverRef.current?.({ code: BuckyErrorCodes.Success, data: { signatures } });
+            let pwdHashUsername = normalizePwdHashUsername(activeDid?.sn_status?.username);
+            if (!pwdHashUsername && activeDid) {
+                const cached = await getCachedSnStatus(activeDid.id);
+                pwdHashUsername = normalizePwdHashUsername(cached?.username);
+            }
+            const pwd_hash = pwdHashUsername
+                ? buckyos.hashPassword(pwdHashUsername, passwordDialog.value)
+                : null;
+            resolverRef.current?.({ code: BuckyErrorCodes.Success, data: { signatures, pwd_hash } });
             resolverRef.current = null;
             closeDialog();
         } catch (err) {
@@ -175,7 +188,7 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
                 resolverRef.current?.({ code: BuckyErrorCodes.NativeError, message });
             }
         }
-    }, [passwordDialog.value, passwordDialog.payloadsToSign, closeDialog, t]);
+    }, [passwordDialog.value, passwordDialog.payloadsToSign, closeDialog, t, activeDid]);
 
     React.useEffect(() => {
         const container = document.createElement("div");

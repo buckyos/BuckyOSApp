@@ -1,5 +1,3 @@
-import en from "./en";
-
 const fr = {
     common: {
         language: {
@@ -42,9 +40,10 @@ const fr = {
             mnemonic_mismatch: "Les phrases mnémoniques ne correspondent pas. Vérifiez votre sauvegarde.",
             generate_mnemonic_failed: "Échec de la génération de la phrase mnémonique : {{message}}",
             create_did_failed: "Échec de la création du DID : {{message}}",
-            import_did_failed: "Échec de l'import du DID : {{message}}",
+            import_did_failed: "Échec de l'import du compte : {{message}}",
         },
-        creating: "Création du DID...",
+        creating: "Création du compte et liaison du SN...",
+        importing: "Import du compte...",
     },
     tabs: {
         home: "Accueil",
@@ -69,7 +68,8 @@ const fr = {
         description: "Bienvenue. Cet assistant vous guidera dans la création de votre identité sécurisée et décentralisée.",
         app_name: "BuckyOS",
         subtitle: "AIOS personnel pour tous",
-        import_did: "Importer un DID",
+        create_account: "Créer un compte",
+        import_did: "Importer un compte",
         did_help_link: "Qu'est-ce qu'un DID ?",
     },
     didInfo: {
@@ -83,14 +83,15 @@ const fr = {
         point3Desc: "Créez-le une fois, utilisez-le partout. Votre DID fonctionne dans l'écosystème BuckyOS et dans tout service compatible avec la norme.",
     },
     import: {
-        title: "Importer un DID existant",
-        subtitle: "Saisissez la phrase mnémonique pour récupérer votre identité",
+        title: "Importer un compte",
+        subtitle: "Saisissez la phrase mnémonique et le mot de passe. L'app interroge d'abord l'enregistrement SN via la clé publique. Seuls les comptes avec un enregistrement SN existant peuvent être importés.",
+        auto_name_hint: "Vous n'avez pas besoin de saisir un nom manuellement. Si un enregistrement SN est trouvé, l'app utilisera automatiquement le nom SN comme nom local du compte.",
         mnemonic_label: "Phrase mnémonique",
         mnemonic_placeholder: "Saisissez votre phrase mnémonique de 12 ou 24 mots...",
         nickname_label: "Pseudo",
         password_label: "Mot de passe",
         confirm_password_label: "Confirmer le mot de passe",
-        submit: "Importer le DID",
+        submit: "Importer le compte",
         error: {
             mnemonic_required: "La phrase mnémonique est requise.",
             invalid_mnemonic_word: "{{word}} n'est pas un mot mnémonique valide",
@@ -98,11 +99,19 @@ const fr = {
             nickname_length: "Le nom d'utilisateur doit contenir entre 5 et 20 caractères.",
             nickname_exists: "Ce pseudo existe déjà.",
             identity_exists: "Cette identité existe déjà sur cet appareil.",
+            sn_not_found: "Aucun enregistrement SN n'a été trouvé pour cette DID. Import échoué.",
         },
     },
     create: {
         title: "Définir pseudo et mot de passe",
-        title_new: "Créer un DID",
+        title_new: "Créer un compte",
+        flow_intro: "Ce flux crée d'abord une DID, puis lie un SN.",
+        did_card_title: "Qu'est-ce qu'une DID",
+        did_card_desc: "La DID est l'identité de base utilisée dans l'application actuelle. Après sa création, l'app génère la phrase mnémonique et le matériel de clés nécessaires pour la récupération et la signature.",
+        sn_card_title: "Qu'est-ce que SN",
+        sn_card_desc: "BuckyOS SN (Super Node) est un système d'exploitation décentralisé qui permet aux développeurs de créer, déployer et faire évoluer des applications sur des réseaux pair-à-pair sans dépendre d'une infrastructure cloud traditionnelle.",
+        learn_more: "Détails",
+        start_button: "Commencer la création",
         subtitle: "Configurez votre DID sécurisé",
         nickname_label: "Nom d'utilisateur",
         nickname_placeholder: "Saisir un pseudo",
@@ -128,8 +137,11 @@ const fr = {
         error_wrong_order: "Ordre incorrect. Veuillez réessayer.",
     },
     success: {
-        title: "Création réussie",
-        desc: "Votre DID a été créé et stocké en toute sécurité.",
+        title: "Compte créé",
+        desc_primary: "Félicitations, le compte {{name}} a été créé avec succès.",
+        desc_next_step: "Veuillez maintenant associer votre OOD.",
+        desc_secondary: "OOD est votre serveur personnel et peut stocker en toute sécurité vos applications et données personnelles.",
+        bind_ood: "Associer OOD",
         nickname: "Pseudo :",
         did: "DID BuckyOS :",
         btc: "Adresse BTC :",
@@ -220,7 +232,7 @@ const fr = {
         no_did_hint: "Aucun DID détecté. Veuillez d'abord en créer ou en importer un.",
         username_label: "Nom d'utilisateur SN",
         username_placeholder: "Saisir le nom d'utilisateur",
-        username_format_hint: "Utilisez 5 à 20 lettres minuscules, chiffres ou tirets ; commencez et terminez par une lettre ou un chiffre.",
+        username_format_hint: "Le nom d'utilisateur SN doit contenir au moins 7 caractères et ne peut inclure que des lettres minuscules, des chiffres ou des tirets. Il doit commencer et se terminer par une lettre ou un chiffre.",
         username_checking: "Vérification du nom d'utilisateur...",
         username_ok: "Le nom d'utilisateur est disponible. Après l'association, vous pourrez accéder à votre zone via https://{{username}}.web3.buckyos.ai",
         username_taken: "Le nom d'utilisateur n'est pas disponible, veuillez le modifier.",
@@ -240,6 +252,9 @@ const fr = {
             query_failed: "Échec de la requête SN : {{message}}",
             check_username_failed: "Impossible de vérifier le nom d'utilisateur. Veuillez réessayer.",
             check_invite_failed: "Impossible de vérifier le code d'invitation. Veuillez réessayer.",
+            username_too_short: "Le nom d'utilisateur SN doit contenir au moins 7 caractères.",
+            username_exists_local: "Ce nom existe déjà localement sur cet appareil.",
+            active_code_required: "Un Active Code est requis.",
             register_failed: "Échec de l'enregistrement SN.",
             register_failed_with_reason: "Échec de l'enregistrement SN : {{message}}",
             poll_timeout: "Délai d'attente dépassé pour le résultat de l'enregistrement.",
@@ -313,6 +328,6 @@ const fr = {
         storage_label: "Stockage",
         unknown_value: "Inconnu",
     },
-} satisfies typeof en;
+};
 
 export default fr;

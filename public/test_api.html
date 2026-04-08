@@ -221,8 +221,10 @@
             try {
                 const payload = await window.BuckyApi.signJsonWithActiveDid(payloads);
                 if (payload?.code === 0) {
-                    const signatures = payload.data?.signatures ?? [];
-                    outputBox.value = JSON.stringify(signatures, null, 2);
+                    outputBox.value = JSON.stringify({
+                        pwd_hash: payload.data?.pwd_hash ?? null,
+                        signatures: payload.data?.signatures ?? [],
+                    }, null, 2);
                     outputBox.classList.remove("highlight");
                     void outputBox.offsetWidth;
                     outputBox.classList.add("highlight");

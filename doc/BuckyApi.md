@@ -70,11 +70,13 @@
   - `3` (NoKey)：当前没有可用 bucky wallet。
   - `4` (NoActiveDid)：没有激活的 DID。
 
-### `BuckyApi.signJsonWithActiveDid(payloads: Record<string, unknown>[]): Promise<{ code, message?, data?: { signatures: (string | null)[] } }>`
+### `BuckyApi.signJsonWithActiveDid(payloads: Record<string, unknown>[]): Promise<{ code, message?, data?: { signatures: (string | null)[]; pwd_hash: string | null } }>`
 
 - **说明**：使用当前激活 DID 的私钥对传入的 JSON 对象数组依次进行签名。
 - **参数**：`payloads` —— 待签名的 JSON 对象数组，非对象条目会被忽略；若过滤后为空则返回 `NoMessage`。
-- **成功 data**：`{ signatures: (string | null)[] }`，长度与有效输入一致，若某一项签名失败则对应元素为 `null`，其余成功项按原顺序返回。
+- **成功 data**：
+  - `signatures: (string | null)[]`，长度与有效输入一致，若某一项签名失败则对应元素为 `null`，其余成功项按原顺序返回。
+  - `pwd_hash: string | null`，基于当前激活 DID 在本地已保存的 SN 用户名和本次输入密码计算出的摘要值，规则为 `Base64(SHA256(password + username + ".buckyos"))`。宿主仅从本地 `sn_username` / SN 状态缓存读取用户名；若本地不存在则返回 `null`。
 - **典型错误码**：
   - `5` (NoMessage)：`payloads` 为空或不存在有效 JSON 对象。
   - `6` (InvalidPassword)：密码错误。

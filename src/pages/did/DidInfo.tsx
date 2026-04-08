@@ -1,4 +1,5 @@
 import React from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import MobileHeader from "../../components/ui/MobileHeader";
 import { useI18n } from "../../i18n";
 
@@ -8,6 +9,9 @@ interface DidInfoProps {
 
 const DidInfo: React.FC<DidInfoProps> = ({ onBack }) => {
     const { t } = useI18n();
+    const location = useLocation();
+    const navigate = useNavigate();
+    const backTo = (location.state as { backTo?: string } | null)?.backTo;
     const bullets = [
         { title: t("didInfo.point1Title"), desc: t("didInfo.point1Desc") },
         { title: t("didInfo.point2Title"), desc: t("didInfo.point2Desc") },
@@ -16,7 +20,17 @@ const DidInfo: React.FC<DidInfoProps> = ({ onBack }) => {
 
     return (
         <div className="did-container" style={{ padding: 16 }}>
-            <MobileHeader title={t("didInfo.title")} showBack onBack={onBack} />
+            <MobileHeader
+                title={t("didInfo.title")}
+                showBack
+                onBack={() => {
+                    if (backTo) {
+                        navigate(backTo);
+                        return;
+                    }
+                    onBack();
+                }}
+            />
             <div className="page-content" style={{ marginTop: 8 }}>
                 <p style={{ color: "var(--muted-text)", lineHeight: 1.5 }}>{t("didInfo.intro")}</p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 12 }}>

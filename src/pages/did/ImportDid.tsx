@@ -7,13 +7,12 @@ import { useI18n } from "../../i18n";
 interface ImportDidProps {
     loading: boolean;
     error: string;
-    onImport: (payload: { nickname: string; password: string; mnemonicWords: string[] }) => void;
+    onImport: (payload: { password: string; mnemonicWords: string[] }) => void;
     onBack: () => void;
 }
 
 const ImportDid: React.FC<ImportDidProps> = ({ loading, error, onImport, onBack }) => {
     const { t } = useI18n();
-    const [nickname, setNickname] = React.useState("");
     const [password, setPassword] = React.useState("");
     const [confirmPassword, setConfirmPassword] = React.useState("");
     const [mnemonicInput, setMnemonicInput] = React.useState("");
@@ -66,15 +65,6 @@ const ImportDid: React.FC<ImportDidProps> = ({ loading, error, onImport, onBack 
             setLocalError(t("import.error.mnemonic_required"));
             return;
         }
-        const trimmedNickname = nickname.trim();
-        if (!trimmedNickname) {
-            setLocalError(t("import.error.nickname_required"));
-            return;
-        }
-        if (trimmedNickname.length < 5 || trimmedNickname.length > 20) {
-            setLocalError(t("import.error.nickname_length"));
-            return;
-        }
         if (password !== confirmPassword) {
             setLocalError(t("common.error.passwords_mismatch"));
             return;
@@ -85,7 +75,7 @@ const ImportDid: React.FC<ImportDidProps> = ({ loading, error, onImport, onBack 
         }
         const mnemonicWords = trimmedMnemonic.split(/\s+/).filter(Boolean);
         setLocalError("");
-        onImport({ nickname: trimmedNickname, password, mnemonicWords });
+        onImport({ password, mnemonicWords });
     };
 
     const displayedError = localError || mnemonicWordError || error;
@@ -124,22 +114,6 @@ const ImportDid: React.FC<ImportDidProps> = ({ loading, error, onImport, onBack 
                             resize: "vertical",                            fontSize: 14,
                             lineHeight: 1.45,
                         }}
-                        disabled={loading}
-                    />
-                </div>
-
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    <label style={{ fontSize: 14, color: "var(--muted-text)" }}>
-                        {t("import.nickname_label")}
-                    </label>
-                    <input
-                        type="text"
-                        value={nickname}
-                        onChange={(event) => {
-                            setNickname(event.target.value);
-                            setLocalError("");
-                        }}
-                        placeholder={t("create.nickname_placeholder")}
                         disabled={loading}
                     />
                 </div>

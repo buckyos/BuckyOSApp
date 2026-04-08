@@ -1,5 +1,3 @@
-import en from "./en";
-
 const es = {
     common: {
         language: {
@@ -42,9 +40,10 @@ const es = {
             mnemonic_mismatch: "Las frases mnemónicas no coinciden. Revisa tu copia de seguridad.",
             generate_mnemonic_failed: "No se pudo generar la frase mnemónica: {{message}}",
             create_did_failed: "No se pudo crear el DID: {{message}}",
-            import_did_failed: "No se pudo importar el DID: {{message}}",
+            import_did_failed: "No se pudo importar la cuenta: {{message}}",
         },
-        creating: "Creando DID...",
+        creating: "Creando la cuenta y vinculando SN...",
+        importing: "Importando cuenta...",
     },
     tabs: {
         home: "Inicio",
@@ -69,7 +68,8 @@ const es = {
         description: "Bienvenido. Este asistente te guiará para crear tu identidad segura y descentralizada.",
         app_name: "BuckyOS",
         subtitle: "AIOS personal para todos",
-        import_did: "Importar DID",
+        create_account: "Crear cuenta",
+        import_did: "Importar cuenta",
         did_help_link: "¿Qué es un DID?",
     },
     didInfo: {
@@ -83,14 +83,15 @@ const es = {
         point3Desc: "Créala una vez y úsala en todas partes. Tu DID funciona en el ecosistema BuckyOS y en cualquier servicio compatible con el estándar.",
     },
     import: {
-        title: "Importar DID existente",
-        subtitle: "Introduce la frase mnemónica para recuperar tu identidad",
+        title: "Importar cuenta",
+        subtitle: "Introduce la frase mnemónica y la contraseña. La app consultará primero el registro SN mediante la clave pública. Solo se pueden importar cuentas con un registro SN existente.",
+        auto_name_hint: "No necesitas introducir un nombre manualmente. Si se encuentra un registro SN, la app usará automáticamente el nombre de SN como nombre local de la cuenta.",
         mnemonic_label: "Frase mnemónica",
         mnemonic_placeholder: "Introduce tu frase mnemónica de 12 o 24 palabras...",
         nickname_label: "Apodo",
         password_label: "Contraseña",
         confirm_password_label: "Confirmar contraseña",
-        submit: "Importar DID",
+        submit: "Importar cuenta",
         error: {
             mnemonic_required: "La frase mnemónica es obligatoria.",
             invalid_mnemonic_word: "{{word}} no es una palabra mnemónica válida",
@@ -98,11 +99,19 @@ const es = {
             nickname_length: "El nombre de usuario debe tener entre 5 y 20 caracteres.",
             nickname_exists: "Este apodo ya existe.",
             identity_exists: "Esta identidad ya existe en este dispositivo.",
+            sn_not_found: "Esta DID no tiene registro en SN. La importación falló.",
         },
     },
     create: {
         title: "Configura apodo y contraseña",
-        title_new: "Crear DID",
+        title_new: "Crear cuenta",
+        flow_intro: "Este flujo primero creará una DID y después vinculará un SN.",
+        did_card_title: "Qué es DID",
+        did_card_desc: "La DID es la identidad básica usada en la app actual. Tras crearla, la app generará la frase mnemónica y el material de claves necesarios para recuperar y firmar.",
+        sn_card_title: "Qué es SN",
+        sn_card_desc: "BuckyOS SN (Super Node) es un sistema operativo descentralizado que permite a los desarrolladores crear, desplegar y escalar aplicaciones sobre redes peer-to-peer sin depender de infraestructura cloud tradicional.",
+        learn_more: "Detalles",
+        start_button: "Empezar a crear",
         subtitle: "Configura tu DID seguro",
         nickname_label: "Nombre de usuario",
         nickname_placeholder: "Introduce un apodo",
@@ -128,8 +137,11 @@ const es = {
         error_wrong_order: "El orden es incorrecto. Inténtalo de nuevo.",
     },
     success: {
-        title: "Creación completada",
-        desc: "Tu DID se ha creado y almacenado de forma segura.",
+        title: "Cuenta creada",
+        desc_primary: "Enhorabuena, la cuenta {{name}} se ha creado correctamente.",
+        desc_next_step: "Ahora vincula tu OOD.",
+        desc_secondary: "OOD es tu servidor personal y puede almacenar de forma segura tus aplicaciones y datos personales.",
+        bind_ood: "Vincular OOD",
         nickname: "Apodo:",
         did: "DID de BuckyOS:",
         btc: "Dirección BTC:",
@@ -220,7 +232,7 @@ const es = {
         no_did_hint: "No se detectó ningún DID. Crea o importa uno primero.",
         username_label: "Nombre de usuario de SN",
         username_placeholder: "Introduce un nombre de usuario",
-        username_format_hint: "Usa entre 5 y 20 letras minúsculas, números o guiones; debe comenzar y terminar con una letra o un número.",
+        username_format_hint: "El nombre de usuario de SN debe tener al menos 7 caracteres y solo puede contener letras minúsculas, números o guiones. Debe comenzar y terminar con una letra o un número.",
         username_checking: "Comprobando nombre de usuario...",
         username_ok: "El nombre de usuario está disponible. Tras vincularlo podrás acceder a tu zona mediante https://{{username}}.web3.buckyos.ai",
         username_taken: "El nombre de usuario no está disponible. Modifícalo.",
@@ -240,6 +252,9 @@ const es = {
             query_failed: "No se pudo consultar SN: {{message}}",
             check_username_failed: "No se pudo comprobar el nombre de usuario. Inténtalo de nuevo.",
             check_invite_failed: "No se pudo comprobar el código de invitación. Inténtalo de nuevo.",
+            username_too_short: "El nombre de usuario de SN debe tener al menos 7 caracteres.",
+            username_exists_local: "Este nombre ya existe localmente en este dispositivo.",
+            active_code_required: "El Active Code es obligatorio.",
             register_failed: "Falló el registro de SN.",
             register_failed_with_reason: "Falló el registro de SN: {{message}}",
             poll_timeout: "Se agotó el tiempo esperando el resultado del registro.",
@@ -313,6 +328,6 @@ const es = {
         storage_label: "Almacenamiento",
         unknown_value: "Desconocido",
     },
-} satisfies typeof en;
+};
 
 export default es;

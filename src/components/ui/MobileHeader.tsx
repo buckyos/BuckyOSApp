@@ -5,9 +5,10 @@ interface MobileHeaderProps {
     title: string;
     showBack?: boolean;
     onBack?: () => void;
+    rightSlot?: React.ReactNode;
 }
 
-const MobileHeader: React.FC<MobileHeaderProps> = ({ title, showBack = false, onBack }) => {
+const MobileHeader: React.FC<MobileHeaderProps> = ({ title, showBack = false, onBack, rightSlot }) => {
     const navigate = useNavigate();
     const handleBack = React.useCallback(() => {
         if (onBack) {
@@ -73,11 +74,17 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({ title, showBack = false, on
                         whiteSpace: "nowrap",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
+                        flex: 1,
                     }}
                 >
                     {title}
                 </h1>
             )}
+            {rightSlot ? (
+                <div style={{ marginLeft: "auto", display: "flex", alignItems: "center" }}>
+                    {rightSlot}
+                </div>
+            ) : null}
         </div>
     );
 };

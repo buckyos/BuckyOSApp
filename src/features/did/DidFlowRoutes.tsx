@@ -1,7 +1,8 @@
 import React from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 import Welcome from "../../pages/did/Welcome";
 import CreateDid from "../../pages/did/CreateDid";
+import BindSn from "../../pages/did/BindSn";
 import ShowMnemonic from "../../pages/did/ShowMnemonic";
 import ConfirmMnemonic from "../../pages/did/ConfirmMnemonic";
 import Success from "../../pages/did/Success";
@@ -11,15 +12,20 @@ import "./DidFlowRoutes.css";
 import SnIntro from "../../pages/did/SnIntro";
 import ImportDid from "../../pages/did/ImportDid";
 import DidInfo from "../../pages/did/DidInfo";
+import { useI18n } from "../../i18n";
 
 const DidFlowRoutes: React.FC = () => {
+    const { t } = useI18n();
+    const location = useLocation();
     const {
-        nickname,
-        setNickname,
         password,
         setPassword,
         confirmPassword,
         setConfirmPassword,
+        snName,
+        setSnName,
+        activeCode,
+        setActiveCode,
         mnemonic,
         confirmedMnemonic,
         setConfirmedMnemonic,
@@ -30,20 +36,24 @@ const DidFlowRoutes: React.FC = () => {
         goToImportDid,
         goToShowMnemonic,
         goToConfirmMnemonic,
-        handleCreateDid,
+        goToBindSn,
+        handleBindSnAndCreateDid,
         handleImportDid,
         goToWelcome,
         goToDidInfo,
+        goToSnInfo,
         resetFlow,
     } = useDidFlow();
 
+    const loadingTextKey = location.pathname === "/import" ? "common.importing" : "common.creating";
+
     return (
         <div className="App">
-            <LoadingOverlay visible={loading} textKey="common.creating" />
+            <LoadingOverlay visible={loading} textKey={loadingTextKey} />
             <Routes>
                 <Route
                     path="/"
-                    element={<Welcome onStart={goToCreateDid} onImport={goToImportDid} onShowDidInfo={goToDidInfo} />}
+                    element={<Welcome onStart={goToCreateDid} onImport={goToImportDid} />}
                 />
                 <Route path="/did-info" element={<DidInfo onBack={goToWelcome} />} />
                 <Route path="/sn" element={<SnIntro />} />
@@ -62,13 +72,9 @@ const DidFlowRoutes: React.FC = () => {
                     path="/create"
                     element={
                         <CreateDid
-                            nickname={nickname}
-                            setNickname={setNickname}
-                            password={password}
-                            setPassword={setPassword}
-                            confirmPassword={confirmPassword}
-                            setConfirmPassword={setConfirmPassword}
                             onNext={goToShowMnemonic}
+                            onShowDidInfo={goToDidInfo}
+                            onShowSnInfo={goToSnInfo}
                             error={error}
                         />
                     }
@@ -81,11 +87,31 @@ const DidFlowRoutes: React.FC = () => {
                     path="/confirm-mnemonic"
                     element={
                         <ConfirmMnemonic
-                            onConfirm={handleCreateDid}
+                            onConfirm={goToBindSn}
                             setConfirmedMnemonic={setConfirmedMnemonic}
                             error={error}
                             confirmedMnemonic={confirmedMnemonic}
                             mnemonic={mnemonic}
+                            confirmLabel={t("common.actions.next")}
+                        />
+                    }
+                />
+                <Route
+                    path="/bind-sn"
+                    element={
+                        <BindSn
+                            snName={snName}
+                            setSnName={setSnName}
+                            password={password}
+                            setPassword={setPassword}
+                            confirmPassword={confirmPassword}
+                            setConfirmPassword={setConfirmPassword}
+                            activeCode={activeCode}
+                            setActiveCode={setActiveCode}
+                            loading={loading}
+                            error={error}
+                            onSubmit={handleBindSnAndCreateDid}
+                            onShowSnInfo={goToSnInfo}
                         />
                     }
                 />

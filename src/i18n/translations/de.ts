@@ -1,5 +1,3 @@
-import en from "./en";
-
 const de = {
     common: {
         language: {
@@ -42,9 +40,10 @@ const de = {
             mnemonic_mismatch: "Die Mnemonik stimmt nicht überein. Bitte überprüfe dein Backup.",
             generate_mnemonic_failed: "Mnemonik konnte nicht erzeugt werden: {{message}}",
             create_did_failed: "DID konnte nicht erstellt werden: {{message}}",
-            import_did_failed: "DID konnte nicht importiert werden: {{message}}",
+            import_did_failed: "Konto konnte nicht importiert werden: {{message}}",
         },
-        creating: "DID wird erstellt...",
+        creating: "Konto wird erstellt und SN wird verknüpft...",
+        importing: "Konto wird importiert...",
     },
     tabs: {
         home: "Start",
@@ -69,7 +68,8 @@ const de = {
         description: "Willkommen. Dieser Assistent führt dich durch die Erstellung deiner sicheren und dezentralen Identität.",
         app_name: "BuckyOS",
         subtitle: "Persönliches AIOS für alle",
-        import_did: "DID importieren",
+        create_account: "Konto erstellen",
+        import_did: "Konto importieren",
         did_help_link: "Was ist eine DID?",
     },
     didInfo: {
@@ -83,14 +83,15 @@ const de = {
         point3Desc: "Einmal erstellen, überall verwenden. Deine DID funktioniert im BuckyOS-Ökosystem und in allen Diensten, die den Standard unterstützen.",
     },
     import: {
-        title: "Vorhandene DID importieren",
-        subtitle: "Gib die Mnemonik ein, um deine Identität wiederherzustellen",
+        title: "Konto importieren",
+        subtitle: "Gib Mnemonik und Passwort ein. Die App prüft zuerst den SN-Eintrag über den öffentlichen Schlüssel. Nur Konten mit vorhandenem SN-Eintrag können importiert werden.",
+        auto_name_hint: "Du musst keinen Namen manuell eingeben. Wenn ein SN-Eintrag gefunden wird, verwendet die App automatisch den SN-Namen als lokalen Anzeigenamen.",
         mnemonic_label: "Mnemonische Phrase",
         mnemonic_placeholder: "Gib deine Mnemonik mit 12 oder 24 Wörtern ein...",
         nickname_label: "Spitzname",
         password_label: "Passwort",
         confirm_password_label: "Passwort bestätigen",
-        submit: "DID importieren",
+        submit: "Konto importieren",
         error: {
             mnemonic_required: "Die Mnemonik ist erforderlich.",
             invalid_mnemonic_word: "{{word}} ist kein gültiges Mnemonik-Wort",
@@ -98,11 +99,19 @@ const de = {
             nickname_length: "Der Benutzername muss 5 bis 20 Zeichen lang sein.",
             nickname_exists: "Dieser Spitzname existiert bereits.",
             identity_exists: "Diese Identität existiert bereits auf diesem Gerät.",
+            sn_not_found: "Für diese DID wurde kein SN-Eintrag gefunden. Import fehlgeschlagen.",
         },
     },
     create: {
         title: "Spitzname und Passwort festlegen",
-        title_new: "DID erstellen",
+        title_new: "Konto erstellen",
+        flow_intro: "Dieser Ablauf erstellt zuerst eine DID und bindet danach ein SN.",
+        did_card_title: "Was ist eine DID",
+        did_card_desc: "Die DID ist die grundlegende Identität in der aktuellen App. Nach der Erstellung erzeugt die App die Mnemonik und das Schlüsselmaterial für Wiederherstellung und Signaturen.",
+        sn_card_title: "Was ist SN",
+        sn_card_desc: "BuckyOS SN (Super Node) ist ein dezentrales Betriebssystem, mit dem Entwickler Anwendungen über Peer-to-Peer-Netzwerke bauen, bereitstellen und skalieren können, ohne von klassischer Cloud-Infrastruktur abhängig zu sein.",
+        learn_more: "Details",
+        start_button: "Erstellung starten",
         subtitle: "Richte deine sichere DID ein",
         nickname_label: "Benutzername",
         nickname_placeholder: "Spitznamen eingeben",
@@ -128,8 +137,11 @@ const de = {
         error_wrong_order: "Falsche Reihenfolge. Bitte versuche es erneut.",
     },
     success: {
-        title: "Erstellung erfolgreich",
-        desc: "Deine DID wurde erstellt und sicher gespeichert.",
+        title: "Konto erstellt",
+        desc_primary: "Glückwunsch, das Konto {{name}} wurde erfolgreich erstellt.",
+        desc_next_step: "Als Nächstes binde bitte dein OOD.",
+        desc_secondary: "OOD ist dein persönlicher Server und kann deine persönlichen Apps und Daten sicher speichern.",
+        bind_ood: "OOD binden",
         nickname: "Spitzname:",
         did: "BuckyOS-DID:",
         btc: "BTC-Adresse:",
@@ -220,7 +232,7 @@ const de = {
         no_did_hint: "Keine DID erkannt. Bitte zuerst erstellen oder importieren.",
         username_label: "SN-Benutzername",
         username_placeholder: "Benutzernamen eingeben",
-        username_format_hint: "Verwende 5 bis 20 Kleinbuchstaben, Zahlen oder Bindestriche. Der Name muss mit einem Buchstaben oder einer Zahl beginnen und enden.",
+        username_format_hint: "Der SN-Benutzername muss mindestens 7 Zeichen lang sein und darf nur Kleinbuchstaben, Zahlen oder Bindestriche enthalten. Er muss mit einem Buchstaben oder einer Zahl beginnen und enden.",
         username_checking: "Benutzername wird geprüft...",
         username_ok: "Der Benutzername ist verfügbar. Nach dem Verbinden erreichst du deine Zone über https://{{username}}.web3.buckyos.ai",
         username_taken: "Der Benutzername ist nicht verfügbar. Bitte ändern.",
@@ -240,6 +252,9 @@ const de = {
             query_failed: "SN-Abfrage fehlgeschlagen: {{message}}",
             check_username_failed: "Benutzername konnte nicht geprüft werden. Bitte erneut versuchen.",
             check_invite_failed: "Einladungscode konnte nicht geprüft werden. Bitte erneut versuchen.",
+            username_too_short: "Der SN-Benutzername muss mindestens 7 Zeichen lang sein.",
+            username_exists_local: "Dieser Name existiert bereits lokal auf diesem Gerät.",
+            active_code_required: "Ein Active Code ist erforderlich.",
             register_failed: "SN-Registrierung fehlgeschlagen.",
             register_failed_with_reason: "SN-Registrierung fehlgeschlagen: {{message}}",
             poll_timeout: "Zeitüberschreitung beim Warten auf das Registrierungsergebnis.",
@@ -313,6 +328,6 @@ const de = {
         storage_label: "Speicher",
         unknown_value: "Unbekannt",
     },
-} satisfies typeof en;
+};
 
 export default de;
