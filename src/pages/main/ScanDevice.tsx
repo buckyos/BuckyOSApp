@@ -1,8 +1,11 @@
 import React from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { useNavigate } from "react-router-dom";
 import MobileHeader from "../../components/ui/MobileHeader";
 import GradientButton from "../../components/ui/GradientButton";
 import { useI18n } from "../../i18n";
+import { useDidContext } from "../../features/did/DidContext";
+import { fetchSnStatus, getCachedSnStatus } from "../../features/sn/snStatusManager";
 import { getLocalIPv4List } from "../../utils/network";
 import { openWebView } from "../../utils/webview";
 import oodIllustration from "../../assets/ood.png";
@@ -31,6 +34,8 @@ function hasUsableActiveUrl(value: unknown): value is string {
 
 const ScanDevice: React.FC = () => {
     const { t } = useI18n();
+    const navigate = useNavigate();
+    const { activeDid } = useDidContext();
     const [devices, setDevices] = React.useState<DeviceRecord[]>([]);
     const [scanning, setScanning] = React.useState(false);
     const [progress, setProgress] = React.useState(0);
@@ -41,6 +46,7 @@ const ScanDevice: React.FC = () => {
     const listRef = React.useRef<HTMLUListElement | null>(null);
     const scanInFlightRef = React.useRef(false);
     const pendingStartRef = React.useRef(false);
+    const oodCheckInFlightRef = React.useRef(false);
 
     const addDevice = React.useCallback((info: DeviceRecord) => {
         setDevices((prev) => {
@@ -244,6 +250,63 @@ const ScanDevice: React.FC = () => {
             abortRef.current = true;
         };
     }, []);
+
+    React.useEffect(() => {
+        if (!activeDid || devices.length === 0 || oodCheckInFlightRef.current) return;
+
+        let cancelled = false;
+        let timer: number | undefined;
+
+        const pollOodBinding = async () => {
+            if (!activeDid?.bucky_wallets?.length) return;
+            const cached = await getCachedSnStatus(activeDid.id);
+            const hasUsername = Boolean(
+                (typeof cached?.username === "string" && cached.username.trim().length > 0) ||
+                (typeof activeDid.sn_status?.username === "string" &&
+                    activeDid.sn_status.username.trim().length > 0)
+            );
+            const hasZoneConfig =
+                typeof cached?.zoneConfig === "string" && cached.zoneConfig.trim().length > 0;
+
+            if (cancelled) return;
+            if (hasZoneConfig) {
+                navigate("/main/home");
+                return;
+            }
+            if (!hasUsername) return;
+
+            try {
+                oodCheckInFlightRef.current = true;
+                const jwk = JSON.stringify(activeDid.bucky_wallets[0].public_key as any);
+                const record = await fetchSnStatus(activeDid.id, jwk);
+                if (
+                    !cancelled &&
+                    typeof record.zoneConfig === "string" &&
+                    record.zoneConfig.trim().length > 0
+                ) {
+                    navigate("/main/home");
+                    return;
+                }
+            } catch (err) {
+                console.warn("[OOD-CHECK] scan page refresh failed", err);
+            } finally {
+                oodCheckInFlightRef.current = false;
+            }
+
+            if (!cancelled) {
+                timer = window.setTimeout(pollOodBinding, 5000);
+            }
+        };
+
+        timer = window.setTimeout(pollOodBinding, 5000);
+
+        return () => {
+            cancelled = true;
+            if (timer) {
+                window.clearTimeout(timer);
+            }
+        };
+    }, [activeDid, devices.length, navigate]);
 
     const percent = Math.min(100, Math.round(progress * 100));
     const statusTitle = scanning ? t("device_scan.running_title") : status || t("device_scan.status_preparing");

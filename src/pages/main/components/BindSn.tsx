@@ -15,6 +15,7 @@ import type { DidInfo } from "../../../features/did/types";
 const SN_USERNAME_MIN_LEN = 5;
 const SN_USERNAME_MAX_LEN = 20;
 const SN_USERNAME_REGEX = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
+const OOD_STATUS_REFRESH_INTERVAL_MS = 5000;
 
 function normalizeSnInput(value: string): string {
     return value.toLowerCase();
@@ -199,6 +200,16 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
         };
         run();
     }, [activeDid?.id, refetchSn]);
+
+    React.useEffect(() => {
+        if (!activeDid || !snBound || oodBound || snChecking) return;
+        const timer = window.setTimeout(() => {
+            void refetchSn(true);
+        }, OOD_STATUS_REFRESH_INTERVAL_MS);
+        return () => {
+            window.clearTimeout(timer);
+        };
+    }, [activeDid, snBound, oodBound, snChecking, refetchSn]);
 
     React.useEffect(() => {
         if (!formVisible) return;
