@@ -69,6 +69,7 @@ pub fn run() {
             did::sign_json_with_active_did,
             applist::get_applist,
             network::local_ipv4_list,
+            network::scan_device_batch,
             config::get_sn_api_host,
         ])
         .run(tauri::generate_context!())
