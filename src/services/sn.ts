@@ -17,6 +17,23 @@ export function setSnApiUrl(url: string) {
 
 type JsonValue = Record<string, any>;
 
+function shortenValue(value: string, keep = 16): string {
+    if (value.length <= keep * 2) return value;
+    return `${value.slice(0, keep)}...${value.slice(-keep)}`;
+}
+
+function summarizePublicKeyJwk(publicKeyJwk: string): string {
+    try {
+        const parsed = JSON.parse(publicKeyJwk) as Record<string, unknown>;
+        const kty = typeof parsed.kty === "string" ? parsed.kty : "unknown";
+        const crv = typeof parsed.crv === "string" ? parsed.crv : "unknown";
+        const x = typeof parsed.x === "string" ? shortenValue(parsed.x, 10) : "missing-x";
+        return `${kty}/${crv}/${x}`;
+    } catch {
+        return shortenValue(publicKeyJwk, 24);
+    }
+}
+
 async function getSnApiBaseUrl(): Promise<string> {
     if (snApiUrlPromise) {
         return snApiUrlPromise;
@@ -117,6 +134,9 @@ export async function registerSnAccountWithPassword(args: {
 }
 
 export async function getUserByPublicKey(publicKeyJwk: string): Promise<{ ok: boolean; raw: any }> {
+    const keySummary = summarizePublicKeyJwk(publicKeyJwk);
+    console.info("[OOD-CHECK] device.get_by_pk request", { keySummary });
+
     const data = await snCall<{
         device_info?: string | null;
         device_name?: string | null;
@@ -129,8 +149,11 @@ export async function getUserByPublicKey(publicKeyJwk: string): Promise<{ ok: bo
         zone_config?: string | null;
     }>("root", "device.get_by_pk", { public_key: publicKeyJwk });
 
+    const ok = typeof data?.user_name === "string" && data.user_name.trim().length > 0;
+    console.info("[OOD-CHECK] device.get_by_pk response", { keySummary, raw: data });
+
     return {
-        ok: typeof data?.user_name === "string" && data.user_name.trim().length > 0,
+        ok,
         raw: data,
     };
 }

@@ -128,7 +128,7 @@ const BindSn: React.FC<BindSnProps> = ({ activeDid, onStatusChange }) => {
                 if (cached.username) {
                     setSnUsername(normalizeSnInput(cached.username));
                 }
-                if (cached.username && !force) {
+                if (cached.username && cached.zoneConfig && !force) {
                     setSnChecking(false);
                     setInitializing(false);
                     return;
