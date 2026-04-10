@@ -1,0 +1,45 @@
+.about-app-page {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.about-app-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    padding: 24px 16px 40px;
+}
+
+.about-app-logo-wrap {
+    width: 148px;
+    height: 148px;
+    border-radius: 40px;
+    overflow: hidden;
+    box-shadow: 0 24px 48px rgba(104, 108, 243, 0.22), 0 14px 28px rgba(0, 0, 0, 0.08);
+}
+
+.about-app-logo {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+}
+
+.about-app-version-label {
+    margin-top: 20px;
+    font-size: 14px;
+    color: var(--muted-text);
+}
+
+.about-app-version {
+    font-size: 24px;
+    line-height: 1.2;
+    font-weight: 600;
+    color: var(--app-text);
+    text-align: center;
+    word-break: break-word;
+}

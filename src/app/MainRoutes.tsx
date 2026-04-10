@@ -10,6 +10,7 @@ import IdentityList from "../pages/main/IdentityList";
 import BackupIdentity from "../pages/main/BackupIdentity";
 import EmbeddedWebView from "../pages/main/EmbeddedWebView";
 import ScanDevice from "../pages/main/ScanDevice";
+import AboutApp from "../pages/main/AboutApp";
 import "./MainRoutes.css";
 import { useI18n } from "../i18n";
 import { useDidContext } from "../features/did/DidContext";
@@ -86,6 +87,7 @@ const MainRoutes: React.FC = () => {
         normalizedPath.startsWith("/main/setting/backup") ||
         normalizedPath.startsWith("/main/setting/identities") ||
         normalizedPath.startsWith("/main/setting/language") ||
+        normalizedPath.startsWith("/main/setting/about") ||
         normalizedPath.startsWith("/main/setting/embedded-webview") ||
         normalizedPath.startsWith("/main/home/ood-scan");
 
@@ -111,6 +113,7 @@ const MainRoutes: React.FC = () => {
                         <Route path="/setting/identities" element={<IdentityList />} />
                         <Route path="/setting/backup" element={<BackupIdentity />} />
                         <Route path="/setting/language" element={<LanguageSelect />} />
+                        <Route path="/setting/about" element={<AboutApp />} />
                         <Route path="/setting/embedded-webview" element={<EmbeddedWebView />} />
                         <Route path="/home/ood-scan" element={<ScanDevice />} />
                     </Routes>

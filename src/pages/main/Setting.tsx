@@ -10,7 +10,7 @@ import { openWebView } from "../../utils/webview";
 import { getTheme, toggleTheme } from "../../theme";
 import { parseCommandError } from "../../utils/commandError";
 import { CommandErrorCodes } from "../../constants/commandErrorCodes";
-import { SunMoon, Globe, Users, ShieldCheck, Trash2, ExternalLink, Monitor } from "lucide-react";
+import { SunMoon, Globe, Users, ShieldCheck, Trash2, ExternalLink, Monitor, Info } from "lucide-react";
 import { getLocaleLabel } from "../../i18n/config";
 
 const defaultOpenUrl = "http://localhost:1420/test_api.html";
@@ -236,6 +236,16 @@ const Setting: React.FC = () => {
                             </svg>
                         </button>
                     )}
+
+                    <button className="settings-item" onClick={() => navigate("/main/setting/about")}>
+                        <span className="settings-left">
+                            <Info className="settings-icon" aria-hidden="true" strokeWidth={1.8} />
+                            <span className="label">{t("settings.about_app")}</span>
+                        </span>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="9 18 15 12 9 6" />
+                        </svg>
+                    </button>
                 </div>
             </div>
 
