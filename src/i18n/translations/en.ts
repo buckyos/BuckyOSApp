@@ -247,6 +247,7 @@ export default {
         retry: "Retry",
         error: {
             query_failed: "Failed to query SN: {{message}}",
+            check_timeout: "Check timed out.",
             check_username_failed: "Failed to check username. Please try again.",
             check_invite_failed: "Failed to check invite code. Please try again.",
             username_too_short: "SN username must be at least 7 characters.",

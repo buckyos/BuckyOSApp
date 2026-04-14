@@ -245,6 +245,7 @@ export default {
         retry: "重试",
         error: {
             query_failed: "查询 SN 失败：{{message}}",
+            check_timeout: "检查超时",
             check_username_failed: "检查用户名失败，请重试。",
             check_invite_failed: "检查邀请码失败，请重试。",
             username_too_short: "SN 用户名长度至少为 7 个字符。",

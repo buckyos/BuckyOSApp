@@ -2,6 +2,7 @@ import { buckyos } from "buckyos";
 import { invoke } from "@tauri-apps/api/core";
 
 const DEFAULT_SN_API_BASE_URL = "https://sn.buckyos.ai/kapi/sn";
+const SN_CHECK_TIMEOUT_MS = 5000;
 
 let snApiUrlOverride: string | null = null;
 let snApiUrlPromise: Promise<string> | null = null;
@@ -72,27 +73,64 @@ async function snCall<T = any>(
     return data as T;
 }
 
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    try {
+        return await Promise.race([
+            promise,
+            new Promise<T>((_, reject) => {
+                timer = setTimeout(() => reject(new Error(errorMessage)), timeoutMs);
+            }),
+        ]);
+    } finally {
+        if (timer) clearTimeout(timer);
+    }
+}
+
 export async function checkBuckyUsername(username: string): Promise<boolean> {
     const normalized = normalizeUsername(username);
-    if (!normalized) return false;
-    const data = await snCall<{ valid?: boolean; code?: number }>("auth", "auth.check_username", {
-        name: normalized,
-    });
+    if (!normalized) {
+        console.info("[SN-CHECK] auth.check_username request", { name: normalized });
+        console.info("[SN-CHECK] auth.check_username result", { name: normalized, valid: false, raw: null });
+        return false;
+    }
+    console.info("[SN-CHECK] auth.check_username request", { name: normalized });
+    const data = await withTimeout(
+        snCall<{ valid?: boolean; code?: number }>("auth", "auth.check_username", {
+            name: normalized,
+        }),
+        SN_CHECK_TIMEOUT_MS,
+        "sn_check_timeout"
+    );
 
-    if (typeof data?.valid === "boolean") return data.valid;
-    if (typeof data?.code === "number") return data.code === 0;
-    return false;
+    let valid = false;
+    if (typeof data?.valid === "boolean") {
+        valid = data.valid;
+    } else if (typeof data?.code === "number") {
+        valid = data.code === 0;
+    }
+
+    console.info("[SN-CHECK] auth.check_username result", { name: normalized, valid, raw: data });
+    return valid;
 }
 
 export async function checkSnActiveCode(activeCode: string): Promise<boolean> {
-    const data = await snCall<{ valid?: boolean; code?: number }>(
-        "auth",
-        "auth.check_active_code",
-        { active_code: activeCode.trim() }
+    const trimmedCode = activeCode.trim();
+    console.info("[SN-CHECK] auth.check_active_code request", { activeCode: trimmedCode });
+    const data = await withTimeout(
+        snCall<{ valid?: boolean; code?: number }>(
+            "auth",
+            "auth.check_active_code",
+            { active_code: trimmedCode }
+        ),
+        SN_CHECK_TIMEOUT_MS,
+        "sn_check_timeout"
     );
 
-    if (typeof data?.valid === "boolean") return data.valid;
-    return false;
+    const valid = typeof data?.valid === "boolean" ? data.valid : false;
+    console.info("[SN-CHECK] auth.check_active_code result", { activeCode: trimmedCode, valid, raw: data });
+    return valid;
 }
 
 export async function registerSnAccountWithPassword(args: {

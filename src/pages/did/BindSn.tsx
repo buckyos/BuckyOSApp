@@ -92,8 +92,10 @@ const BindSn: React.FC<BindSnProps> = ({
         const timer = setTimeout(async () => {
             try {
                 setNameValid(await checkBuckyUsername(normalized));
-            } catch (_) {
+            } catch (err) {
                 setNameValid(null);
+                const message = err instanceof Error ? err.message : String(err);
+                setUsernameError(message === "sn_check_timeout" ? t("sn.error.check_timeout") : t("sn.error.check_username_failed"));
             } finally {
                 setCheckingName(false);
             }
@@ -118,8 +120,10 @@ const BindSn: React.FC<BindSnProps> = ({
         const timer = setTimeout(async () => {
             try {
                 setActiveCodeValid(await checkSnActiveCode(code));
-            } catch (_) {
+            } catch (err) {
                 setActiveCodeValid(null);
+                const message = err instanceof Error ? err.message : String(err);
+                setInviteError(message === "sn_check_timeout" ? t("sn.error.check_timeout") : t("sn.error.check_invite_failed"));
             } finally {
                 setCheckingCode(false);
             }
