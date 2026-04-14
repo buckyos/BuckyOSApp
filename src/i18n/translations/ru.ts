@@ -127,7 +127,8 @@ export default {
     },
     success: {
         title: "Аккаунт создан",
-        desc_primary: "Поздравляем, аккаунт {{name}} успешно создан.",
+        desc_primary_prefix: "Поздравляем,",
+        desc_primary_suffix: "успешно создан.",
         desc_next_step: "Теперь привяжите ваш OOD.",
         desc_secondary: "OOD — это ваш персональный сервер, который может безопасно хранить ваши личные приложения и данные.",
         bind_ood: "Привязать OOD",

@@ -138,7 +138,8 @@ const de = {
     },
     success: {
         title: "Konto erstellt",
-        desc_primary: "Glückwunsch, das Konto {{name}} wurde erfolgreich erstellt.",
+        desc_primary_prefix: "Glückwunsch,",
+        desc_primary_suffix: "wurde erfolgreich erstellt.",
         desc_next_step: "Als Nächstes binde bitte dein OOD.",
         desc_secondary: "OOD ist dein persönlicher Server und kann deine persönlichen Apps und Daten sicher speichern.",
         bind_ood: "OOD binden",

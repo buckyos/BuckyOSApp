@@ -127,7 +127,8 @@ export default {
     },
     success: {
         title: "계정 생성 완료",
-        desc_primary: "축하합니다. 계정 {{name}} 생성이 완료되었습니다.",
+        desc_primary_prefix: "축하합니다.",
+        desc_primary_suffix: "생성이 완료되었습니다.",
         desc_next_step: "이제 OOD를 바인딩하세요.",
         desc_secondary: "OOD는 당신의 개인 서버이며, 개인 앱과 데이터를 안전하게 저장할 수 있습니다.",
         bind_ood: "OOD 바인딩",

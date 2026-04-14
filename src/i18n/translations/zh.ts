@@ -130,7 +130,8 @@ export default {
     },
     success: {
         title: "账户创建完成",
-        desc_primary: "恭喜，账户 {{name}} 创建成功。",
+        desc_primary_prefix: "恭喜，账户",
+        desc_primary_suffix: "创建成功。",
         desc_next_step: "接下来请绑定您的OOD。",
         desc_secondary: "OOD是你的个人服务器，可以安全的存储您的个人应用和数据。",
         bind_ood: "绑定OOD",

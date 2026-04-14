@@ -127,7 +127,8 @@ export default {
     },
     success: {
         title: "帳戶建立完成",
-        desc_primary: "恭喜，帳戶 {{name}} 建立成功。",
+        desc_primary_prefix: "恭喜，帳戶",
+        desc_primary_suffix: "建立成功。",
         desc_next_step: "接下來請綁定您的 OOD。",
         desc_secondary: "OOD 是你的個人伺服器，可以安全地儲存你的個人應用與資料。",
         bind_ood: "綁定 OOD",

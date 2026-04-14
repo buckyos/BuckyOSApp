@@ -49,6 +49,38 @@
     margin: 0 0 4px;
 }
 
+.success-primary-line {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    line-height: 1.9;
+}
+
+.success-account-inline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 30px;
+    padding: 2px 10px;
+    border-radius: 10px;
+    background: rgba(79, 70, 229, 0.1);
+    border: 1px solid rgba(79, 70, 229, 0.18);
+    color: #4f46e5;
+    font-size: 0.98em;
+    font-weight: 600;
+    line-height: 1.2;
+    word-break: break-word;
+    max-width: min(100%, 220px);
+}
+
+[data-theme='dark'] .success-account-inline {
+    background: rgba(124, 166, 255, 0.12);
+    border-color: rgba(124, 166, 255, 0.28);
+    color: #cdd4ff;
+}
+
 .did-container h1 {
     font-size: 22px;
     line-height: 1.2;

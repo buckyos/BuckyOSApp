@@ -131,7 +131,8 @@ export default {
     },
     success: {
         title: "Account Created",
-        desc_primary: "Congratulations, account {{name}} has been created successfully.",
+        desc_primary_prefix: "Congratulations,",
+        desc_primary_suffix: "has been created successfully.",
         desc_next_step: "Next, please bind your OOD.",
         desc_secondary: "OOD is your personal server and can securely store your personal apps and data.",
         bind_ood: "Bind OOD",

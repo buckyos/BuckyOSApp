@@ -127,7 +127,8 @@ export default {
     },
     success: {
         title: "アカウント作成完了",
-        desc_primary: "おめでとうございます。アカウント {{name}} の作成が完了しました。",
+        desc_primary_prefix: "おめでとうございます。",
+        desc_primary_suffix: "の作成が完了しました。",
         desc_next_step: "次に OOD をバインドしてください。",
         desc_secondary: "OOD はあなた専用のサーバーであり、個人アプリとデータを安全に保存できます。",
         bind_ood: "OOD をバインド",

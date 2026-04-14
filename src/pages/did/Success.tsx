@@ -66,7 +66,11 @@ const Success: React.FC<SuccessProps> = ({ didInfo, onDone }) => {
                             marginTop: 18,
                         }}
                     >
-                        <span>{t("success.desc_primary", { name: accountName })}</span>
+                        <span className="success-primary-line">
+                            <span>{t("success.desc_primary_prefix")}</span>
+                            <span className="success-account-inline">{accountName}</span>
+                            <span>{t("success.desc_primary_suffix")}</span>
+                        </span>
                         <span>{t("success.desc_next_step")}</span>
                         <span>{t("success.desc_secondary")}</span>
                     </div>

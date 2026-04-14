@@ -138,7 +138,8 @@ const fr = {
     },
     success: {
         title: "Compte créé",
-        desc_primary: "Félicitations, le compte {{name}} a été créé avec succès.",
+        desc_primary_prefix: "Félicitations,",
+        desc_primary_suffix: "a été créé avec succès.",
         desc_next_step: "Veuillez maintenant associer votre OOD.",
         desc_secondary: "OOD est votre serveur personnel et peut stocker en toute sécurité vos applications et données personnelles.",
         bind_ood: "Associer OOD",
