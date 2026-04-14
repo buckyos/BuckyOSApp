@@ -4,7 +4,7 @@ import GradientButton from "../../components/ui/GradientButton";
 import { useI18n } from "../../i18n";
 import { checkBuckyUsername, checkSnActiveCode } from "../../services/sn";
 
-const SN_USERNAME_REGEX = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
+const SN_USERNAME_REGEX = /^[a-z0-9.-]+$/;
 
 interface BindSnProps {
     snName: string;
@@ -23,6 +23,11 @@ interface BindSnProps {
 
 function normalizeSnInput(value: string): string {
     return value.toLowerCase();
+}
+
+function isLocallyValidSnUsername(value: string): boolean {
+    const normalized = value.trim().toLowerCase();
+    return normalized.length >= 7 && SN_USERNAME_REGEX.test(normalized) && !normalized.includes("..");
 }
 
 const errorHintStyle: React.CSSProperties = {
@@ -81,7 +86,7 @@ const BindSn: React.FC<BindSnProps> = ({
             setUsernameError("");
             return;
         }
-        if (normalized.length < 7 || !SN_USERNAME_REGEX.test(normalized)) {
+        if (!isLocallyValidSnUsername(normalized)) {
             setNameValid(null);
             setUsernameError(t("sn.username_format_hint"));
             return;

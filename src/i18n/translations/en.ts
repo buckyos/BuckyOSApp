@@ -229,7 +229,7 @@ export default {
         no_did_hint: "No DID detected. Please create or import first.",
         username_label: "SN Username",
         username_placeholder: "Enter username",
-        username_format_hint: "SN username must be at least 7 characters and may contain only lowercase letters, numbers, or hyphens. It must start and end with a letter or number.",
+        username_format_hint: "SN usernames must be at least 7 characters long and may contain only lowercase letters, numbers, hyphens (-), and dots (.). Multi-level names are supported (for example, sub.domain); each label must start with a letter, must not end with -, and cannot be empty (for example, double..dot).",
         username_checking: "Checking username...",
         username_ok: "Username is available. After binding you can reach your zone via https://{{username}}.web3.buckyos.ai",
         username_taken: "Username is not available, please modify",

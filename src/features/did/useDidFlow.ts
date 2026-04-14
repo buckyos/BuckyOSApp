@@ -15,6 +15,11 @@ function normalizeName(value: string) {
     return value.trim().toLowerCase();
 }
 
+function isLocallyValidSnUsername(value: string) {
+    const normalized = normalizeName(value);
+    return normalized.length >= 7 && /^[a-z0-9.-]+$/.test(normalized) && !normalized.includes("..");
+}
+
 export function useDidFlow() {
     const navigate = useNavigate();
     const { t } = useI18n();
@@ -57,8 +62,8 @@ export function useDidFlow() {
         }
 
         const normalizedName = normalizeName(snName);
-        if (normalizedName.length < 7) {
-            setError(t("sn.error.username_too_short"));
+        if (!isLocallyValidSnUsername(normalizedName)) {
+            setError(t("sn.username_format_hint"));
             return;
         }
         if (password !== confirmPassword) {
