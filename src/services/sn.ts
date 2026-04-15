@@ -199,3 +199,30 @@ export async function getUserByPublicKey(publicKeyJwk: string): Promise<{ ok: bo
         raw: data,
     };
 }
+
+export async function unbindZoneConfig(userName: string, token: string): Promise<void> {
+    const normalizedUserName = normalizeUsername(userName);
+    console.info("[OOD-UNBIND] zone.unbind_config request", { userName: normalizedUserName });
+    const result = await withTimeout(
+        snCall<{ code?: number }>(
+            "bns",
+            "zone.unbind_config",
+            { user_name: normalizedUserName },
+            token
+        ),
+        SN_CHECK_TIMEOUT_MS,
+        "sn_unbind_timeout"
+    );
+    console.info("[OOD-UNBIND] zone.unbind_config response", {
+        userName: normalizedUserName,
+        raw: result,
+    });
+
+    if ((result?.code ?? -1) !== 0) {
+        console.error("[OOD-UNBIND] zone.unbind_config failed", {
+            userName: normalizedUserName,
+            raw: result,
+        });
+        throw new Error("sn_unbind_failed");
+    }
+}
