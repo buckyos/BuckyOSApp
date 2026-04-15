@@ -33,6 +33,7 @@
 .account-avatar {
     width: 44px;
     height: 44px;
+    flex: 0 0 44px;
     border-radius: 50%;
     background: linear-gradient(135deg, #6366f1 0%, #6c5ce7 100%);
     color: #fff;
@@ -47,6 +48,7 @@
 .account-info {
     display: flex;
     flex-direction: column;
+    min-width: 0;
     line-height: 1.2;
 }
 
@@ -59,6 +61,9 @@
     font-size: 18px;
     font-weight: 600;
     color: var(--app-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .content-body {

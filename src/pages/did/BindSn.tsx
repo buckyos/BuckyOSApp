@@ -209,7 +209,18 @@ const BindSn: React.FC<BindSnProps> = ({
                     {checkingName ? (
                         <p style={{ margin: 0, color: "var(--muted-text)", fontSize: 13 }}>{t("sn.username_checking")}</p>
                     ) : nameValid === true ? (
-                        <p style={{ margin: 0, color: "#16a34a", fontSize: 13 }}>{t("sn.username_ok", { username: snName.trim().toLowerCase() })}</p>
+                        <p
+                            style={{
+                                margin: 0,
+                                color: "#16a34a",
+                                fontSize: 13,
+                                overflowWrap: "anywhere",
+                                wordBreak: "break-word",
+                                lineHeight: 1.6,
+                            }}
+                        >
+                            {t("sn.username_ok", { username: snName.trim().toLowerCase() })}
+                        </p>
                     ) : nameValid === false ? (
                         <ErrorHint message={t("sn.username_taken")} />
                     ) : usernameError ? (
