@@ -1,4 +1,5 @@
-use futures::stream::{self, StreamExt};
+use futures::future::BoxFuture;
+use futures::stream::{FuturesUnordered, StreamExt};
 use if_addrs::get_if_addrs;
 use reqwest::Client;
 use serde_json::{Map, Value};
@@ -46,6 +47,10 @@ async fn probe_device(client: &Client, ip: String) -> Option<Value> {
     Some(Value::Object(Map::from_iter(object.clone())))
 }
 
+fn probe_device_future(client: Client, ip: String) -> BoxFuture<'static, Option<Value>> {
+    Box::pin(async move { probe_device(&client, ip).await })
+}
+
 #[tauri::command]
 pub async fn scan_device_batch(ips: Vec<String>) -> Result<Vec<Value>, String> {
     if ips.is_empty() {
@@ -58,15 +63,26 @@ pub async fn scan_device_batch(ips: Vec<String>) -> Result<Vec<Value>, String> {
         .build()
         .map_err(|e| e.to_string())?;
 
-    let devices = stream::iter(ips.into_iter())
-        .map(|ip| {
-            let client = client.clone();
-            async move { probe_device(&client, ip).await }
-        })
-        .buffer_unordered(SCAN_BATCH_CONCURRENCY)
-        .filter_map(async move |device| device)
-        .collect::<Vec<_>>()
-        .await;
+    let mut devices = Vec::new();
+    let mut in_flight = FuturesUnordered::new();
+    let mut pending = ips.into_iter();
+
+    for _ in 0..SCAN_BATCH_CONCURRENCY {
+        let Some(ip) = pending.next() else {
+            break;
+        };
+        in_flight.push(probe_device_future(client.clone(), ip));
+    }
+
+    while let Some(device) = in_flight.next().await {
+        if let Some(device) = device {
+            devices.push(device);
+        }
+
+        if let Some(ip) = pending.next() {
+            in_flight.push(probe_device_future(client.clone(), ip));
+        }
+    }
 
     Ok(devices)
 }
