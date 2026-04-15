@@ -97,6 +97,7 @@ export default {
             nickname_exists: "この名前は既に存在します。",
             identity_exists: "このアカウントはこのデバイスに既に存在します。",
             sn_not_found: "この DID に対応する SN レコードがありません。インポートに失敗しました。",
+            timeout: "アカウントのインポートがタイムアウトしました。",
         },
     },
     create: {

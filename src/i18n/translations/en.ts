@@ -99,6 +99,7 @@ export default {
             nickname_exists: "This nickname already exists.",
             identity_exists: "This identity already exists on this device.",
             sn_not_found: "This DID has no SN record. Import failed.",
+            timeout: "Import account timed out.",
         },
     },
     create: {

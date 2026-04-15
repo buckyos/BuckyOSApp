@@ -100,6 +100,7 @@ const de = {
             nickname_exists: "Dieser Spitzname existiert bereits.",
             identity_exists: "Diese Identität existiert bereits auf diesem Gerät.",
             sn_not_found: "Für diese DID wurde kein SN-Eintrag gefunden. Import fehlgeschlagen.",
+            timeout: "Der Kontoimport hat das Zeitlimit überschritten.",
         },
     },
     create: {

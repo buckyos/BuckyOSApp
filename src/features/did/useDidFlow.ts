@@ -20,6 +20,19 @@ function isLocallyValidSnUsername(value: string) {
     return normalized.length >= 7 && /^[a-z0-9.-]+$/.test(normalized) && !normalized.includes("..");
 }
 
+function isSnImportTimeoutError(message: string) {
+    const normalized = message.trim().toLowerCase();
+    return (
+        normalized === "sn_import_timeout" ||
+        normalized.includes("failed to fetch") ||
+        normalized.includes("networkerror") ||
+        normalized.includes("load failed") ||
+        normalized.includes("timed out") ||
+        normalized.includes("timeout") ||
+        normalized.includes("aborterror")
+    );
+}
+
 export function useDidFlow() {
     const navigate = useNavigate();
     const { t } = useI18n();
@@ -182,6 +195,8 @@ export function useDidFlow() {
                 translated = t("import.error.mnemonic_required");
             } else if (code === CommandErrorCodes.IdentityExists || message === "identity_already_exists") {
                 translated = t("import.error.identity_exists");
+            } else if (isSnImportTimeoutError(message)) {
+                translated = t("import.error.timeout");
             } else {
                 translated = t("common.error.import_did_failed", { message });
             }

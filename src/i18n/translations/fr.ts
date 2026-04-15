@@ -100,6 +100,7 @@ const fr = {
             nickname_exists: "Ce pseudo existe déjà.",
             identity_exists: "Cette identité existe déjà sur cet appareil.",
             sn_not_found: "Aucun enregistrement SN n'a été trouvé pour cette DID. Import échoué.",
+            timeout: "L'import du compte a expiré.",
         },
     },
     create: {

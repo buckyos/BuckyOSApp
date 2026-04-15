@@ -100,6 +100,7 @@ const es = {
             nickname_exists: "Este apodo ya existe.",
             identity_exists: "Esta identidad ya existe en este dispositivo.",
             sn_not_found: "Esta DID no tiene registro en SN. La importación falló.",
+            timeout: "La importación de la cuenta agotó el tiempo de espera.",
         },
     },
     create: {

@@ -97,6 +97,7 @@ export default {
             nickname_exists: "此名稱已存在。",
             identity_exists: "此帳戶已存在於此裝置。",
             sn_not_found: "目前 DID 在 SN 上無紀錄，匯入失敗。",
+            timeout: "匯入帳戶逾時。",
         },
     },
     create: {

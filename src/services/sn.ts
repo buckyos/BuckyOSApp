@@ -175,17 +175,21 @@ export async function getUserByPublicKey(publicKeyJwk: string): Promise<{ ok: bo
     const keySummary = summarizePublicKeyJwk(publicKeyJwk);
     console.info("[OOD-CHECK] device.get_by_pk request", { keySummary });
 
-    const data = await snCall<{
-        device_info?: string | null;
-        device_name?: string | null;
-        device_sn_ip?: string | null;
-        found?: boolean | null;
-        public_key?: string | null;
-        reason?: string | null;
-        sn_ips?: string[] | null;
-        user_name?: string | null;
-        zone_config?: string | null;
-    }>("root", "device.get_by_pk", { public_key: publicKeyJwk });
+    const data = await withTimeout(
+        snCall<{
+            device_info?: string | null;
+            device_name?: string | null;
+            device_sn_ip?: string | null;
+            found?: boolean | null;
+            public_key?: string | null;
+            reason?: string | null;
+            sn_ips?: string[] | null;
+            user_name?: string | null;
+            zone_config?: string | null;
+        }>("root", "device.get_by_pk", { public_key: publicKeyJwk }),
+        SN_CHECK_TIMEOUT_MS,
+        "sn_import_timeout"
+    );
 
     const ok = typeof data?.user_name === "string" && data.user_name.trim().length > 0;
     console.info("[OOD-CHECK] device.get_by_pk response", { keySummary, raw: data });

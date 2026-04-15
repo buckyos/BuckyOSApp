@@ -97,6 +97,7 @@ export default {
             nickname_exists: "이 이름은 이미 존재합니다.",
             identity_exists: "이 계정은 이 기기에 이미 존재합니다.",
             sn_not_found: "이 DID에 대한 SN 기록이 없습니다. 가져오기에 실패했습니다.",
+            timeout: "계정 가져오기가 시간 초과되었습니다.",
         },
     },
     create: {

@@ -98,6 +98,7 @@ export default {
             nickname_exists: "该昵称已存在。",
             identity_exists: "该身份已经存在于此设备。",
             sn_not_found: "当前 DID 在 SN 上无记录，导入失败。",
+            timeout: "导入账户超时。",
         },
     },
     create: {
