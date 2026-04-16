@@ -125,19 +125,21 @@
 }
 
 .bind-ood-scan-page .ood-device-item {
-    background: #fff;
-    border: 1px solid rgba(99, 102, 241, 0.18);
+    background: color-mix(in oklab, var(--card-bg), #6366f1 3%);
+    border: 1px solid color-mix(in oklab, var(--border), #6366f1 18%);
     border-radius: 16px;
     padding: 12px 14px;
-    box-shadow: none;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
 }
 
 .bind-ood-scan-page .ood-device-item:hover {
-    border-color: rgba(99, 102, 241, 0.4);
+    border-color: rgba(99, 102, 241, 0.38);
+    box-shadow: 0 14px 28px rgba(99, 102, 241, 0.14);
 }
 
 .bind-ood-scan-page .ood-device-title-row span:first-child {
     font-size: 1rem;
+    color: var(--app-text);
 }
 
 .device-os-info {
@@ -153,12 +155,35 @@
 
 .device-chip {
     font-size: 0.75rem;
-    padding: 3px 10px;
+    padding: 4px 11px;
     border-radius: 999px;
-    background: rgba(99, 102, 241, 0.15);
+    background: rgba(99, 102, 241, 0.1);
     color: #4c50f5;
-    border: 1px solid rgba(99, 102, 241, 0.25);
+    border: 1px solid rgba(99, 102, 241, 0.22);
     text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+[data-theme='dark'] .bind-ood-scan-page .ood-device-item {
+    background: color-mix(in oklab, var(--card-bg), #7ca6ff 8%);
+    border-color: rgba(124, 166, 255, 0.24);
+    box-shadow: 0 12px 28px rgba(4, 8, 20, 0.28);
+}
+
+[data-theme='dark'] .bind-ood-scan-page .ood-device-item:hover {
+    border-color: rgba(139, 156, 255, 0.48);
+    box-shadow: 0 16px 32px rgba(6, 10, 24, 0.34);
+}
+
+[data-theme='dark'] .device-os-info,
+[data-theme='dark'] .bind-ood-scan-page .ood-device-item small {
+    color: rgba(174, 182, 194, 0.92);
+}
+
+[data-theme='dark'] .device-chip {
+    background: rgba(111, 157, 255, 0.14);
+    color: #a9bdff;
+    border-color: rgba(111, 157, 255, 0.32);
 }
 
 .scan-device-actions {
