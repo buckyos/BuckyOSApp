@@ -16,6 +16,13 @@ const sanitizeLabel = (raw?: string) => {
     return cleaned || undefined;
 };
 
+const isMobileShell = () => /Android|iPhone|iPad|iPod/i.test(window.navigator.userAgent);
+
+const buildEmbeddedHash = (target: string, title: string, label: string) =>
+    `#/web-container?embedded=1&label=${encodeURIComponent(label)}&src=${encodeURIComponent(
+        target
+    )}&title=${encodeURIComponent(title)}`;
+
 export interface WebViewWindowOptions {
     width?: number;
     height?: number;
@@ -78,6 +85,10 @@ export async function openWebView<T = unknown>(
     let resolvedLabel = sanitizeLabel(label?.trim());
     if (!resolvedLabel) {
         resolvedLabel = `webview_${crypto.randomUUID()}`;
+    }
+    if (isMobileShell()) {
+        window.location.hash = buildEmbeddedHash(target, resolvedTitle, resolvedLabel);
+        return;
     } else {
         const existing = await WebviewWindow.getByLabel(resolvedLabel);
         if (existing) {

@@ -27,6 +27,7 @@ interface DeviceRecord extends DeviceInfo {
 
 const SCAN_BATCH_SIZE = 64;
 const SCAN_INTERLEAVE_GROUPS = 4;
+const isMobileShell = () => /Android|iPhone|iPad|iPod/i.test(window.navigator.userAgent);
 
 function hasUsableActiveUrl(value: unknown): value is string {
     return typeof value === "string" && value.trim().length > 0;
@@ -41,6 +42,7 @@ const ScanDevice: React.FC = () => {
     const [progress, setProgress] = React.useState(0);
     const [status, setStatus] = React.useState(() => t("device_scan.status_preparing"));
     const [selfScanDone, setSelfScanDone] = React.useState(false);
+    const [showTapHint, setShowTapHint] = React.useState(false);
     const abortRef = React.useRef<boolean>(false);
     const selfIpSetRef = React.useRef<Set<string>>(new Set());
     const listRef = React.useRef<HTMLUListElement | null>(null);
@@ -252,6 +254,16 @@ const ScanDevice: React.FC = () => {
     }, []);
 
     React.useEffect(() => {
+        if (!showTapHint) return;
+        const timer = window.setTimeout(() => {
+            setShowTapHint(false);
+        }, 1500);
+        return () => {
+            window.clearTimeout(timer);
+        };
+    }, [showTapHint]);
+
+    React.useEffect(() => {
         if (!activeDid || devices.length === 0 || oodCheckInFlightRef.current) return;
 
         let cancelled = false;
@@ -314,6 +326,7 @@ const ScanDevice: React.FC = () => {
 
     return (
         <div className="bind-ood-scan-page">
+            {showTapHint ? <div className="scan-device-mobile-hint">Locating...</div> : null}
             <MobileHeader title={t("device_scan.title")} showBack />
 
             <div className="scan-device-body">
@@ -361,16 +374,24 @@ const ScanDevice: React.FC = () => {
                                             onClick={() => {
                                                 const activeUrl = (device.active_url || "").trim();
                                                 if (!activeUrl) return;
+                                                if (isMobileShell()) {
+                                                    setShowTapHint(true);
+                                                }
                                                 const baseWindowOptions = {
                                                     center: true,
                                                 };
-                                                if (/^https?:\/\//i.test(activeUrl)) {
-                                                    openWebView(activeUrl, title, label, baseWindowOptions);
-                                                } else {
-                                                    const base = `http://${device.display_ip || device.ip}:3182`;
-                                                    const path = activeUrl.startsWith("/") ? activeUrl : `/${activeUrl}`;
-                                                    openWebView(`${base}${path}`, title, label, baseWindowOptions);
-                                                }
+                                                const target = /^https?:\/\//i.test(activeUrl)
+                                                    ? activeUrl
+                                                    : `http://${device.display_ip || device.ip}:3182${
+                                                        activeUrl.startsWith("/") ? activeUrl : `/${activeUrl}`
+                                                    }`;
+                                                void openWebView(target, title, label, baseWindowOptions).catch((err) => {
+                                                    console.warn("[ScanDevice] open device webview failed", {
+                                                        ip: device.ip,
+                                                        target,
+                                                        err,
+                                                    });
+                                                });
                                             }}
                                         >
                                             <div className="ood-device-title-row">
