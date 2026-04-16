@@ -61,6 +61,9 @@ jobs:
         run: cargo update
         working-directory: ./src-tauri
 
+      - name: Initialize Tauri Android project
+        run: pnpm tauri android init --ci
+
       - name: Write Android version properties
         run: |
           cat > src-tauri/gen/android/app/tauri.properties <<EOF
@@ -69,7 +72,7 @@ jobs:
           EOF
 
       - name: Build Android APK
-        run: pnpm tauri android build --apk --ci
+        run: pnpm tauri android build --apk --ci -v
 
       - name: Upload APK Artifacts
         uses: actions/upload-artifact@v4
