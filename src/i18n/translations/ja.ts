@@ -226,7 +226,7 @@ export default {
         no_did_hint: "DID が見つかりません。先に作成またはインポートしてください。",
         username_label: "SN ユーザー名",
         username_placeholder: "ユーザー名を入力",
-        username_format_hint: "SNユーザー名は7文字以上で、小文字、数字、-、. のみ使用できます。sub.domain のような多階層名に対応しており、各ラベルは英字で始まり、- で終わってはならず、空にできません（例: double..dot）。",
+        username_format_hint: "SN 名称のルール: 7 文字以上であること。使用できるのは小文字の英字（a-z）、数字（0-9）、ハイフン（-）のみです。先頭は小文字の英字で始め、末尾をハイフン（-）にすることはできません。",
         username_checking: "ユーザー名を確認中...",
         username_ok: "このユーザー名は利用可能です。バインド後、https://{{username}}.web3.buckyos.ai からあなたの zone にアクセスできます。",
         username_taken: "このユーザー名は利用できません。変更してください。",

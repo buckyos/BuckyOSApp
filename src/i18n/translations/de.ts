@@ -237,7 +237,7 @@ const de = {
         no_did_hint: "Keine DID erkannt. Bitte zuerst erstellen oder importieren.",
         username_label: "SN-Benutzername",
         username_placeholder: "Benutzernamen eingeben",
-        username_format_hint: "Der SN-Benutzername muss mindestens 7 Zeichen lang sein und darf nur Kleinbuchstaben, Zahlen, Bindestriche (-) und Punkte (.) enthalten. Mehrstufige Namen sind erlaubt (z. B. sub.domain); jeder Abschnitt muss mit einem Buchstaben beginnen, darf nicht mit - enden und darf nicht leer sein (z. B. double..dot).",
+        username_format_hint: "SN-Namensregeln: mindestens 7 Zeichen; nur Kleinbuchstaben (a-z), Ziffern (0-9) und Bindestriche (-) sind erlaubt; der Name muss mit einem Kleinbuchstaben beginnen und darf nicht mit einem Bindestrich (-) enden.",
         username_checking: "Benutzername wird geprüft...",
         username_ok: "Der Benutzername ist verfügbar. Nach dem Verbinden erreichst du deine Zone über https://{{username}}.web3.buckyos.ai",
         username_taken: "Der Benutzername ist nicht verfügbar. Bitte ändern.",

@@ -229,7 +229,7 @@ export default {
         no_did_hint: "未检测到 DID，请先创建或导入。",
         username_label: "SN 用户名",
         username_placeholder: "请输入用户名",
-        username_format_hint: "SN 用户名至少需要 7 个字符，只能使用小写字母、数字、- 和 .。支持多级名称（如 sub.domain）；每一段必须以字母开头，不能以 - 结尾，且不能有空段（如 double..dot）。",
+        username_format_hint: "SN 名称规则：长度不少于 7 个字符；仅支持小写字母（a-z）、数字（0-9）和连字符（-）；必须以小写字母开头，且不能以连字符（-）结尾。",
         username_checking: "正在检查用户名...",
         username_ok: "用户名可用，绑定后可以通过 https://{{username}}.web3.buckyos.ai 访问您的 zone 内服务",
         username_taken: "用户名不可用，请修改",

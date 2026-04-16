@@ -226,7 +226,7 @@ export default {
         no_did_hint: "DID가 감지되지 않았습니다. 먼저 생성하거나 가져오세요.",
         username_label: "SN 사용자 이름",
         username_placeholder: "사용자 이름 입력",
-        username_format_hint: "SN 사용자 이름은 최소 7자 이상이어야 하며 소문자, 숫자, - 및 .만 사용할 수 있습니다. sub.domain 과 같은 다단계 이름을 지원하며, 각 라벨은 반드시 문자로 시작해야 하고 -로 끝날 수 없으며 빈 라벨은 허용되지 않습니다(예: double..dot).",
+        username_format_hint: "SN 이름 규칙: 7자 이상이어야 하며, 소문자(a-z), 숫자(0-9), 하이픈(-)만 사용할 수 있습니다. 반드시 소문자로 시작해야 하고, 하이픈(-)으로 끝날 수 없습니다.",
         username_checking: "사용자 이름 확인 중...",
         username_ok: "사용 가능한 사용자 이름입니다. 바인딩 후 https://{{username}}.web3.buckyos.ai 로 zone 서비스에 접근할 수 있습니다.",
         username_taken: "사용할 수 없는 사용자 이름입니다. 수정해 주세요.",

@@ -1,5 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { useBackNavigation } from "../../app/BackNavigationContext";
 
 interface MobileHeaderProps {
     title: string;
@@ -10,6 +11,7 @@ interface MobileHeaderProps {
 
 const MobileHeader: React.FC<MobileHeaderProps> = ({ title, showBack = false, onBack, rightSlot }) => {
     const navigate = useNavigate();
+    const { setBackHandler } = useBackNavigation();
     const handleBack = React.useCallback(() => {
         if (onBack) {
             onBack();
@@ -17,6 +19,19 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({ title, showBack = false, on
             navigate(-1);
         }
     }, [navigate, onBack]);
+
+    React.useEffect(() => {
+        if (!showBack) {
+            setBackHandler(null);
+            return;
+        }
+
+        setBackHandler(() => handleBack);
+        return () => {
+            setBackHandler(null);
+        };
+    }, [showBack, handleBack, setBackHandler]);
+
     return (
         <div
             style={{

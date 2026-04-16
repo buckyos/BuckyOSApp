@@ -237,7 +237,7 @@ const fr = {
         no_did_hint: "Aucun DID détecté. Veuillez d'abord en créer ou en importer un.",
         username_label: "Nom d'utilisateur SN",
         username_placeholder: "Saisir le nom d'utilisateur",
-        username_format_hint: "Le nom d'utilisateur SN doit contenir au moins 7 caractères et ne peut utiliser que des lettres minuscules, des chiffres, des tirets (-) et des points (.). Les noms à plusieurs niveaux sont pris en charge (par exemple, sub.domain) ; chaque segment doit commencer par une lettre, ne pas se terminer par - et ne pas être vide (par exemple, double..dot).",
+        username_format_hint: "Règles de nom SN : au moins 7 caractères ; seuls les lettres minuscules (a-z), les chiffres (0-9) et les tirets (-) sont autorisés ; le nom doit commencer par une lettre minuscule et ne doit pas se terminer par un tiret (-).",
         username_checking: "Vérification du nom d'utilisateur...",
         username_ok: "Le nom d'utilisateur est disponible. Après l'association, vous pourrez accéder à votre zone via https://{{username}}.web3.buckyos.ai",
         username_taken: "Le nom d'utilisateur n'est pas disponible, veuillez le modifier.",

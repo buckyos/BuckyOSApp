@@ -10,15 +10,7 @@ import { parseCommandError } from "../../utils/commandError";
 import { CommandErrorCodes } from "../../constants/commandErrorCodes";
 import { checkBuckyUsername, checkSnActiveCode, getUserByPublicKey } from "../../services/sn";
 import { openWebView } from "../../utils/webview";
-
-function normalizeName(value: string) {
-    return value.trim().toLowerCase();
-}
-
-function isLocallyValidSnUsername(value: string) {
-    const normalized = normalizeName(value);
-    return normalized.length >= 7 && /^[a-z0-9.-]+$/.test(normalized) && !normalized.includes("..");
-}
+import { isLocallyValidSnUsername, normalizeSnUsername } from "../sn/snUsername";
 
 function isSnImportTimeoutError(message: string) {
     const normalized = message.trim().toLowerCase();
@@ -74,7 +66,7 @@ export function useDidFlow() {
             return;
         }
 
-        const normalizedName = normalizeName(snName);
+        const normalizedName = normalizeSnUsername(snName);
         if (!isLocallyValidSnUsername(normalizedName)) {
             setError(t("sn.username_format_hint"));
             return;

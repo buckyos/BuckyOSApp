@@ -1,9 +1,12 @@
 import { useEffect } from "react";
 import "./App.css";
 import AppRoutes from "./app/AppRoutes";
+import { initTheme } from "./theme";
 
 function App() {
     useEffect(() => {
+        initTheme();
+
         const allowNativeContextMenu = (event: Event) => {
             const path = "composedPath" in event ? event.composedPath() : [];
             const elements = path.filter((node): node is HTMLElement => node instanceof HTMLElement);

@@ -226,7 +226,7 @@ export default {
         no_did_hint: "未偵測到 DID，請先建立或匯入。",
         username_label: "SN 使用者名稱",
         username_placeholder: "請輸入使用者名稱",
-        username_format_hint: "SN 使用者名稱至少需要 7 個字元，只能使用小寫字母、數字、- 與 .。支援多層名稱（如 sub.domain）；每一段必須以字母開頭，不能以 - 結尾，且不能有空段（如 double..dot）。",
+        username_format_hint: "SN 名稱規則：長度不少於 7 個字元；僅支援小寫字母（a-z）、數字（0-9）和連字號（-）；必須以小寫字母開頭，且不能以連字號（-）結尾。",
         username_checking: "正在檢查使用者名稱...",
         username_ok: "使用者名稱可用，綁定後可透過 https://{{username}}.web3.buckyos.ai 存取您的 zone 服務。",
         username_taken: "使用者名稱不可用，請修改。",

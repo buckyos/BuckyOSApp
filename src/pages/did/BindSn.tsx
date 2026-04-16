@@ -3,8 +3,7 @@ import MobileHeader from "../../components/ui/MobileHeader";
 import GradientButton from "../../components/ui/GradientButton";
 import { useI18n } from "../../i18n";
 import { checkBuckyUsername, checkSnActiveCode } from "../../services/sn";
-
-const SN_USERNAME_REGEX = /^[a-z0-9.-]+$/;
+import { isLocallyValidSnUsername, normalizeSnUsername } from "../../features/sn/snUsername";
 
 interface BindSnProps {
     snName: string;
@@ -23,11 +22,6 @@ interface BindSnProps {
 
 function normalizeSnInput(value: string): string {
     return value.toLowerCase();
-}
-
-function isLocallyValidSnUsername(value: string): boolean {
-    const normalized = value.trim().toLowerCase();
-    return normalized.length >= 7 && SN_USERNAME_REGEX.test(normalized) && !normalized.includes("..");
 }
 
 const errorHintStyle: React.CSSProperties = {
@@ -80,7 +74,7 @@ const BindSn: React.FC<BindSnProps> = ({
     const [inviteError, setInviteError] = React.useState("");
 
     React.useEffect(() => {
-        const normalized = snName.trim().toLowerCase();
+        const normalized = normalizeSnUsername(snName);
         if (!normalized) {
             setNameValid(null);
             setUsernameError("");
@@ -219,7 +213,7 @@ const BindSn: React.FC<BindSnProps> = ({
                                 lineHeight: 1.6,
                             }}
                         >
-                            {t("sn.username_ok", { username: snName.trim().toLowerCase() })}
+                            {t("sn.username_ok", { username: normalizeSnUsername(snName) })}
                         </p>
                     ) : nameValid === false ? (
                         <ErrorHint message={t("sn.username_taken")} />
