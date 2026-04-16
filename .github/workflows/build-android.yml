@@ -61,6 +61,10 @@ jobs:
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Update Cargo
+        run: cargo update
+        working-directory: ./src-tauri
+
       - name: Initialize Tauri Android project
         run: pnpm tauri android init --ci
 
