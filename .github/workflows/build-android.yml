@@ -1,0 +1,79 @@
+name: Build BuckyOS Android APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: Version name for Android artifacts
+        required: true
+        default: "1.0.0"
+        type: string
+      version_code:
+        description: Version code for Android artifacts
+        required: true
+        default: "1"
+        type: string
+
+jobs:
+  build-android-apk:
+    runs-on: ubuntu-latest
+    env:
+      CI: "true"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: "latest"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+          cache: "pnpm"
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK Packages
+        run: |
+          yes | sdkmanager --licenses
+          sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0" "ndk;27.0.12077973"
+
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Update Cargo
+        run: cargo update
+        working-directory: ./src-tauri
+
+      - name: Write Android version properties
+        run: |
+          cat > src-tauri/gen/android/app/tauri.properties <<EOF
+          tauri.android.versionName=${{ inputs.version_name }}
+          tauri.android.versionCode=${{ inputs.version_code }}
+          EOF
+
+      - name: Build Android APK
+        run: pnpm tauri android build --apk --ci
+
+      - name: Upload APK Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: BuckyOS-android-apk-${{ inputs.version_name }}-${{ inputs.version_code }}
+          path: src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+          if-no-files-found: error
