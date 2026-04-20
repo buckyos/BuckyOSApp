@@ -10,10 +10,10 @@
     "tauri": "tauri"
   },
   "dependencies": {
-    "@tauri-apps/api": "^2.10.1",
-    "@tauri-apps/plugin-http": "^2.5.4",
-    "@tauri-apps/plugin-log": "^2.8.0",
-    "@tauri-apps/plugin-opener": "^2",
+    "@tauri-apps/api": "2.10.1",
+    "@tauri-apps/plugin-http": "2.5.4",
+    "@tauri-apps/plugin-log": "2.8.0",
+    "@tauri-apps/plugin-opener": "2.5.0",
     "@types/react-router-dom": "^5.3.3",
     "buckyos": "github:buckyos/buckyos-websdk",
     "lucide-react": "^0.544.0",
@@ -22,11 +22,13 @@
     "react-router-dom": "^7.8.2"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2",
+    "@tauri-apps/cli": "2.10.1",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.6.0",
+    "baseline-browser-mapping": "^2.10.20",
     "typescript": "~5.8.3",
     "vite": "^7.0.4"
-  }
+  },
+  "packageManager": "pnpm@10.33.0+sha512.10568bb4a6afb58c9eb3630da90cc9516417abebd3fabbe6739f0ae795728da1491e9db5a544c76ad8eb7570f5c4bb3d6c637b2cb41bfdcdb47fa823c8649319"
 }
