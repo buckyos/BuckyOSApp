@@ -51,6 +51,10 @@
         getCurrentUser() {
             return callNative("getCurrentUser", {});
         },
+        openExternalUrl(url) {
+            console.info("[BuckyApi] openExternalUrl", url);
+            return callNative("openExternalUrl", { url });
+        },
         signJsonWithActiveDid(payloads) {
             return callNative("signJsonWithActiveDid", { payloads });
         },

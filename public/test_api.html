@@ -121,6 +121,8 @@
         <div class="actions">
             <button id="public-key-button" class="action-button">Get Public Key</button>
             <button id="current-user-button" class="action-button">Get Current User</button>
+            <button id="open-external-button" class="action-button">Open External Url</button>
+            <button id="open-bilibili-button" class="action-button">Open bilibili.com</button>
             <button id="sign-button" class="action-button">SignJsonWithActiveDid</button>
             <button id="fill-single-json-button" class="action-button">填充单个 JSON</button>
             <button id="fill-multi-json-button" class="action-button">填充 JSON 数组</button>
@@ -153,6 +155,8 @@
         const publicKeyButton = document.getElementById("public-key-button");
         const signButton = document.getElementById("sign-button");
         const currentUserButton = document.getElementById("current-user-button");
+        const openExternalButton = document.getElementById("open-external-button");
+        const openBilibiliButton = document.getElementById("open-bilibili-button");
         const fillSingleJsonButton = document.getElementById("fill-single-json-button");
         const fillMultiJsonButton = document.getElementById("fill-multi-json-button");
         const signDemoButton = document.getElementById("sign-demo-button");
@@ -264,6 +268,47 @@
                     outputBox.classList.add("highlight");
                 } else if (typeof result?.code === "number") {
                     logError(result.message || "获取当前用户失败");
+                }
+            } catch (err) {
+                logError(err instanceof Error ? err.message : String(err));
+            }
+        });
+
+        openExternalButton.addEventListener("click", async () => {
+            const raw = inputBox.value.trim();
+            if (!raw) {
+                logError("璇疯緭鍏ヨ鎵撳紑鐨 URL");
+                return;
+            }
+
+            try {
+                const result = await window.BuckyApi.openExternalUrl(raw);
+                if (result?.code === 0) {
+                    outputBox.value = `opened: ${result.data?.url ?? raw}`;
+                    outputBox.classList.remove("highlight");
+                    void outputBox.offsetWidth;
+                    outputBox.classList.add("highlight");
+                } else if (typeof result?.code === "number") {
+                    logError(result.message || "鎵撳紑澶栭儴閾炬帴澶辫触");
+                }
+            } catch (err) {
+                logError(err instanceof Error ? err.message : String(err));
+            }
+        });
+
+        openBilibiliButton.addEventListener("click", async () => {
+            const url = "bilibili.com";
+            inputBox.value = url;
+
+            try {
+                const result = await window.BuckyApi.openExternalUrl(url);
+                if (result?.code === 0) {
+                    outputBox.value = `opened: ${result.data?.url ?? url}`;
+                    outputBox.classList.remove("highlight");
+                    void outputBox.offsetWidth;
+                    outputBox.classList.add("highlight");
+                } else if (typeof result?.code === "number") {
+                    logError(result.message || "打开 bilibili 失败");
                 }
             } catch (err) {
                 logError(err instanceof Error ? err.message : String(err));

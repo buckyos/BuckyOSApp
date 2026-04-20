@@ -1,5 +1,6 @@
 import React from "react";
 import { buckyos } from "buckyos";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { useI18n } from "../i18n";
 import { useDidContext } from "../features/did/DidContext";
 import InputDialog from "../components/ui/InputDialog";
@@ -58,6 +59,28 @@ type SignState = {
 
 function normalizePwdHashUsername(value: string | null | undefined) {
     return typeof value === "string" ? value.trim().toLowerCase() : "";
+}
+
+function normalizeExternalUrl(raw: unknown) {
+    if (typeof raw !== "string") {
+        throw new Error("invalid_external_url");
+    }
+
+    const trimmed = raw.trim();
+    if (!trimmed) {
+        throw new Error("invalid_external_url");
+    }
+
+    const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed)
+        ? trimmed
+        : `https://${trimmed}`;
+    const parsed = new URL(withScheme);
+
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+        throw new Error("invalid_external_url_protocol");
+    }
+
+    return parsed.toString();
 }
 
 export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HTMLIFrameElement | null> }) {
@@ -121,6 +144,11 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
                     sn_username: snUsername,
                 },
             };
+        },
+        openExternalUrl: async (payload: { url?: unknown }) => {
+            const url = normalizeExternalUrl(payload?.url);
+            await openUrl(url);
+            return { code: BuckyErrorCodes.Success, data: { url } };
         },
         signJsonWithActiveDid: (payload: { payloads?: unknown[] }) => {
             const payloads = Array.isArray(payload?.payloads)
