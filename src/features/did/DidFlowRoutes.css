@@ -5,18 +5,16 @@
     gap: 14px;
     text-align: left;
     flex: 1;
-    min-height: 0;
+    min-height: 100%;
     /* allow internal scroll without body scrollbars */
     /* Avoid in-page scrollbars for a cleaner mobile-like layout */
-    overflow: hidden;
+    overflow: auto;
     position: relative;
-    /* allow bottom-fixed actions */
     -ms-overflow-style: none;
     /* IE, Edge */
     scrollbar-width: none;
     /* Firefox */
-    /* Reserve space for fixed bottom actions + shadow */
-    padding: 12px 16px 96px;
+    padding: 12px 16px 24px;
 }
 
 .page-content {
@@ -289,16 +287,10 @@ button:disabled {
 
 /* bottom actions */
 .actions {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 24px;
-    /* unified gap to window bottom */
-    padding: 0 16px;
-    /* match container horizontal padding */
-    margin: 0 auto;
+    width: 100%;
+    padding: 0;
+    margin: auto auto 0;
     max-width: 520px;
-    /* align with page-content width */
     display: flex;
     flex-direction: column;
     gap: 12px;

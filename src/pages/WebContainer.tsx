@@ -4,7 +4,7 @@ import { useIframeBridge, useBuckyIframeActions } from "../bridges/iframeBridge"
 import MobileHeader from "../components/ui/MobileHeader";
 import { isMobileShell } from "../utils/platform";
 
-const DEFAULT_URL = "http://localhost:1420/test_api.html";
+const DEFAULT_URL = "/test_api.html";
 
 const WebContainer: React.FC = () => {
     const [searchParams] = useSearchParams();

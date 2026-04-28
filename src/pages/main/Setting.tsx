@@ -13,7 +13,7 @@ import { CommandErrorCodes } from "../../constants/commandErrorCodes";
 import { SunMoon, Globe, Users, ShieldCheck, Trash2, ExternalLink, Monitor, Info } from "lucide-react";
 import { getLocaleLabel } from "../../i18n/config";
 
-const defaultOpenUrl = "http://localhost:1420/test_api.html";
+const defaultOpenUrl = "/test_api.html";
 
 const Setting: React.FC = () => {
     const navigate = useNavigate();

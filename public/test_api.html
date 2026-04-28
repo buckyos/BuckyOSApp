@@ -12,6 +12,7 @@
 
         :root {
             color-scheme: light;
+            --keyboard-inset: 0px;
         }
 
         body {
@@ -19,17 +20,17 @@
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             background: #fff;
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             padding: 12px;
+            padding-bottom: calc(12px + var(--keyboard-inset));
         }
 
         .container {
             width: min(520px, 100%);
+            margin: 0 auto;
             display: flex;
             flex-direction: column;
             gap: 12px;
+            min-height: calc(100vh + 280px);
         }
 
         .io-box {
@@ -81,6 +82,39 @@
             flex-wrap: wrap;
         }
 
+        .bottom-input-spacer {
+            height: 56px;
+            flex-shrink: 0;
+        }
+
+        .bottom-input-box {
+            margin-top: 24px;
+            border-radius: 18px;
+            border: 2px solid #6366f1;
+            background: #f5f3ff;
+            padding: 12px;
+            box-shadow: 0 -6px 24px rgba(15, 23, 42, 0.08);
+            backdrop-filter: blur(8px);
+        }
+
+        .bottom-input-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #475569;
+        }
+
+        .bottom-input {
+            width: 100%;
+            height: 44px;
+            border-radius: 12px;
+            border: 1px solid #cbd5e1;
+            padding: 0 12px;
+            font-size: 16px;
+            color: #0f172a;
+            background: #fff;
+        }
+
         .action-button {
             flex: 1 1 auto;
             min-width: 100px;
@@ -129,6 +163,11 @@
             <button id="sign-demo-button" class="action-button">示例 JSON 并签名</button>
         </div>
         <a href="https://bilibili.com">跳转到 bilibili</a>
+        <div class="bottom-input-spacer"></div>
+        <div class="bottom-input-box">
+            <label class="bottom-input-label" for="bottom-input">Keyboard overlap test</label>
+            <input id="bottom-input" class="bottom-input" type="text" placeholder="Tap here near the bottom edge" />
+        </div>
     </div>
     <script>
         document.addEventListener("contextmenu", (event) => {
@@ -160,6 +199,45 @@
         const fillSingleJsonButton = document.getElementById("fill-single-json-button");
         const fillMultiJsonButton = document.getElementById("fill-multi-json-button");
         const signDemoButton = document.getElementById("sign-demo-button");
+        const bottomInput = document.getElementById("bottom-input");
+        const root = document.documentElement;
+
+        function updateKeyboardInset() {
+            const viewport = window.visualViewport;
+            if (!viewport) {
+                root.style.setProperty("--keyboard-inset", "0px");
+                return;
+            }
+
+            const inset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
+            root.style.setProperty("--keyboard-inset", `${Math.round(inset)}px`);
+        }
+
+        function keepInputVisible(target) {
+            if (!(target instanceof HTMLElement)) return;
+
+            window.requestAnimationFrame(() => {
+                window.requestAnimationFrame(() => {
+                    target.scrollIntoView({ block: "center", inline: "nearest", behavior: "smooth" });
+                });
+            });
+        }
+
+        updateKeyboardInset();
+        window.visualViewport?.addEventListener("resize", updateKeyboardInset);
+        window.visualViewport?.addEventListener("scroll", updateKeyboardInset);
+        window.addEventListener("resize", updateKeyboardInset);
+
+        bottomInput?.addEventListener("focus", () => {
+            updateKeyboardInset();
+            keepInputVisible(bottomInput);
+            window.setTimeout(() => keepInputVisible(bottomInput), 250);
+            window.setTimeout(() => keepInputVisible(bottomInput), 500);
+        });
+
+        bottomInput?.addEventListener("click", () => {
+            keepInputVisible(bottomInput);
+        });
         const logError = (msg) => {
             if (!outputBox) return;
             outputBox.value = msg;

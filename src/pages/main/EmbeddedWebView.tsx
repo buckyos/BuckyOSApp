@@ -26,7 +26,7 @@ const EmbeddedWebView: React.FC = () => {
                     <iframe
                         ref={iframeRef}
                         title="embedded-webview"
-                        src="http://localhost:1420/test_api.html"
+                        src="/test_api.html"
                         style={{ width: "100%", height: "100%", border: "none" }}
                     />
                 </div>
