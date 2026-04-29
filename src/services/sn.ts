@@ -2,7 +2,7 @@ import { buckyos } from "buckyos";
 import { invoke } from "@tauri-apps/api/core";
 
 const DEFAULT_SN_API_BASE_URL = "https://sn.buckyos.ai/kapi/sn";
-const SN_CHECK_TIMEOUT_MS = 5000;
+const SN_API_TIMEOUT_MS = 10000;
 
 let snApiUrlOverride: string | null = null;
 let snApiUrlPromise: Promise<string> | null = null;
@@ -100,7 +100,7 @@ export async function checkBuckyUsername(username: string): Promise<boolean> {
         snCall<{ valid?: boolean; code?: number }>("auth", "auth.check_username", {
             name: normalized,
         }),
-        SN_CHECK_TIMEOUT_MS,
+        SN_API_TIMEOUT_MS,
         "sn_check_timeout"
     );
 
@@ -124,7 +124,7 @@ export async function checkSnActiveCode(activeCode: string): Promise<boolean> {
             "auth.check_active_code",
             { active_code: trimmedCode }
         ),
-        SN_CHECK_TIMEOUT_MS,
+        SN_API_TIMEOUT_MS,
         "sn_check_timeout"
     );
 
@@ -140,26 +140,34 @@ export async function registerSnAccountWithPassword(args: {
     publicKeyJwk: string;
 }): Promise<{ ok: boolean; raw: any }> {
     const normalizedUserName = normalizeUsername(args.userName);
-    const registration = await snCall<{
-        code?: number;
-        access_token?: string;
-        refresh_token?: string;
-        need_bind_owner_key?: boolean;
-    }>("auth", "auth.register", {
-        name: normalizedUserName,
-        pwd_hash: args.passwordHash,
-        active_code: args.activeCode.trim(),
-    });
+    const registration = await withTimeout(
+        snCall<{
+            code?: number;
+            access_token?: string;
+            refresh_token?: string;
+            need_bind_owner_key?: boolean;
+        }>("auth", "auth.register", {
+            name: normalizedUserName,
+            pwd_hash: args.passwordHash,
+            active_code: args.activeCode.trim(),
+        }),
+        SN_API_TIMEOUT_MS,
+        "register_sn_user_failed"
+    );
 
     if ((registration?.code ?? -1) !== 0 || !registration?.access_token) {
         return { ok: false, raw: registration };
     }
 
-    const bindResult = await snCall<{ code?: number }>(
-        "bns",
-        "user.bind_owner_key",
-        { public_key: args.publicKeyJwk },
-        registration.access_token
+    const bindResult = await withTimeout(
+        snCall<{ code?: number }>(
+            "bns",
+            "user.bind_owner_key",
+            { public_key: args.publicKeyJwk },
+            registration.access_token
+        ),
+        SN_API_TIMEOUT_MS,
+        "register_sn_user_failed"
     );
 
     return {
@@ -187,7 +195,7 @@ export async function getUserByPublicKey(publicKeyJwk: string): Promise<{ ok: bo
             user_name?: string | null;
             zone_config?: string | null;
         }>("root", "device.get_by_pk", { public_key: publicKeyJwk }),
-        SN_CHECK_TIMEOUT_MS,
+        SN_API_TIMEOUT_MS,
         "sn_import_timeout"
     );
 
@@ -210,7 +218,7 @@ export async function unbindZoneConfig(userName: string, token: string): Promise
             { user_name: normalizedUserName },
             token
         ),
-        SN_CHECK_TIMEOUT_MS,
+        SN_API_TIMEOUT_MS,
         "sn_unbind_timeout"
     );
     console.info("[OOD-UNBIND] zone.unbind_config response", {
