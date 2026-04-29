@@ -2,9 +2,11 @@ import { useEffect } from "react";
 import "./App.css";
 import AppRoutes from "./app/AppRoutes";
 import { initTheme } from "./theme";
+import { applyPlatformAttributes } from "./utils/platform";
 
 function App() {
     useEffect(() => {
+        applyPlatformAttributes();
         initTheme();
 
         const allowNativeContextMenu = (event: Event) => {

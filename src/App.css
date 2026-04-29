@@ -34,6 +34,11 @@
     --safe-area-inset-right: env(safe-area-inset-right, 0px);
     --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
     --safe-area-inset-left: env(safe-area-inset-left, 0px);
+    --mobile-system-top: var(--safe-area-inset-top);
+    --mobile-system-bottom: var(--safe-area-inset-bottom);
+}
+
+[data-mobile-shell] {
     --mobile-system-top: max(var(--safe-area-inset-top), 28px);
     --mobile-system-bottom: max(var(--safe-area-inset-bottom), 24px);
 }
