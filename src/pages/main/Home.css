@@ -32,7 +32,7 @@
     flex-direction: column;
     flex: 1;
     min-height: 0;
-    padding-bottom: calc(var(--tabbar-height, 64px) + env(safe-area-inset-bottom, 0px) + 12px);
+    padding-bottom: calc(var(--tabbar-height, 64px) + var(--mobile-system-bottom) + 12px);
 }
 
 .bind-ood-wrapper > * {
@@ -537,7 +537,7 @@
     margin-top: 12px;
     padding-top: 8px;
     /* keep a safe gap above the tabbar when scrolled to bottom */
-    margin-bottom: calc(var(--tabbar-height, 64px) + env(safe-area-inset-bottom, 0px));
+    margin-bottom: calc(var(--tabbar-height, 64px) + var(--mobile-system-bottom));
 }
 
 .sn-page-actions>* {

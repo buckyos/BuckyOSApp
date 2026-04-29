@@ -89,8 +89,8 @@ const Apps: React.FC = () => {
                     role="alert"
                     style={{
                         position: "fixed",
-                        top: 24,
-                        right: 24,
+                        top: "calc(24px + var(--mobile-system-top))",
+                        right: "calc(24px + var(--safe-area-inset-right))",
                         zIndex: 20,
                         maxWidth: 320,
                         background: "var(--card-bg)",

@@ -64,7 +64,7 @@ const InputDialog: React.FC<InputDialogProps> = ({
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                padding: 16,
+                padding: "calc(16px + var(--mobile-system-top)) calc(16px + var(--safe-area-inset-right)) calc(16px + var(--mobile-system-bottom)) calc(16px + var(--safe-area-inset-left))",
                 zIndex: 1000,
             }}
             onClick={onCancel}

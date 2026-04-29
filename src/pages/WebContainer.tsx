@@ -24,7 +24,9 @@ const WebContainer: React.FC = () => {
                 width: isMobileEmbedded ? "100%" : "100vw",
                 height: isMobileEmbedded ? "100dvh" : "100vh",
                 margin: 0,
-                padding: embedded && !isMobileEmbedded ? "0 16px 16px" : 0,
+                padding: isMobileEmbedded
+                    ? "0 0 var(--mobile-system-bottom)"
+                    : embedded && !isMobileEmbedded ? "0 16px 16px" : 0,
                 display: "flex",
                 flexDirection: "column",
                 overflow: isMobileEmbedded ? "hidden" : undefined,
@@ -34,7 +36,7 @@ const WebContainer: React.FC = () => {
             {isMobileEmbedded ? (
                 <div
                     style={{
-                        padding: "max(8px, env(safe-area-inset-top, 0px)) 16px 12px",
+                        padding: "max(8px, var(--mobile-system-top)) calc(16px + var(--safe-area-inset-right)) 12px calc(16px + var(--safe-area-inset-left))",
                         background: "#fff",
                         flexShrink: 0,
                     }}

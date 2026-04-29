@@ -20,9 +20,16 @@ const Welcome: React.FC<WelcomeProps> = ({ onStart, onImport }) => {
     }, []);
     const [theme, setTheme] = React.useState<string>(getTheme());
     return (
-        <div className="did-container" style={{ position: "relative", paddingTop: 12, overflow: "hidden" }}>
+        <div className="did-container" style={{ position: "relative", paddingTop: 12 }}>
             {/* Decorations */}
-            <div style={{ position: "absolute", top: 14, left: 14, zIndex: 2 }}>
+            <div
+                style={{
+                    position: "absolute",
+                    top: "calc(var(--mobile-system-top) + 14px)",
+                    left: 14,
+                    zIndex: 2,
+                }}
+            >
                 <div
                     className="soft-btn"
                     style={{
@@ -83,7 +90,7 @@ const Welcome: React.FC<WelcomeProps> = ({ onStart, onImport }) => {
                 className="theme-toggle-btn soft-btn"
                 style={{
                     position: "absolute",
-                    top: 14,
+                    top: "calc(var(--mobile-system-top) + 14px)",
                     right: 14,
                     width: 40,
                     height: 40,
@@ -111,6 +118,7 @@ const Welcome: React.FC<WelcomeProps> = ({ onStart, onImport }) => {
 
             <div className="page-content" style={{
                 flex: 1,
+                minHeight: 0,
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",

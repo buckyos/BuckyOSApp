@@ -77,7 +77,11 @@
     display: flex;
     justify-content: space-between;
     margin: 0 -16px;
-    padding: 10px 24px calc(env(safe-area-inset-bottom, 0) + 12px);
+    padding:
+        10px
+        calc(24px + var(--safe-area-inset-right))
+        calc(var(--mobile-system-bottom) + 12px)
+        calc(24px + var(--safe-area-inset-left));
     border-top: 1px solid var(--border);
     background: var(--app-bg);
     box-shadow: none;

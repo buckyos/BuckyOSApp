@@ -9,8 +9,8 @@
 
 .scan-device-mobile-hint {
     position: fixed;
-    top: max(12px, calc(env(safe-area-inset-top, 0px) + 12px));
-    right: 16px;
+    top: max(12px, calc(var(--mobile-system-top) + 12px));
+    right: calc(16px + var(--safe-area-inset-right));
     z-index: 30;
     padding: 6px 10px;
     border-radius: 999px;
@@ -136,7 +136,7 @@
     max-height: none;
     gap: 12px;
     overflow: auto;
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+    padding-bottom: calc(var(--mobile-system-bottom) + 12px);
 }
 
 .bind-ood-scan-page .ood-device-item {
@@ -204,7 +204,7 @@
 .scan-device-actions {
     margin-top: auto;
     padding-top: 4px;
-    margin-bottom: calc(env(safe-area-inset-bottom, 0px) + 32px);
+    margin-bottom: calc(var(--mobile-system-bottom) + 32px);
 }
 
 @keyframes scanSpin {
