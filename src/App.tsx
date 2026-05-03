@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import "./App.css";
 import AppRoutes from "./app/AppRoutes";
+import TrayController from "./features/tray/TrayController";
 import { initTheme } from "./theme";
 import { applyPlatformAttributes } from "./utils/platform";
 
@@ -84,7 +85,12 @@ function App() {
         };
     }, []);
 
-    return <AppRoutes />;
+    return (
+        <>
+            <AppRoutes />
+            <TrayController />
+        </>
+    );
 }
 
 export default App;

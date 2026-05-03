@@ -10,8 +10,9 @@ import { openWebView } from "../../utils/webview";
 import { getTheme, toggleTheme } from "../../theme";
 import { parseCommandError } from "../../utils/commandError";
 import { CommandErrorCodes } from "../../constants/commandErrorCodes";
-import { SunMoon, Globe, Users, ShieldCheck, Trash2, ExternalLink, Monitor, Info } from "lucide-react";
+import { SunMoon, Globe, Users, ShieldCheck, Trash2, ExternalLink, Monitor, Info, AppWindow } from "lucide-react";
 import { getLocaleLabel } from "../../i18n/config";
+import { isTrayCapable, useTrayEnabledPreference } from "../../features/tray/trayConfig";
 
 const defaultOpenUrl = "/test_api.html";
 
@@ -20,6 +21,8 @@ const Setting: React.FC = () => {
     const { t, locale } = useI18n();
     const [theme, setTheme] = React.useState<string>(getTheme());
     const isDev = import.meta.env.DEV;
+    const trayCapable = isTrayCapable();
+    const [trayEnabled, setTrayEnabled] = useTrayEnabledPreference();
     const { activeDid, refresh } = useDidContext();
     const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false);
     const [deleteOpen, setDeleteOpen] = React.useState(false);
@@ -234,6 +237,22 @@ const Setting: React.FC = () => {
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                 <polyline points="9 18 15 12 9 6" />
                             </svg>
+                        </button>
+                    )}
+
+                    {trayCapable && (
+                        <button
+                            className="settings-item"
+                            onClick={() => setTrayEnabled(!trayEnabled)}
+                            aria-pressed={trayEnabled}
+                        >
+                            <span className="settings-left">
+                                <AppWindow className="settings-icon" aria-hidden="true" strokeWidth={1.8} />
+                                <span className="label">{t("settings.tray_enable")}</span>
+                            </span>
+                            <span className="right">
+                                <span>{trayEnabled ? t("settings.tray_on") : t("settings.tray_off")}</span>
+                            </span>
                         </button>
                     )}
 

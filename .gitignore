@@ -26,3 +26,4 @@ rust-analyzer
 build_log
 /src-tauri/ios/AudioPlugin/.build
 /.codex
+src-tauri/Cargo.lock
