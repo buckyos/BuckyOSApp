@@ -13,16 +13,14 @@ import {
     startLocalService,
     stopLocalService,
 } from "./trayApi";
-import {
-    isTrayCapable,
-    useTrayEnabledPreference,
-} from "./trayConfig";
+import { isTrayCapable, useTrayEnabledPreference } from "./trayConfig";
 import type {
-    DeploymentForm,
     TrayActionId,
     TrayLabels,
     TrayStateSnapshot,
 } from "./types";
+
+type T = (key: string, params?: Record<string, string | number | boolean>) => string;
 
 const ACTION_RUNNERS: Record<TrayActionId, () => Promise<TrayStateSnapshot>> = {
     start: startLocalService,
@@ -31,24 +29,26 @@ const ACTION_RUNNERS: Record<TrayActionId, () => Promise<TrayStateSnapshot>> = {
     refresh: refreshLocalServiceStatus,
 };
 
-function buildLabels(t: (key: string, params?: Record<string, string | number | boolean>) => string): TrayLabels {
+function buildLabels(t: T): TrayLabels {
     return {
         tooltip: t("tray.tooltip"),
         title_running: t("tray.title.running"),
         title_stopped: t("tray.title.stopped"),
         title_error: t("tray.title.error"),
+        title_not_activated: t("tray.title.not_activated"),
         title_starting: t("tray.title.starting"),
         title_stopping: t("tray.title.stopping"),
         title_refreshing: t("tray.title.refreshing"),
-        status_running_single: t("tray.status.running_single"),
-        status_running_cluster: t("tray.status.running_cluster"),
-        status_stopped_single: t("tray.status.stopped_single"),
-        status_stopped_cluster: t("tray.status.stopped_cluster"),
-        status_error_single: t("tray.status.error_single"),
-        status_error_cluster: t("tray.status.error_cluster"),
+        status_running: t("tray.status.running"),
+        status_stopped: t("tray.status.stopped"),
+        status_error: t("tray.status.error"),
+        status_not_activated: t("tray.status.not_activated"),
         status_starting: t("tray.status.starting"),
         status_stopping: t("tray.status.stopping"),
         status_refreshing: t("tray.status.refreshing"),
+        deployment_dev: t("tray.deployment.dev"),
+        deployment_installed: t("tray.deployment.installed"),
+        deployment_unknown: t("tray.deployment.unknown"),
         submenu_actions: t("tray.menu.actions"),
         action_start: t("tray.menu.start"),
         action_stop: t("tray.menu.stop"),
@@ -67,20 +67,53 @@ interface PendingPrompt {
     danger: boolean;
 }
 
+function buildPrompt(action: TrayActionId, t: T): PendingPrompt {
+    switch (action) {
+        case "start":
+            return {
+                action,
+                title: t("tray.confirm.start_title"),
+                message: t("tray.confirm.start_message"),
+                confirmText: t("tray.confirm.start_continue"),
+                danger: false,
+            };
+        case "stop":
+            return {
+                action,
+                title: t("tray.confirm.stop_title"),
+                message: t("tray.confirm.stop_message"),
+                confirmText: t("tray.confirm.stop_continue"),
+                danger: true,
+            };
+        case "restart":
+            return {
+                action,
+                title: t("tray.confirm.restart_title"),
+                message: t("tray.confirm.restart_message"),
+                confirmText: t("tray.confirm.restart_continue"),
+                danger: true,
+            };
+        case "refresh":
+            return {
+                action,
+                title: t("tray.confirm.refresh_title"),
+                message: t("tray.confirm.refresh_message"),
+                confirmText: t("tray.confirm.refresh_continue"),
+                danger: false,
+            };
+    }
+}
+
 const TrayController: React.FC = () => {
     const { t, locale } = useI18n();
     const [enabled] = useTrayEnabledPreference();
-    const [snapshot, setSnapshot] = React.useState<TrayStateSnapshot | null>(null);
+    const [, setSnapshot] = React.useState<TrayStateSnapshot | null>(null);
     const [prompt, setPrompt] = React.useState<PendingPrompt | null>(null);
     const [busy, setBusy] = React.useState(false);
-    const snapshotRef = React.useRef<TrayStateSnapshot | null>(null);
 
-    React.useEffect(() => {
-        snapshotRef.current = snapshot;
-    }, [snapshot]);
-
-    // Mirror Rust-side state into React so the confirm dialog can pick
-    // the right "single Desktop Service" vs "cluster client" copy.
+    // Mirror Rust-side state into React. We don't currently render it
+    // outside the dialog (the dialog text is the same regardless of
+    // deployment mode), but keep the listener so future UI can subscribe.
     React.useEffect(() => {
         if (!isTrayCapable()) return;
         let unlistenFn: UnlistenFn | undefined;
@@ -102,7 +135,9 @@ const TrayController: React.FC = () => {
         };
     }, []);
 
-    // Push translated labels and the enabled flag to Rust.
+    // Push translated labels and the enabled flag to Rust. Rust will
+    // kick off an initial node_check on enable and emit a state update
+    // when it settles.
     React.useEffect(() => {
         if (!isTrayCapable()) return;
         let cancelled = false;
@@ -129,9 +164,7 @@ const TrayController: React.FC = () => {
             unlistenFn = await listen<TrayActionId | string>(TRAY_ACTION_EVENT, (event) => {
                 const action = event.payload as TrayActionId;
                 if (!ACTION_RUNNERS[action]) return;
-                const current = snapshotRef.current;
-                const deployment: DeploymentForm = current?.deployment ?? "single_desktop_service";
-                setPrompt(buildPrompt(action, deployment, t));
+                setPrompt(buildPrompt(action, t));
             });
         })();
         return () => {
@@ -170,53 +203,5 @@ const TrayController: React.FC = () => {
         />
     );
 };
-
-function buildPrompt(
-    action: TrayActionId,
-    deployment: DeploymentForm,
-    t: (key: string, params?: Record<string, string | number | boolean>) => string,
-): PendingPrompt {
-    const isSingle = deployment === "single_desktop_service";
-    switch (action) {
-        case "start":
-            return {
-                action,
-                title: t("tray.confirm.start_title"),
-                message: isSingle
-                    ? t("tray.confirm.start_message_single")
-                    : t("tray.confirm.start_message_cluster"),
-                confirmText: t("tray.confirm.start_continue"),
-                danger: false,
-            };
-        case "stop":
-            return {
-                action,
-                title: t("tray.confirm.stop_title"),
-                message: isSingle
-                    ? t("tray.confirm.stop_message_single")
-                    : t("tray.confirm.stop_message_cluster"),
-                confirmText: t("tray.confirm.stop_continue"),
-                danger: true,
-            };
-        case "restart":
-            return {
-                action,
-                title: t("tray.confirm.restart_title"),
-                message: isSingle
-                    ? t("tray.confirm.restart_message_single")
-                    : t("tray.confirm.restart_message_cluster"),
-                confirmText: t("tray.confirm.restart_continue"),
-                danger: true,
-            };
-        case "refresh":
-            return {
-                action,
-                title: t("tray.confirm.refresh_title"),
-                message: t("tray.confirm.refresh_message"),
-                confirmText: t("tray.confirm.refresh_continue"),
-                danger: false,
-            };
-    }
-}
 
 export default TrayController;

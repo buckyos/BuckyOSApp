@@ -1,10 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type {
-    DeploymentForm,
-    ServiceStatus,
-    TrayLabels,
-    TrayStateSnapshot,
-} from "./types";
+import type { TrayLabels, TrayStateSnapshot } from "./types";
 
 export const TRAY_ACTION_EVENT = "buckyos://tray-action";
 export const TRAY_STATE_EVENT = "buckyos://tray-state";
@@ -15,13 +10,6 @@ export function setTrayEnabled(enabled: boolean): Promise<TrayStateSnapshot> {
 
 export function setTrayLabels(labels: TrayLabels): Promise<void> {
     return invoke<void>("tray_set_labels", { labels });
-}
-
-export function setTrayStatus(
-    status: ServiceStatus,
-    deployment?: DeploymentForm,
-): Promise<TrayStateSnapshot> {
-    return invoke<TrayStateSnapshot>("tray_set_status", { status, deployment: deployment ?? null });
 }
 
 export function getTrayState(): Promise<TrayStateSnapshot> {

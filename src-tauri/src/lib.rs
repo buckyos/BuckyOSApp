@@ -38,6 +38,8 @@ mod did;
 mod error;
 mod network;
 #[cfg(desktop)]
+mod node_control;
+#[cfg(desktop)]
 mod tray;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -105,7 +107,6 @@ pub fn run() {
         config::get_sn_api_host,
         tray::tray_set_enabled,
         tray::tray_set_labels,
-        tray::tray_set_status,
         tray::tray_get_state,
         tray::tray_start_service,
         tray::tray_stop_service,
