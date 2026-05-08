@@ -17,8 +17,9 @@
     padding:
         calc(12px + var(--mobile-system-top))
         16px
-        calc(24px + var(--mobile-system-bottom))
+        calc(24px + var(--mobile-system-bottom) + var(--keyboard-inset-bottom))
         16px;
+    scroll-padding-bottom: calc(24px + var(--mobile-system-bottom) + var(--keyboard-inset-bottom));
 }
 
 .page-content {

@@ -145,7 +145,7 @@ const BindSn: React.FC<BindSnProps> = ({
     const displayedError = error;
 
     return (
-        <div className="did-container" style={{ position: "relative", overflow: "hidden" }}>
+        <div className="did-container" style={{ position: "relative" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <MobileHeader
                     title={t("sn.bind_title")}

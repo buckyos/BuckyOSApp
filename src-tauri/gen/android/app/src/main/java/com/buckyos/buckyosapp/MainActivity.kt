@@ -18,6 +18,8 @@ class MainActivity : TauriActivity() {
       val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
       val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
       val bottomInset = maxOf(systemBars.bottom, ime.bottom)
+      val density = webView.resources.displayMetrics.density
+      val keyboardInsetBottom = ime.bottom / density
 
       view.updatePadding(
         left = systemBars.left,
@@ -25,6 +27,22 @@ class MainActivity : TauriActivity() {
         right = systemBars.right,
         bottom = bottomInset,
       )
+
+      webView.post {
+        webView.evaluateJavascript(
+          """
+          (() => {
+            const keyboardInsetBottom = ${keyboardInsetBottom};
+            const root = document.documentElement;
+            root.style.setProperty('--keyboard-inset-bottom', `${'$'}{keyboardInsetBottom}px`);
+            window.dispatchEvent(new CustomEvent('android-window-insets-change', {
+              detail: { keyboardInsetBottom }
+            }));
+          })();
+          """.trimIndent(),
+          null,
+        )
+      }
 
       insets
     }

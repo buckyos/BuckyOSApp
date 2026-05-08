@@ -81,7 +81,7 @@ const ImportDid: React.FC<ImportDidProps> = ({ loading, error, onImport, onBack 
     const displayedError = localError || mnemonicWordError || error;
 
     return (
-        <div className="did-container" style={{ position: "relative", overflow: "hidden" }}>
+        <div className="did-container" style={{ position: "relative" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <MobileHeader title={t("import.title")} showBack onBack={onBack} />
             </div>
