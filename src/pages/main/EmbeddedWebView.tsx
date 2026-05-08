@@ -12,7 +12,7 @@ const EmbeddedWebView: React.FC = () => {
     return (
         <div className="App" style={{ display: "flex", flexDirection: "column", height: "100%" }}>
             <MobileHeader title={t("settings.embedded_webview_title")} showBack />
-            <div style={{ flex: 1, paddingBottom: 16 }}>
+            <div style={{ flex: 1, minHeight: 0, paddingBottom: "calc(16px + var(--keyboard-inset-bottom))" }}>
                 <div
                     style={{
                         width: "100%",

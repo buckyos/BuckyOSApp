@@ -168,6 +168,11 @@
             <label class="bottom-input-label" for="bottom-input">Keyboard overlap test</label>
             <input id="bottom-input" class="bottom-input" type="text" placeholder="Tap here near the bottom edge" />
         </div>
+        <div class="bottom-input-spacer"></div>
+        <div class="bottom-input-box">
+            <label class="bottom-input-label" for="embedded-bottom-input">Embedded bottom keyboard test</label>
+            <input id="embedded-bottom-input" class="bottom-input" type="text" placeholder="Tap the embedded page bottom input" />
+        </div>
     </div>
     <script>
         document.addEventListener("contextmenu", (event) => {
@@ -200,6 +205,7 @@
         const fillMultiJsonButton = document.getElementById("fill-multi-json-button");
         const signDemoButton = document.getElementById("sign-demo-button");
         const bottomInput = document.getElementById("bottom-input");
+        const embeddedBottomInput = document.getElementById("embedded-bottom-input");
         const root = document.documentElement;
 
         function updateKeyboardInset() {
@@ -228,16 +234,21 @@
         window.visualViewport?.addEventListener("scroll", updateKeyboardInset);
         window.addEventListener("resize", updateKeyboardInset);
 
-        bottomInput?.addEventListener("focus", () => {
-            updateKeyboardInset();
-            keepInputVisible(bottomInput);
-            window.setTimeout(() => keepInputVisible(bottomInput), 250);
-            window.setTimeout(() => keepInputVisible(bottomInput), 500);
-        });
+        function bindKeyboardTestInput(input) {
+            input?.addEventListener("focus", () => {
+                updateKeyboardInset();
+                keepInputVisible(input);
+                window.setTimeout(() => keepInputVisible(input), 250);
+                window.setTimeout(() => keepInputVisible(input), 500);
+            });
 
-        bottomInput?.addEventListener("click", () => {
-            keepInputVisible(bottomInput);
-        });
+            input?.addEventListener("click", () => {
+                keepInputVisible(input);
+            });
+        }
+
+        bindKeyboardTestInput(bottomInput);
+        bindKeyboardTestInput(embeddedBottomInput);
         const logError = (msg) => {
             if (!outputBox) return;
             outputBox.value = msg;

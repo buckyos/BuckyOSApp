@@ -25,7 +25,7 @@ const WebContainer: React.FC = () => {
                 height: isMobileEmbedded ? "100dvh" : "100vh",
                 margin: 0,
                 padding: isMobileEmbedded
-                    ? "0 0 var(--mobile-system-bottom)"
+                    ? "0 0 calc(var(--mobile-system-bottom) + var(--keyboard-inset-bottom))"
                     : embedded && !isMobileEmbedded ? "0 16px 16px" : 0,
                 display: "flex",
                 flexDirection: "column",
