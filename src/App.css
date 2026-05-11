@@ -35,13 +35,27 @@
     --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
     --safe-area-inset-left: env(safe-area-inset-left, 0px);
     --keyboard-inset-bottom: 0px;
+    --android-system-inset-top: 0px;
+    --android-system-inset-right: 0px;
+    --android-system-inset-bottom: 0px;
+    --android-system-inset-left: 0px;
+    --android-navigation-inset-bottom: 0px;
+    --android-tappable-inset-bottom: 0px;
+    --android-system-gesture-inset-bottom: 0px;
+    --android-gesture-comfort-bottom: min(var(--android-system-gesture-inset-bottom), 12px);
     --mobile-system-top: var(--safe-area-inset-top);
     --mobile-system-bottom: var(--safe-area-inset-bottom);
 }
 
 [data-mobile-shell] {
-    --mobile-system-top: max(var(--safe-area-inset-top), 28px);
-    --mobile-system-bottom: max(var(--safe-area-inset-bottom), 24px);
+    --mobile-system-top: max(var(--safe-area-inset-top), var(--android-system-inset-top), 28px);
+    --mobile-system-bottom: max(
+        var(--safe-area-inset-bottom),
+        var(--android-system-inset-bottom),
+        var(--android-navigation-inset-bottom),
+        var(--android-tappable-inset-bottom),
+        var(--android-gesture-comfort-bottom)
+    );
 }
 
 html,
