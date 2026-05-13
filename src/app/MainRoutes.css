@@ -10,7 +10,7 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 16px;
+    padding: max(16px, var(--mobile-system-top)) 16px 12px;
     padding-bottom: 12px;
     background: transparent;
 }

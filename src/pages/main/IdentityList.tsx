@@ -82,7 +82,7 @@ const IdentityList: React.FC = () => {
             className="App page-scroll-hide"
             style={{ display: "flex", flexDirection: "column", height: "100%", overflowY: "auto" }}
         >
-            <MobileHeader title={t("identities.title")} showBack={!forceSelection} />
+            <MobileHeader title={t("identities.title")} showBack={!forceSelection} safeAreaTop />
             <div style={{ padding: "8px 16px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
                 <div className="settings-list">
                     {dids.map((did) => {

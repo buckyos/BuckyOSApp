@@ -6,9 +6,10 @@ interface MobileHeaderProps {
     showBack?: boolean;
     onBack?: () => void;
     rightSlot?: React.ReactNode;
+    safeAreaTop?: boolean;
 }
 
-const MobileHeader: React.FC<MobileHeaderProps> = ({ title, showBack = false, onBack, rightSlot }) => {
+const MobileHeader: React.FC<MobileHeaderProps> = ({ title, showBack = false, onBack, rightSlot, safeAreaTop = false }) => {
     const navigate = useNavigate();
     const handleBack = React.useCallback(() => {
         if (onBack) {
@@ -24,7 +25,7 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({ title, showBack = false, on
                 display: "flex",
                 alignItems: "center",
                 gap: 6,
-                padding: "8px 0 12px",
+                padding: safeAreaTop ? "max(8px, calc(var(--mobile-system-top) - 8px)) 0 12px" : "8px 0 12px",
                 minHeight: 44, // ensure consistent header row height
                 width: "100%",
             }}

@@ -19,7 +19,14 @@ const LanguageSelect: React.FC = () => {
 
     return (
         <div className="App" style={{ display: "flex", flexDirection: "column" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div
+                style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    paddingTop: "max(0px, calc(var(--mobile-system-top) - 16px))",
+                }}
+            >
                 <div style={{ flex: 1, minWidth: 0 }}>
                     <MobileHeader title={t("settings.languages_title")} showBack />
                 </div>

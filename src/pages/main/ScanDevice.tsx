@@ -327,7 +327,7 @@ const ScanDevice: React.FC = () => {
     return (
         <div className="bind-ood-scan-page">
             {showTapHint ? <div className="scan-device-mobile-hint">Locating...</div> : null}
-            <MobileHeader title={t("device_scan.title")} showBack />
+            <MobileHeader title={t("device_scan.title")} showBack safeAreaTop />
 
             <div className="scan-device-body">
                 <div className="scan-device-hero" aria-hidden="true">
