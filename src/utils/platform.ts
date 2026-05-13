@@ -3,6 +3,7 @@ const MOBILE_SHELL_USER_AGENT_RE = /Android|iPhone|iPad|iPod/i;
 let androidKeyboardFocusHandlerAttached = false;
 const keyboardBoundDocuments = new WeakSet<Document>();
 const keyboardBoundIframes = new WeakSet<HTMLIFrameElement>();
+const keyboardScrollTimers = new WeakMap<Document, number>();
 
 export function isMobileShell() {
     return MOBILE_SHELL_USER_AGENT_RE.test(window.navigator.userAgent);
@@ -12,13 +13,19 @@ export function isAndroidShell() {
     return /Android/i.test(window.navigator.userAgent);
 }
 
-function getKeyboardInsetBottom() {
-    return getComputedStyle(document.documentElement)
+function getKeyboardInsetBottom(targetDocument: Document = document) {
+    return getComputedStyle(targetDocument.documentElement)
         .getPropertyValue("--keyboard-inset-bottom")
         .trim() || "0px";
 }
 
-function scrollFocusedControlIntoView(targetDocument: Document) {
+function parseCssPixelValue(value: string) {
+    const parsed = Number.parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function scrollFocusedControlIntoView(targetDocument: Document, delay = 120) {
+    const targetWindow = targetDocument.defaultView ?? window;
     const active = targetDocument.activeElement;
     if (
         !(active instanceof HTMLInputElement) &&
@@ -27,21 +34,37 @@ function scrollFocusedControlIntoView(targetDocument: Document) {
         return;
     }
 
-    window.setTimeout(() => {
-        active.scrollIntoView({ block: "center", inline: "nearest", behavior: "smooth" });
-    }, 80);
+    const pendingTimer = keyboardScrollTimers.get(targetDocument);
+    if (pendingTimer !== undefined) {
+        targetWindow.clearTimeout(pendingTimer);
+    }
+
+    const timer = targetWindow.setTimeout(() => {
+        if (targetDocument.activeElement !== active) {
+            return;
+        }
+
+        active.scrollIntoView({ block: "center", inline: "nearest", behavior: "auto" });
+    }, delay);
+
+    keyboardScrollTimers.set(targetDocument, timer);
 }
 
-function bindKeyboardDocument(targetDocument: Document) {
+function bindKeyboardDocument(targetDocument: Document, listenForInsetChanges = true) {
     if (keyboardBoundDocuments.has(targetDocument)) {
         return;
     }
 
     keyboardBoundDocuments.add(targetDocument);
-    targetDocument.addEventListener("focusin", () => scrollFocusedControlIntoView(targetDocument));
-    targetDocument.defaultView?.addEventListener("android-window-insets-change", () => {
-        scrollFocusedControlIntoView(targetDocument);
-    });
+    targetDocument.addEventListener("focusin", () => scrollFocusedControlIntoView(targetDocument, 160));
+
+    if (listenForInsetChanges) {
+        targetDocument.defaultView?.addEventListener("android-window-insets-change", () => {
+            if (parseCssPixelValue(getKeyboardInsetBottom(targetDocument)) > 0) {
+                scrollFocusedControlIntoView(targetDocument);
+            }
+        });
+    }
 }
 
 function syncKeyboardInsetToIframe(iframe: HTMLIFrameElement) {
@@ -90,7 +113,7 @@ export function applyPlatformAttributes() {
     if (androidShell && !androidKeyboardFocusHandlerAttached) {
         androidKeyboardFocusHandlerAttached = true;
 
-        bindKeyboardDocument(document);
+        bindKeyboardDocument(document, false);
         syncKeyboardInsetsToIframes();
 
         const iframeObserver = new MutationObserver((records) => {
@@ -111,8 +134,10 @@ export function applyPlatformAttributes() {
         iframeObserver.observe(document.body, { childList: true, subtree: true });
 
         window.addEventListener("android-window-insets-change", () => {
-            scrollFocusedControlIntoView(document);
             syncKeyboardInsetsToIframes();
+            if (parseCssPixelValue(getKeyboardInsetBottom()) > 0) {
+                scrollFocusedControlIntoView(document);
+            }
         });
     }
 }

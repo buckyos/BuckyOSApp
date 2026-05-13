@@ -10,6 +10,11 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 
 class MainActivity : TauriActivity() {
+  private var latestInsetsScript: String? = null
+  private var lastRequestedInsetsKey: String? = null
+  private var pendingInsetsApply: Runnable? = null
+  private var startupInsetsReplayScheduled = false
+
   override fun onCreate(savedInstanceState: Bundle?) {
     WindowCompat.setDecorFitsSystemWindows(window, false)
     window.statusBarColor = Color.TRANSPARENT
@@ -83,8 +88,26 @@ class MainActivity : TauriActivity() {
     tappableInsetBottom: Float,
     gestureInsetBottom: Float,
   ) {
+    val insetsKey = listOf(
+      systemInsetTop,
+      systemInsetRight,
+      systemInsetBottom,
+      systemInsetLeft,
+      keyboardInsetBottom,
+      navigationInsetBottom,
+      tappableInsetBottom,
+      gestureInsetBottom,
+    ).joinToString("|")
+
+    if (insetsKey == lastRequestedInsetsKey) {
+      return
+    }
+
+    lastRequestedInsetsKey = insetsKey
+
     val script = """
       (() => {
+        const insetsKey = "${insetsKey}";
         const systemInsetTop = ${systemInsetTop};
         const systemInsetRight = ${systemInsetRight};
         const systemInsetBottom = ${systemInsetBottom};
@@ -95,6 +118,8 @@ class MainActivity : TauriActivity() {
         const gestureInsetBottom = ${gestureInsetBottom};
         const root = document.documentElement;
         if (!root) return;
+        if (root.dataset.androidInsetsKey === insetsKey) return;
+        root.dataset.androidInsetsKey = insetsKey;
         root.style.setProperty('--android-system-inset-top', `${'$'}{systemInsetTop}px`);
         root.style.setProperty('--android-system-inset-right', `${'$'}{systemInsetRight}px`);
         root.style.setProperty('--android-system-inset-bottom', `${'$'}{systemInsetBottom}px`);
@@ -118,10 +143,28 @@ class MainActivity : TauriActivity() {
       })();
     """.trimIndent()
 
-    listOf(0L, 100L, 500L, 1500L, 3000L, 5000L).forEach { delay ->
-      webView.postDelayed({
-        webView.evaluateJavascript(script, null)
-      }, delay)
+    latestInsetsScript = script
+    evaluateLatestInsetsScript(webView)
+
+    pendingInsetsApply?.let { webView.removeCallbacks(it) }
+    pendingInsetsApply = Runnable {
+      evaluateLatestInsetsScript(webView)
+    }
+    webView.postDelayed(pendingInsetsApply, 180L)
+
+    if (!startupInsetsReplayScheduled) {
+      startupInsetsReplayScheduled = true
+      listOf(700L, 1800L).forEach { delay ->
+        webView.postDelayed({
+          evaluateLatestInsetsScript(webView)
+        }, delay)
+      }
+    }
+  }
+
+  private fun evaluateLatestInsetsScript(webView: WebView) {
+    latestInsetsScript?.let { script ->
+      webView.evaluateJavascript(script, null)
     }
   }
 }
