@@ -130,16 +130,15 @@ const Setting: React.FC = () => {
             setOpenUrlError(t("settings.openurl_invalid"));
             return;
         }
-        let url = raw;
-        if (!/^https?:\/\//i.test(url)) {
-            url = `https://${url}`;
-        }
         try {
             setOpenUrlError("");
             setOpenUrlLoading(true);
-            const userData = { source: "settings-openurl", url };
-            await openWebView(url, undefined, undefined, undefined, userData, (data) => {
-                console.info("[WebView] closed", data);
+            const userData = { source: "settings-openurl", url: raw };
+            await openWebView(raw, {
+                userData,
+                onClosed: (data) => {
+                    console.info("[WebView] closed", data);
+                },
             });
             setOpenUrlLoading(false);
             setOpenUrlOpen(false);
@@ -227,7 +226,16 @@ const Setting: React.FC = () => {
                     )}
 
                     {showDebugTools && (
-                        <button className="settings-item" onClick={() => navigate("/main/setting/embedded-webview")}>
+                        <button
+                            className="settings-item"
+                            onClick={() => {
+                                void openWebView(defaultOpenUrl, {
+                                    title: t("settings.embedded_webview_title"),
+                                    label: "embedded-webview",
+                                    mode: "inapp",
+                                });
+                            }}
+                        >
                             <span className="settings-left">
                                 <Monitor className="settings-icon" aria-hidden="true" strokeWidth={1.8} />
                                 <span className="label">{t("settings.embedded_webview")}</span>

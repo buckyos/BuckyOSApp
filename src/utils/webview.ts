@@ -29,7 +29,18 @@ export interface WebViewWindowOptions {
     center?: boolean;
 }
 
+export type WebViewOpenMode = "auto" | "inapp" | "window";
+
 export type WebViewClosedCallback<T = unknown> = (userData: T) => void;
+
+export interface OpenWebViewOptions<T = unknown> {
+    title?: string;
+    label?: string;
+    mode?: WebViewOpenMode;
+    windowOptions?: WebViewWindowOptions;
+    userData?: T;
+    onClosed?: WebViewClosedCallback<T>;
+}
 
 async function getSafeWindowOptions(options?: WebViewWindowOptions) {
     let screenWidth = window.screen?.width ?? 1920;
@@ -61,6 +72,49 @@ async function getSafeWindowOptions(options?: WebViewWindowOptions) {
     };
 }
 
+function normalizeTargetUrl(raw: string) {
+    const target = raw.trim();
+    if (!target) {
+        throw new Error("invalid_webview_url");
+    }
+    if (target.startsWith("/")) {
+        return target;
+    }
+    if (/^https?:\/\//i.test(target)) {
+        return target;
+    }
+    if (/^tauri:\/\//i.test(target)) {
+        return target;
+    }
+    if (/^[a-z][a-z0-9+.-]*:/i.test(target)) {
+        throw new Error("invalid_webview_url_protocol");
+    }
+    return `https://${target}`;
+}
+
+function resolveWebViewArgs<T>(
+    titleOrOptions?: string | OpenWebViewOptions<T>,
+    label?: string,
+    windowOptions?: WebViewWindowOptions,
+    userData?: T,
+    onClosed?: WebViewClosedCallback<T>
+): OpenWebViewOptions<T> {
+    if (typeof titleOrOptions === "object" && titleOrOptions !== null) {
+        return titleOrOptions;
+    }
+    return {
+        title: titleOrOptions,
+        label,
+        windowOptions,
+        userData,
+        onClosed,
+    };
+}
+
+export async function openWebView<T = unknown>(
+    url: string,
+    options?: OpenWebViewOptions<T>
+): Promise<void>;
 export async function openWebView<T = unknown>(
     url: string,
     title?: string,
@@ -68,28 +122,39 @@ export async function openWebView<T = unknown>(
     windowOptions?: WebViewWindowOptions,
     userData?: T,
     onClosed?: WebViewClosedCallback<T>
+): Promise<void>;
+export async function openWebView<T = unknown>(
+    url: string,
+    titleOrOptions?: string | OpenWebViewOptions<T>,
+    label?: string,
+    windowOptions?: WebViewWindowOptions,
+    userData?: T,
+    onClosed?: WebViewClosedCallback<T>
 ) {
-    let target = url.trim();
-    if (!/^https?:\/\//i.test(target)) {
-        target = `https://${target}`;
-    }
-    let resolvedTitle = title?.trim();
+    const options = resolveWebViewArgs(titleOrOptions, label, windowOptions, userData, onClosed);
+    const target = normalizeTargetUrl(url);
+    let resolvedTitle = options.title?.trim();
     if (!resolvedTitle) {
         try {
             const parsed = new URL(target);
             resolvedTitle = parsed.hostname || target;
         } catch {
-            resolvedTitle = target;
+            const localName = target.split("/").filter(Boolean).pop();
+            resolvedTitle = localName || target;
         }
     }
-    let resolvedLabel = sanitizeLabel(label?.trim());
+    let resolvedLabel = sanitizeLabel(options.label?.trim());
     if (!resolvedLabel) {
         resolvedLabel = `webview_${crypto.randomUUID()}`;
     }
-    if (isMobileShell()) {
+    const requestedMode = options.mode ?? "auto";
+    const mobileShell = isMobileShell();
+    const openInApp = requestedMode === "inapp" || mobileShell;
+
+    if (openInApp) {
         window.location.hash = buildEmbeddedHash(target, resolvedTitle, resolvedLabel);
         return;
-    } else {
+    } else if (requestedMode === "window" || requestedMode === "auto") {
         const existing = await WebviewWindow.getByLabel(resolvedLabel);
         if (existing) {
             await existing.setFocus();
@@ -101,7 +166,7 @@ export async function openWebView<T = unknown>(
             target
         )}&title=${encodeURIComponent(resolvedTitle)}`
     );
-    const safeOptions = await getSafeWindowOptions(windowOptions);
+    const safeOptions = await getSafeWindowOptions(options.windowOptions);
     console.debug("[WebView] open url window", { label: resolvedLabel, containerUrl, title: resolvedTitle, windowOptions: safeOptions });
     const webviewWindow = new WebviewWindow(resolvedLabel, {
         url: containerUrl,
@@ -110,9 +175,9 @@ export async function openWebView<T = unknown>(
         height: safeOptions?.height,
         center: safeOptions?.center,
     });
-    if (onClosed) {
+    if (options.onClosed) {
         await webviewWindow.once("tauri://destroyed", () => {
-            onClosed(userData as T);
+            options.onClosed?.(options.userData as T);
         });
     }
 }
