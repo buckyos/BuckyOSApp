@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import MobileHeader from "../../components/ui/MobileHeader";
+import GradientButton from "../../components/ui/GradientButton";
 import "./LanguageSelect.css";
 import { useI18n } from "../../i18n";
 import { useNavigate } from "react-router-dom";
@@ -18,34 +19,8 @@ const LanguageSelect: React.FC = () => {
     };
 
     return (
-        <div className="App" style={{ display: "flex", flexDirection: "column" }}>
-            <div
-                style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 12,
-                    paddingTop: "max(0px, calc(var(--mobile-system-top) - 16px))",
-                }}
-            >
-                <div style={{ flex: 1, minWidth: 0 }}>
-                    <MobileHeader title={t("settings.languages_title")} showBack />
-                </div>
-                <button
-                    onClick={save}
-                    className="soft-btn"
-                    style={{
-                        height: 36,
-                        padding: "0 16px",
-                        borderRadius: 18,
-                        border: "none",
-                        color: "var(--app-text)",
-                        marginTop: 0,
-                        whiteSpace: "nowrap",
-                    }}
-                >
-                    {t("common.actions.save")}
-                </button>
-            </div>
+        <div className="mobile-page">
+            <MobileHeader title={t("settings.languages_title")} showBack />
 
             <div className="lang-panel">
                 <div className="lang-field-label">{t("common.language.switch_label")}</div>
@@ -63,6 +38,12 @@ const LanguageSelect: React.FC = () => {
                     </select>
                     <ChevronDown size={18} className="lang-select-icon" />
                 </div>
+            </div>
+
+            <div className="lang-actions">
+                <GradientButton onClick={save}>
+                    {t("common.actions.save")}
+                </GradientButton>
             </div>
         </div>
     );

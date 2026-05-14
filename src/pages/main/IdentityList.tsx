@@ -79,7 +79,7 @@ const IdentityList: React.FC = () => {
 
     return (
         <div
-            className="App page-scroll-hide"
+            className="mobile-page page-scroll-hide"
             style={{ display: "flex", flexDirection: "column", height: "100%", overflowY: "auto" }}
         >
             <MobileHeader title={t("identities.title")} showBack={!forceSelection} safeAreaTop />

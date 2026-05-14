@@ -40,3 +40,10 @@
     pointer-events: none;
     color: var(--muted-text);
 }
+
+.lang-actions {
+    width: 100%;
+    max-width: 520px;
+    margin: auto auto 0;
+    padding-bottom: calc(var(--mobile-system-bottom) + var(--keyboard-inset-bottom));
+}

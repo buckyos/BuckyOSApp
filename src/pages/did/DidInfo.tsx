@@ -19,7 +19,7 @@ const DidInfo: React.FC<DidInfoProps> = ({ onBack }) => {
     ];
 
     return (
-        <div className="did-container" style={{ padding: 16 }}>
+        <div className="did-container" style={{ position: "relative" }}>
             <MobileHeader
                 title={t("didInfo.title")}
                 showBack

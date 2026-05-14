@@ -20,6 +20,7 @@ const Setting: React.FC = () => {
     const { t, locale } = useI18n();
     const [theme, setTheme] = React.useState<string>(getTheme());
     const isDev = import.meta.env.DEV;
+    const showDebugTools = isDev || import.meta.env.VITE_SHOW_DEBUG_TOOLS === "true";
     const { activeDid, refresh } = useDidContext();
     const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false);
     const [deleteOpen, setDeleteOpen] = React.useState(false);
@@ -213,7 +214,7 @@ const Setting: React.FC = () => {
                         </svg>
                     </button>
 
-                    {isDev && (
+                    {showDebugTools && (
                         <button className="settings-item" onClick={() => { setOpenUrlValue(defaultOpenUrl); setOpenUrlError(""); setOpenUrlOpen(true); }}>
                             <span className="settings-left">
                                 <ExternalLink className="settings-icon" aria-hidden="true" strokeWidth={1.8} />
@@ -225,7 +226,7 @@ const Setting: React.FC = () => {
                         </button>
                     )}
 
-                    {isDev && (
+                    {showDebugTools && (
                         <button className="settings-item" onClick={() => navigate("/main/setting/embedded-webview")}>
                             <span className="settings-left">
                                 <Monitor className="settings-icon" aria-hidden="true" strokeWidth={1.8} />
@@ -298,7 +299,7 @@ const Setting: React.FC = () => {
                 loading={backupLoading}
                 error={backupError}
             />
-            {isDev && (
+            {showDebugTools && (
                 <InputDialog
                     open={openUrlOpen}
                     title={t("settings.openurl_title")}

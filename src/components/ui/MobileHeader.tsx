@@ -9,7 +9,7 @@ interface MobileHeaderProps {
     safeAreaTop?: boolean;
 }
 
-const MobileHeader: React.FC<MobileHeaderProps> = ({ title, showBack = false, onBack, rightSlot, safeAreaTop = false }) => {
+const MobileHeader: React.FC<MobileHeaderProps> = ({ title, showBack = false, onBack, rightSlot, safeAreaTop = true }) => {
     const navigate = useNavigate();
     const handleBack = React.useCallback(() => {
         if (onBack) {
@@ -24,9 +24,9 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({ title, showBack = false, on
             style={{
                 display: "flex",
                 alignItems: "center",
-                gap: 6,
-                padding: safeAreaTop ? "max(8px, calc(var(--mobile-system-top) - 8px)) 0 12px" : "8px 0 12px",
-                minHeight: 44, // ensure consistent header row height
+                gap: 8,
+                paddingTop: safeAreaTop ? "var(--mobile-system-top)" : 0,
+                height: safeAreaTop ? "calc(var(--mobile-system-top) + 52px)" : 52,
                 width: "100%",
             }}
         >
@@ -37,10 +37,11 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({ title, showBack = false, on
                     style={{
                         display: "flex",
                         alignItems: "center",
-                        justifyContent: "flex-start",
+                        justifyContent: "center",
                         width: 36,
                         height: 36,
                         padding: 0,
+                        marginTop: 0,
                         border: "none",
                         background: "transparent",
                         lineHeight: 0,
@@ -50,7 +51,6 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({ title, showBack = false, on
                         borderRadius: 999,
                     }}
                 >
-                    {/* iOS-like chevron back icon (no circular bg) */}
                     <svg
                         width="20"
                         height="20"
@@ -61,7 +61,7 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({ title, showBack = false, on
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         aria-hidden="true"
-                        style={{ display: "block", transform: "translateY(-3px)" }}
+                        style={{ display: "block" }}
                     >
                         <polyline points="15 18 9 12 15 6" />
                     </svg>

@@ -41,7 +41,7 @@ const WebContainer: React.FC = () => {
                         flexShrink: 0,
                     }}
                 >
-                    <MobileHeader title={title} showBack />
+                    <MobileHeader title={title} showBack safeAreaTop={false} />
                 </div>
             ) : embedded ? <MobileHeader title={title} showBack /> : null}
             <iframe

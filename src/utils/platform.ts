@@ -24,13 +24,25 @@ function parseCssPixelValue(value: string) {
     return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function isKeyboardScrollableControl(
+    element: Element | null,
+    targetWindow: Window
+): element is HTMLInputElement | HTMLTextAreaElement {
+    const constructors = targetWindow as Window & {
+        HTMLInputElement: typeof HTMLInputElement;
+        HTMLTextAreaElement: typeof HTMLTextAreaElement;
+    };
+
+    return (
+        element instanceof constructors.HTMLInputElement ||
+        element instanceof constructors.HTMLTextAreaElement
+    );
+}
+
 function scrollFocusedControlIntoView(targetDocument: Document, delay = 120) {
     const targetWindow = targetDocument.defaultView ?? window;
     const active = targetDocument.activeElement;
-    if (
-        !(active instanceof HTMLInputElement) &&
-        !(active instanceof HTMLTextAreaElement)
-    ) {
+    if (!isKeyboardScrollableControl(active, targetWindow)) {
         return;
     }
 

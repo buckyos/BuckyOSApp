@@ -30,7 +30,7 @@
             display: flex;
             flex-direction: column;
             gap: 12px;
-            min-height: calc(100vh + 280px);
+            min-height: calc(100vh - 24px);
         }
 
         .io-box {
@@ -54,11 +54,13 @@
         @media (max-width: 480px) {
             body {
                 padding: 8px;
+                padding-bottom: calc(8px + var(--keyboard-inset));
             }
 
             .container {
                 width: 100%;
                 gap: 10px;
+                min-height: calc(100vh - 16px);
             }
 
             textarea {
@@ -82,13 +84,8 @@
             flex-wrap: wrap;
         }
 
-        .bottom-input-spacer {
-            height: 56px;
-            flex-shrink: 0;
-        }
-
         .bottom-input-box {
-            margin-top: 24px;
+            margin-top: 12px;
             border-radius: 18px;
             border: 2px solid #6366f1;
             background: #f5f3ff;
@@ -163,15 +160,9 @@
             <button id="sign-demo-button" class="action-button">示例 JSON 并签名</button>
         </div>
         <a href="https://bilibili.com">跳转到 bilibili</a>
-        <div class="bottom-input-spacer"></div>
         <div class="bottom-input-box">
-            <label class="bottom-input-label" for="bottom-input">Keyboard overlap test</label>
-            <input id="bottom-input" class="bottom-input" type="text" placeholder="Tap here near the bottom edge" />
-        </div>
-        <div class="bottom-input-spacer"></div>
-        <div class="bottom-input-box">
-            <label class="bottom-input-label" for="embedded-bottom-input">Embedded bottom keyboard test</label>
-            <input id="embedded-bottom-input" class="bottom-input" type="text" placeholder="Tap the embedded page bottom input" />
+            <label class="bottom-input-label" for="keyboard-test-input">Keyboard overlap test</label>
+            <input id="keyboard-test-input" class="bottom-input" type="text" placeholder="Tap here near the bottom edge" />
         </div>
     </div>
     <script>
@@ -204,8 +195,7 @@
         const fillSingleJsonButton = document.getElementById("fill-single-json-button");
         const fillMultiJsonButton = document.getElementById("fill-multi-json-button");
         const signDemoButton = document.getElementById("sign-demo-button");
-        const bottomInput = document.getElementById("bottom-input");
-        const embeddedBottomInput = document.getElementById("embedded-bottom-input");
+        const keyboardTestInput = document.getElementById("keyboard-test-input");
         const root = document.documentElement;
 
         function updateKeyboardInset() {
@@ -247,8 +237,7 @@
             });
         }
 
-        bindKeyboardTestInput(bottomInput);
-        bindKeyboardTestInput(embeddedBottomInput);
+        bindKeyboardTestInput(keyboardTestInput);
         const logError = (msg) => {
             if (!outputBox) return;
             outputBox.value = msg;

@@ -11,9 +11,8 @@ import androidx.core.view.updatePadding
 
 class MainActivity : TauriActivity() {
   private var latestInsetsScript: String? = null
-  private var lastRequestedInsetsKey: String? = null
   private var pendingInsetsApply: Runnable? = null
-  private var startupInsetsReplayScheduled = false
+  private var pendingInsetsReplayApply: Runnable? = null
 
   override fun onCreate(savedInstanceState: Bundle?) {
     WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -99,12 +98,6 @@ class MainActivity : TauriActivity() {
       gestureInsetBottom,
     ).joinToString("|")
 
-    if (insetsKey == lastRequestedInsetsKey) {
-      return
-    }
-
-    lastRequestedInsetsKey = insetsKey
-
     val script = """
       (() => {
         const insetsKey = "${insetsKey}";
@@ -152,14 +145,11 @@ class MainActivity : TauriActivity() {
     }
     webView.postDelayed(pendingInsetsApply, 180L)
 
-    if (!startupInsetsReplayScheduled) {
-      startupInsetsReplayScheduled = true
-      listOf(700L, 1800L).forEach { delay ->
-        webView.postDelayed({
-          evaluateLatestInsetsScript(webView)
-        }, delay)
-      }
+    pendingInsetsReplayApply?.let { webView.removeCallbacks(it) }
+    pendingInsetsReplayApply = Runnable {
+      evaluateLatestInsetsScript(webView)
     }
+    webView.postDelayed(pendingInsetsReplayApply, 700L)
   }
 
   private fun evaluateLatestInsetsScript(webView: WebView) {
