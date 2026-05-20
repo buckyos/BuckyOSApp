@@ -23,6 +23,10 @@
 }
 
 .scan-device-body {
+    width: calc(100% - 32px);
+    max-width: 520px;
+    margin-left: auto;
+    margin-right: auto;
     flex: 1;
     min-height: 0;
     display: flex;
@@ -202,6 +206,10 @@
 }
 
 .scan-device-actions {
+    width: calc(100% - 32px);
+    max-width: 520px;
+    margin-left: auto;
+    margin-right: auto;
     margin-top: auto;
     padding-top: 4px;
     margin-bottom: calc(var(--mobile-system-bottom) + 32px);
