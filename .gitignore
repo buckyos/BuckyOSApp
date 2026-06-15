@@ -36,3 +36,4 @@ doc/*.log
 /src-tauri/ios/AudioPlugin/.build
 /.codex
 auto_test
+tmp/ui-style-review-*/

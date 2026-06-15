@@ -20,20 +20,22 @@ const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ visible, textKey = "com
             zIndex: 1000,
         }}>
             <div style={{
-                background: "#fff",
+                background: "var(--app-bg)",
+                color: "var(--app-text)",
+                border: "1px solid var(--border)",
                 borderRadius: 16,
                 padding: "16px 20px",
                 minWidth: 220,
                 display: "flex",
                 alignItems: "center",
                 gap: 12,
-                boxShadow: "0 8px 24px rgba(20, 20, 60, 0.16)",
+                boxShadow: "none",
             }}>
                 <div className="spinner" style={{
                     width: 20,
                     height: 20,
-                    border: "3px solid #e6e8f0",
-                    borderTopColor: "#2fc690",
+                    border: "3px solid var(--border)",
+                    borderTopColor: "#6366f1",
                     borderRadius: "50%",
                     animation: "spin 1s linear infinite",
                 }} />
@@ -45,4 +47,3 @@ const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ visible, textKey = "com
 };
 
 export default LoadingOverlay;
-

@@ -117,9 +117,12 @@ const InputDialog: React.FC<InputDialogProps> = ({
                         className="soft-btn"
                         style={{
                             borderRadius: 12,
-                            padding: "10px 14px",
+                            width: 128,
+                            height: 48,
+                            padding: "0 16px",
                             background: "#a9b1bbff",
                             color: "#fff",
+                            whiteSpace: "nowrap",
                         }}
                         onClick={onCancel}
                         disabled={loading}
@@ -130,8 +133,9 @@ const InputDialog: React.FC<InputDialogProps> = ({
                         type="submit"
                         style={{
                             borderRadius: 12,
-                            padding: "10px 18px",
-                            minWidth: 110,
+                            width: 128,
+                            height: 48,
+                            padding: "0 16px",
                             background: loading
                                 ? "linear-gradient(90deg, #9ca3af 0%, #d1d5db 100%)"
                                 : "linear-gradient(90deg, #6366f1 0%, #6c5ce7 100%)",
@@ -140,6 +144,7 @@ const InputDialog: React.FC<InputDialogProps> = ({
                             boxShadow: "none",
                             opacity: loading ? 0.85 : 1,
                             cursor: loading ? "progress" : "pointer",
+                            whiteSpace: "nowrap",
                         }}
                         disabled={loading}
                     >

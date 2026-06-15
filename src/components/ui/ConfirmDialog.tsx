@@ -67,12 +67,13 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
                             className="soft-btn"
                             style={{
                                 borderRadius: 12,
-                                height: 40,
+                                width: 128,
+                                height: 48,
                                 padding: "0 16px",
-                                minWidth: 96,
                                 background: "#a9b1bbff",
                                 color: "#fff",
                                 boxShadow: "none",
+                                whiteSpace: "nowrap",
                             }}
                             onClick={onCancel}
                         >
@@ -82,9 +83,9 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
                     <button
                         style={{
                             borderRadius: 12,
-                            height: 40,
+                            width: 128,
+                            height: 48,
                             padding: "0 16px",
-                            minWidth: 96,
                             background:
                                 confirmVariant === "danger"
                                     ? "linear-gradient(90deg, #ef4444 0%, #f97316 100%)"
@@ -92,6 +93,7 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
                             color: "#fff",
                             border: "none",
                             boxShadow: "none",
+                            whiteSpace: "nowrap",
                         }}
                         onClick={onConfirm}
                     >
