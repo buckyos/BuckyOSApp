@@ -193,6 +193,21 @@ button {
 }
 
 /* Manual theme override via data attribute */
+[data-theme='light'] {
+    color: #0f0f0f;
+    background: linear-gradient(160deg, #e8f7f3 0%, #f6f3ff 100%);
+    --app-bg: #ffffff;
+    --app-text: #0f172a;
+    --muted-text: #5b6473;
+    --card-bg: #f7f8fb;
+    --border: #e6e8f0;
+    --input-border: #e6e8f0;
+    --chip-bg: #202733;
+    --header-btn-bg: #ffffff;
+    --header-btn-border: #e6e8f0;
+    --header-icon: #202733;
+}
+
 [data-theme='dark'] {
     color: #f6f6f6;
     background: #121826;
@@ -208,7 +223,17 @@ button {
     --header-icon: #ffffff;
 }
 
-/* Ensure controls are legible when manual dark is active */
+/* Ensure controls are legible when a manual theme is active */
+[data-theme='light'] input,
+[data-theme='light'] button {
+    color: #0f0f0f;
+    background-color: #ffffff;
+}
+
+[data-theme='light'] button:active {
+    background-color: #e8e8e8;
+}
+
 [data-theme='dark'] input,
 [data-theme='dark'] button {
     color: var(--app-text);

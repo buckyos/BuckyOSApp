@@ -13,13 +13,11 @@ export function getTheme(): Theme {
 export function applyTheme(theme: Theme) {
     const root = document.documentElement;
     const body = document.body;
+    root.setAttribute('data-theme', theme);
+    body.setAttribute('data-theme', theme);
     if (theme === 'dark') {
-        root.setAttribute('data-theme', 'dark');
-        body.setAttribute('data-theme', 'dark');
         root.style.colorScheme = 'dark';
     } else {
-        root.removeAttribute('data-theme');
-        body.removeAttribute('data-theme');
         root.style.colorScheme = 'light';
     }
 }
