@@ -180,6 +180,19 @@ button:disabled {
     gap: 8px;
 }
 
+.show-mnemonic-page {
+    gap: 10px;
+}
+
+.show-mnemonic-page .mnemonic-grid {
+    gap: 8px;
+    padding: 10px;
+}
+
+.show-mnemonic-page .mnemonic-item {
+    height: 40px;
+}
+
 .mnemonic-index {
     width: 24px;
     min-width: 24px;
@@ -244,6 +257,11 @@ button:disabled {
     line-height: 1.45;
 }
 
+.show-mnemonic-page .mnemonic-info {
+    margin-top: 8px;
+    padding: 8px 12px;
+}
+
 [data-theme='dark'] .mnemonic-info {
     background: rgba(124, 166, 255, 0.12);
     color: #cdd4ff;
@@ -274,7 +292,7 @@ button:disabled {
 .actions {
     width: calc(100% - 32px);
     padding: 0;
-    margin: auto auto 0;
+    margin: 8px auto 12px;
     max-width: 520px;
     display: flex;
     flex-direction: column;
