@@ -1,8 +1,10 @@
 package com.buckyos.buckyosapp
 
+import android.content.res.Configuration
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
+import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
@@ -15,25 +17,15 @@ class MainActivity : TauriActivity() {
   private var pendingInsetsReplayApply: Runnable? = null
 
   override fun onCreate(savedInstanceState: Bundle?) {
-    WindowCompat.setDecorFitsSystemWindows(window, false)
-    window.statusBarColor = Color.TRANSPARENT
-    window.navigationBarColor = Color.TRANSPARENT
-
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-      window.isStatusBarContrastEnforced = false
-      window.isNavigationBarContrastEnforced = false
-    }
-
-    WindowCompat.getInsetsController(window, window.decorView).apply {
-      isAppearanceLightStatusBars = false
-      isAppearanceLightNavigationBars = false
-    }
+    applySystemBarsTheme(isSystemLightTheme())
 
     super.onCreate(savedInstanceState)
   }
 
   override fun onWebViewCreate(webView: WebView) {
     super.onWebViewCreate(webView)
+
+    webView.addJavascriptInterface(SystemBarsBridge(), "BuckySystemBars")
 
     ViewCompat.setOnApplyWindowInsetsListener(webView) { view, insets ->
       val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -74,6 +66,39 @@ class MainActivity : TauriActivity() {
     }
 
     ViewCompat.requestApplyInsets(webView)
+  }
+
+  private fun isSystemLightTheme(): Boolean {
+    return (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) != Configuration.UI_MODE_NIGHT_YES
+  }
+
+  private fun applySystemBarsTheme(isLightTheme: Boolean) {
+    WindowCompat.setDecorFitsSystemWindows(window, false)
+    window.statusBarColor = Color.TRANSPARENT
+    window.navigationBarColor = Color.TRANSPARENT
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+      window.navigationBarDividerColor = Color.TRANSPARENT
+    }
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+      window.isStatusBarContrastEnforced = false
+      window.isNavigationBarContrastEnforced = false
+    }
+
+    WindowCompat.getInsetsController(window, window.decorView).apply {
+      isAppearanceLightStatusBars = isLightTheme
+      isAppearanceLightNavigationBars = isLightTheme
+    }
+  }
+
+  private inner class SystemBarsBridge {
+    @JavascriptInterface
+    fun setTheme(theme: String) {
+      runOnUiThread {
+        applySystemBarsTheme(theme == "light")
+      }
+    }
   }
 
   private fun injectAndroidInsets(
