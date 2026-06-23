@@ -4,6 +4,7 @@ import MobileHeader from "../../components/ui/MobileHeader";
 import "./Setting.css";
 import InputDialog from "../../components/ui/InputDialog";
 import BottomSheetActions from "../../components/ui/BottomSheetActions";
+import GradientButton from "../../components/ui/GradientButton";
 import { useI18n } from "../../i18n";
 import { useDidContext } from "../../features/did/DidContext";
 import { revealMnemonic } from "../../features/did/api";
@@ -79,11 +80,10 @@ const IdentityList: React.FC = () => {
 
     return (
         <div
-            className="mobile-page page-scroll-hide"
-            style={{ display: "flex", flexDirection: "column", height: "100%", overflowY: "auto" }}
+            className="mobile-page identity-list-page"
         >
             <MobileHeader title={t("identities.title")} showBack={!forceSelection} safeAreaTop />
-            <div style={{ padding: "8px 16px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
+            <div className="identity-list-content page-scroll-hide">
                 <div className="settings-list">
                     {dids.map((did) => {
                         const name = did.nickname?.trim()?.length ? did.nickname : t("common.account.unnamed");
@@ -118,24 +118,12 @@ const IdentityList: React.FC = () => {
                         );
                     })}
                 </div>
+            </div>
 
-                <div style={{ height: 12 }} />
-                <div style={{ display: "flex", justifyContent: "center" }}>
-                    <button
-                        className="soft-btn"
-                        onClick={addIdentity}
-                        style={{
-                            height: 40,
-                            padding: "0 16px",
-                            borderRadius: 20,
-                            border: "none",
-                            color: "#fff",
-                            background: "linear-gradient(90deg, #6366f1 0%, #6c5ce7 100%)",
-                        }}
-                    >
-                        {t("identities.add_identity")}
-                    </button>
-                </div>
+            <div className="identity-list-actions">
+                <GradientButton onClick={addIdentity}>
+                    {t("identities.add_identity")}
+                </GradientButton>
             </div>
 
             <InputDialog

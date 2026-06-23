@@ -51,6 +51,13 @@ export default {
         apps: "Apps",
         setting: "Setting",
     },
+    appsPage: {
+        loading: "Loading apps...",
+        error_title: "Failed to load apps",
+        empty: "No apps are available yet.",
+        empty_after_error: "No apps are available right now.",
+        no_description: "No description available",
+    },
     home: {
         title: "Identities",
         subtitle: "Manage your decentralized identities and linked wallets",

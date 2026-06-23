@@ -411,7 +411,7 @@ const ScanDevice: React.FC = () => {
                 </div>
             </div>
 
-            <div className="sn-page-actions scan-device-actions">
+            <div className="scan-device-actions">
                 <GradientButton onClick={scanning ? handleCancelScan : startScan}>
                     {scanning ? t("device_scan.stop_button") : t("device_scan.rescan_button")}
                 </GradientButton>

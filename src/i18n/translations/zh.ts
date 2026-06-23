@@ -50,6 +50,13 @@ export default {
         apps: "应用",
         setting: "设置",
     },
+    appsPage: {
+        loading: "正在加载应用...",
+        error_title: "加载应用失败",
+        empty: "暂无可用应用。",
+        empty_after_error: "当前暂无可用应用。",
+        no_description: "暂无描述",
+    },
     home: {
         title: "身份列表",
         subtitle: "查看并管理已经创建的去中心化身份及其钱包",
