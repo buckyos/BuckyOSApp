@@ -2,8 +2,7 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
-    /* small bottom padding; actual reserve lives on actions' margin */
-    padding: 0 16px 8px;
+    padding: 0 16px;
     flex: 1;
     min-height: 0;
     /* allow scrolling but hide scrollbar visuals */
@@ -32,7 +31,7 @@
     flex-direction: column;
     flex: 1;
     min-height: 0;
-    padding-bottom: calc(var(--tabbar-height, 64px) + var(--mobile-system-bottom) + 12px);
+    padding-bottom: 0;
 }
 
 .bind-ood-wrapper > * {
@@ -534,10 +533,10 @@
 
 /* Bottom actions inside Home page, above tab bar */
 .sn-page-actions {
-    margin-top: 12px;
+    margin-top: auto;
     padding-top: 8px;
-    /* keep a safe gap above the tabbar when scrolled to bottom */
-    margin-bottom: calc(var(--tabbar-height, 64px) + var(--mobile-system-bottom));
+    padding-bottom: var(--bottom-tab-action-gap);
+    margin-bottom: 0;
 }
 
 .sn-page-actions>* {
@@ -578,8 +577,6 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
-    margin-bottom: 0;
-    padding-top: 8px;
 }
 
 .dialog-backdrop {

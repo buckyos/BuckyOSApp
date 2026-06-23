@@ -14,12 +14,8 @@
     /* IE, Edge */
     scrollbar-width: none;
     /* Firefox */
-    padding:
-        0
-        0
-        calc(24px + var(--mobile-system-bottom) + var(--keyboard-inset-bottom))
-        0;
-    scroll-padding-bottom: calc(24px + var(--mobile-system-bottom) + var(--keyboard-inset-bottom));
+    padding: 0;
+    scroll-padding-bottom: var(--bottom-action-gap);
 }
 
 .page-content {
@@ -291,10 +287,11 @@ button:disabled {
 /* bottom actions */
 .actions {
     width: calc(100% - 32px);
-    padding: 0;
-    margin: 8px auto 12px;
+    padding: 0 0 var(--flow-bottom-action-gap);
+    margin: auto auto 0;
     max-width: 520px;
     display: flex;
     flex-direction: column;
     gap: 12px;
+    padding-top: 8px;
 }

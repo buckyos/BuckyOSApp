@@ -45,6 +45,19 @@
     --android-gesture-comfort-bottom: min(var(--android-system-gesture-inset-bottom), 12px);
     --mobile-system-top: var(--safe-area-inset-top);
     --mobile-system-bottom: var(--safe-area-inset-bottom);
+    --bottom-action-gap: clamp(20px, 3.5vh, 36px);
+    --subpage-bottom-action-gap: clamp(24px, 4vh, 44px);
+    --flow-bottom-action-gap: clamp(32px, 5vh, 56px);
+    --bottom-tab-action-gap: clamp(28px, 4.5vh, 48px);
+}
+
+@supports (height: 100dvh) {
+    :root {
+        --bottom-action-gap: clamp(20px, 3.5dvh, 36px);
+        --subpage-bottom-action-gap: clamp(24px, 4dvh, 44px);
+        --flow-bottom-action-gap: clamp(32px, 5dvh, 56px);
+        --bottom-tab-action-gap: clamp(28px, 4.5dvh, 48px);
+    }
 }
 
 [data-mobile-shell] {
@@ -272,7 +285,7 @@ button {
 }
 
 .App:not(.app-tabbed) {
-    padding-bottom: calc(16px + var(--mobile-system-bottom));
+    padding-bottom: calc(var(--bottom-action-gap) + var(--mobile-system-bottom));
 }
 
 .mobile-page {
