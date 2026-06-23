@@ -788,18 +788,47 @@
     width: 128px;
     height: 48px;
     padding: 0 16px;
-    color: #fff;
+    border: none;
     white-space: nowrap;
 }
 
 .dialog-cancel-button {
     background: #a9b1bbff;
+    color: #fff;
+    box-shadow: none;
+}
+
+[data-theme='light'] .dialog-cancel-button,
+[data-theme='dark'] .dialog-cancel-button {
+    background: #a9b1bbff;
+    color: #fff;
+}
+
+.dialog-cancel-button:hover,
+.dialog-cancel-button:active {
+    background: #a9b1bbff;
+    color: #fff;
+    border-color: transparent;
 }
 
 .dialog-confirm-button {
+    color: #fff;
     border: none;
     background: linear-gradient(90deg, #6366f1 0%, #6c5ce7 100%);
     box-shadow: none;
+}
+
+[data-theme='light'] .dialog-confirm-button,
+[data-theme='dark'] .dialog-confirm-button {
+    color: #fff;
+    background: linear-gradient(90deg, #6366f1 0%, #6c5ce7 100%);
+}
+
+.dialog-confirm-button:hover,
+.dialog-confirm-button:active {
+    color: #fff;
+    border-color: transparent;
+    background: linear-gradient(90deg, #6366f1 0%, #6c5ce7 100%);
 }
 
 .dialog-confirm-button:disabled {

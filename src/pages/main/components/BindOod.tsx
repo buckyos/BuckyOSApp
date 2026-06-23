@@ -453,7 +453,7 @@ const BindOod: React.FC = () => {
                         <div className="dialog-actions">
                             <button
                                 type="button"
-                                className="soft-btn dialog-action-button dialog-cancel-button"
+                                className="dialog-action-button dialog-cancel-button"
                                 onClick={handleCloseRemoteDialog}
                                 disabled={remoteLoading}
                             >

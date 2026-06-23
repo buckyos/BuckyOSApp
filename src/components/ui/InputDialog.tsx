@@ -34,6 +34,7 @@ const InputDialog: React.FC<InputDialogProps> = ({
     children,
 }) => {
     const inputRef = React.useRef<HTMLInputElement | null>(null);
+    const [pressedAction, setPressedAction] = React.useState<"cancel" | "confirm" | null>(null);
 
     React.useEffect(() => {
         if (open) {
@@ -52,6 +53,17 @@ const InputDialog: React.FC<InputDialogProps> = ({
             onConfirm();
         }
     };
+
+    const pressHandlers = (action: "cancel" | "confirm") => ({
+        onPointerDown: () => {
+            if (!loading) {
+                setPressedAction(action);
+            }
+        },
+        onPointerUp: () => setPressedAction(null),
+        onPointerCancel: () => setPressedAction(null),
+        onPointerLeave: () => setPressedAction(null),
+    });
 
     return (
         <div
@@ -123,9 +135,11 @@ const InputDialog: React.FC<InputDialogProps> = ({
                             background: "#a9b1bbff",
                             color: "#fff",
                             whiteSpace: "nowrap",
+                            opacity: !loading && pressedAction === "cancel" ? 0.82 : 1,
                         }}
                         onClick={onCancel}
                         disabled={loading}
+                        {...pressHandlers("cancel")}
                     >
                         {cancelText}
                     </button>
@@ -142,11 +156,12 @@ const InputDialog: React.FC<InputDialogProps> = ({
                             color: "#fff",
                             border: "none",
                             boxShadow: "none",
-                            opacity: loading ? 0.85 : 1,
+                            opacity: loading ? 0.85 : pressedAction === "confirm" ? 0.82 : 1,
                             cursor: loading ? "progress" : "pointer",
                             whiteSpace: "nowrap",
                         }}
                         disabled={loading}
+                        {...pressHandlers("confirm")}
                     >
                         {confirmText}
                     </button>
