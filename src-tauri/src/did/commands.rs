@@ -3,7 +3,7 @@ use rand::{rngs::OsRng, RngCore};
 use serde::Deserialize;
 use serde_json::Value;
 use std::collections::HashMap;
-use tauri::AppHandle;
+use tauri::{AppHandle, Runtime};
 
 use crate::error::{CommandErrors, CommandResult};
 
@@ -14,9 +14,6 @@ use super::store::{load_vault, new_did_id, open_store, save_vault, StoredDid};
 use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
 use secrecy::{ExposeSecret, SecretString};
 use std::time::{SystemTime, UNIX_EPOCH};
-
-#[cfg(test)]
-use super::derive::{derive_eth_address, SeedCtx};
 
 #[derive(Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
@@ -89,7 +86,7 @@ pub fn derive_bucky_public_key(mnemonic_words: Vec<String>) -> CommandResult<Val
 
 #[tauri::command]
 pub fn create_did(
-    app_handle: AppHandle,
+    app_handle: AppHandle<impl Runtime>,
     nickname: String,
     password: String,
     mnemonic_words: Vec<String>,
@@ -131,7 +128,7 @@ pub fn create_did(
 
 #[tauri::command]
 pub fn import_did(
-    app_handle: AppHandle,
+    app_handle: AppHandle<impl Runtime>,
     nickname: String,
     password: String,
     mnemonic_words: Vec<String>,
@@ -192,7 +189,7 @@ pub fn import_did(
 
 #[tauri::command]
 pub fn extend_wallets(
-    app_handle: AppHandle,
+    app_handle: AppHandle<impl Runtime>,
     password: String,
     did_id: String,
     request: WalletExtensionKind,
@@ -245,21 +242,21 @@ pub fn extend_wallets(
 }
 
 #[tauri::command]
-pub fn wallet_exists(app_handle: AppHandle) -> CommandResult<bool> {
+pub fn wallet_exists(app_handle: AppHandle<impl Runtime>) -> CommandResult<bool> {
     let store = open_store(&app_handle)?;
     let vault = load_vault(&store)?;
     Ok(!vault.dids.is_empty())
 }
 
 #[tauri::command]
-pub fn list_dids(app_handle: AppHandle) -> CommandResult<Vec<DidInfo>> {
+pub fn list_dids(app_handle: AppHandle<impl Runtime>) -> CommandResult<Vec<DidInfo>> {
     let store = open_store(&app_handle)?;
     let vault = load_vault(&store)?;
     Ok(vault.dids.iter().map(StoredDid::to_info).collect())
 }
 
 #[tauri::command]
-pub fn active_did(app_handle: AppHandle) -> CommandResult<Option<DidInfo>> {
+pub fn active_did(app_handle: AppHandle<impl Runtime>) -> CommandResult<Option<DidInfo>> {
     let store = open_store(&app_handle)?;
     let vault = load_vault(&store)?;
 
@@ -273,7 +270,10 @@ pub fn active_did(app_handle: AppHandle) -> CommandResult<Option<DidInfo>> {
 }
 
 #[tauri::command]
-pub fn set_active_did(app_handle: AppHandle, did_id: String) -> CommandResult<DidInfo> {
+pub fn set_active_did(
+    app_handle: AppHandle<impl Runtime>,
+    did_id: String,
+) -> CommandResult<DidInfo> {
     let store = open_store(&app_handle)?;
     let mut vault = load_vault(&store)?;
 
@@ -298,7 +298,9 @@ pub struct SnStatusPayload {
 }
 
 #[tauri::command]
-pub fn list_sn_statuses(app_handle: AppHandle) -> CommandResult<HashMap<String, SnStatusInfo>> {
+pub fn list_sn_statuses(
+    app_handle: AppHandle<impl Runtime>,
+) -> CommandResult<HashMap<String, SnStatusInfo>> {
     let store = open_store(&app_handle)?;
     let vault = load_vault(&store)?;
     let mut map = HashMap::new();
@@ -312,7 +314,7 @@ pub fn list_sn_statuses(app_handle: AppHandle) -> CommandResult<HashMap<String, 
 
 #[tauri::command]
 pub fn set_sn_status(
-    app_handle: AppHandle,
+    app_handle: AppHandle<impl Runtime>,
     did_id: String,
     status: SnStatusPayload,
 ) -> CommandResult<()> {
@@ -342,7 +344,7 @@ pub fn set_sn_status(
 }
 
 #[tauri::command]
-pub fn clear_sn_status(app_handle: AppHandle, did_id: String) -> CommandResult<()> {
+pub fn clear_sn_status(app_handle: AppHandle<impl Runtime>, did_id: String) -> CommandResult<()> {
     let store = open_store(&app_handle)?;
     let mut vault = load_vault(&store)?;
     if let Some(record) = vault.dids.iter_mut().find(|did| did.id == did_id) {
@@ -353,7 +355,7 @@ pub fn clear_sn_status(app_handle: AppHandle, did_id: String) -> CommandResult<(
 
 #[tauri::command]
 pub fn delete_wallet(
-    app_handle: AppHandle,
+    app_handle: AppHandle<impl Runtime>,
     password: String,
     did_id: Option<String>,
 ) -> CommandResult<()> {
@@ -389,7 +391,7 @@ pub fn delete_wallet(
 
 #[tauri::command]
 pub fn reveal_mnemonic(
-    app_handle: AppHandle,
+    app_handle: AppHandle<impl Runtime>,
     password: String,
     did_id: Option<String>,
 ) -> CommandResult<Vec<String>> {
@@ -419,7 +421,9 @@ pub fn reveal_mnemonic(
 }
 
 #[tauri::command]
-pub fn current_wallet_nickname(app_handle: AppHandle) -> CommandResult<Option<String>> {
+pub fn current_wallet_nickname(
+    app_handle: AppHandle<impl Runtime>,
+) -> CommandResult<Option<String>> {
     let store = open_store(&app_handle)?;
     let vault = load_vault(&store)?;
 
@@ -443,7 +447,7 @@ struct ZoneBootClaims {
 }
 
 fn load_active_signing_key(
-    app_handle: &AppHandle,
+    app_handle: &AppHandle<impl Runtime>,
     password: &str,
 ) -> CommandResult<(EncodingKey, Option<String>)> {
     let store = open_store(app_handle)?;
@@ -465,13 +469,11 @@ fn load_active_signing_key(
     drop(secret_phrase);
 
     let phrase = mnemonic.to_string();
-    let passphrase_opt: Option<&str> = None;
     let index = 0u32;
-    let (private_pem, _public_jwk) =
-        name_lib::generate_ed25519_key_pair_from_mnemonic(&phrase, passphrase_opt, index)
-            .map_err(|e| CommandErrors::crypto_failed(e.to_string()))?;
+    let derived = name_lib::derive_bucky_key_from_mnemonic(&phrase, None, index)
+        .map_err(|e| CommandErrors::crypto_failed(e.to_string()))?;
 
-    let pem_key = EncodingKey::from_ed_pem(private_pem.as_bytes())
+    let pem_key = EncodingKey::from_ed_pem(derived.private_key_pem.as_bytes())
         .map_err(|e| CommandErrors::crypto_failed(format!("invalid ed25519 private key: {e}")))?;
 
     let did_label = record
@@ -486,7 +488,7 @@ fn load_active_signing_key(
 
 #[tauri::command]
 pub fn sign_json_with_active_did(
-    app_handle: AppHandle,
+    app_handle: AppHandle<impl Runtime>,
     password: String,
     payloads: Vec<Value>,
 ) -> CommandResult<Vec<Option<String>>> {
@@ -528,7 +530,7 @@ pub fn sign_json_with_active_did(
 
 #[tauri::command]
 pub fn generate_zone_boot_config_jwt(
-    app_handle: AppHandle,
+    app_handle: AppHandle<impl Runtime>,
     password: String,
     did_id: Option<String>,
     sn: Option<String>,
@@ -554,13 +556,11 @@ pub fn generate_zone_boot_config_jwt(
 
     // derive ed25519 owner private key from mnemonic index 0 (Bucky identity)
     let phrase = mnemonic.to_string();
-    let passphrase_opt: Option<&str> = None;
     let index = 0u32;
-    let (private_pem, _public_jwk) =
-        name_lib::generate_ed25519_key_pair_from_mnemonic(&phrase, passphrase_opt, index)
-            .map_err(|e| CommandErrors::crypto_failed(e.to_string()))?;
+    let derived = name_lib::derive_bucky_key_from_mnemonic(&phrase, None, index)
+        .map_err(|e| CommandErrors::crypto_failed(e.to_string()))?;
 
-    let pem_key = EncodingKey::from_ed_pem(private_pem.as_bytes())
+    let pem_key = EncodingKey::from_ed_pem(derived.private_key_pem.as_bytes())
         .map_err(|e| CommandErrors::crypto_failed(format!("invalid ed25519 private key: {e}")))?;
 
     let now = SystemTime::now()
@@ -587,9 +587,24 @@ pub fn generate_zone_boot_config_jwt(
 
 #[cfg(test)]
 mod tests {
-    use super::domain::DEFAULT_BTC_ADDRESS_TYPE;
     use super::*;
-    use tauri::test::mock_app;
+    use crate::did::domain::DEFAULT_BTC_ADDRESS_TYPE;
+    use crate::did::store::{save_vault, VaultStore};
+    use tauri::test::{mock_builder, mock_context, noop_assets, MockRuntime};
+
+    static STORE_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+    fn test_app() -> tauri::App<MockRuntime> {
+        mock_builder()
+            .plugin(tauri_plugin_store::Builder::default().build())
+            .build(mock_context(noop_assets()))
+            .unwrap()
+    }
+
+    fn reset_vault(app_handle: &AppHandle<MockRuntime>) {
+        let store = open_store(app_handle).unwrap();
+        save_vault(&store, &VaultStore::default()).unwrap();
+    }
 
     #[test]
     fn test_generate_mnemonic() {
@@ -599,22 +614,20 @@ mod tests {
 
     #[test]
     fn test_eth_address_derivation_and_eip55() {
-        let mnemonic = Mnemonic::parse_in(
-            Language::English,
-            "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
-        )
-        .unwrap();
-        let ctx = SeedCtx::new(&mnemonic, "").unwrap();
-        let address = derive_eth_address(&ctx, 0).unwrap();
+        let mnemonic =
+            "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+        let address = name_lib::derive_evm_key_from_mnemonic(mnemonic, None, 0)
+            .unwrap()
+            .address;
         assert_eq!(address, "0x9858EfFD232B4033E47d90003D41EC34EcaEda94");
     }
 
     #[test]
     fn test_create_did_flow() {
-        let app = mock_app()
-            .plugin(tauri_plugin_store::Builder::default().build())
-            .build();
+        let _guard = STORE_TEST_LOCK.lock().unwrap();
+        let app = test_app();
         let app_handle = app.handle();
+        reset_vault(app_handle);
 
         let nickname = "test_user".to_string();
         let password = "password123".to_string();
@@ -663,16 +676,16 @@ mod tests {
         assert_eq!(mnemonic.len(), 12);
 
         delete_wallet(app_handle.clone(), password, Some(did_info.id)).unwrap();
-        let dids_after = list_dids(app_handle).unwrap();
+        let dids_after = list_dids(app_handle.clone()).unwrap();
         assert!(dids_after.is_empty());
     }
 
     #[test]
     fn test_extend_wallets() {
-        let app = mock_app()
-            .plugin(tauri_plugin_store::Builder::default().build())
-            .build();
+        let _guard = STORE_TEST_LOCK.lock().unwrap();
+        let app = test_app();
         let app_handle = app.handle();
+        reset_vault(app_handle);
 
         let nickname = "extend_user".to_string();
         let password = "password123".to_string();
@@ -729,7 +742,7 @@ mod tests {
         assert_eq!(listed[0].bucky_wallets.len(), 2);
 
         delete_wallet(app_handle.clone(), password, Some(did_info.id)).unwrap();
-        let after_delete = list_dids(app_handle).unwrap();
+        let after_delete = list_dids(app_handle.clone()).unwrap();
         assert!(after_delete.is_empty());
     }
 }

@@ -2,7 +2,6 @@ use bip39::Mnemonic;
 use bitcoin::bip32::{DerivationPath, Xpriv, Xpub};
 use bitcoin::key::Secp256k1;
 use bitcoin::{Address, PublicKey};
-use sha3::{Digest, Keccak256};
 
 use super::domain::BtcAddressType;
 use super::store::NETWORK;
@@ -58,38 +57,4 @@ pub fn derive_btc_address(
         }
     };
     Ok(address)
-}
-
-pub fn derive_eth_address(ctx: &SeedCtx, index: u32) -> CommandResult<String> {
-    // 使用常见路径：m/44'/60'/0'/0/{index}
-    let path: DerivationPath = format!("m/44'/60'/0'/0/{index}").parse().unwrap();
-    let child_prv = ctx
-        .master_xprv
-        .derive_priv(ctx.secp(), &path)
-        .map_err(|e| {
-            CommandErrors::key_derivation_failed(format!("eth derive_priv failed: {e}"))
-        })?;
-    let xpub = Xpub::from_priv(ctx.secp(), &child_prv);
-    let secp_pk = xpub.public_key;
-    let uncompressed = secp_pk.serialize_uncompressed();
-    let hash = Keccak256::digest(&uncompressed[1..]);
-    let mut addr20 = [0u8; 20];
-    addr20.copy_from_slice(&hash[12..]);
-    Ok(to_eip55(&addr20))
-}
-
-fn to_eip55(addr20: &[u8; 20]) -> String {
-    let lower_hex = hex::encode(addr20);
-    let hash = Keccak256::digest(lower_hex.as_bytes());
-    let mut out = String::with_capacity(42);
-    out.push_str("0x");
-    for (i, ch) in lower_hex.chars().enumerate() {
-        let nibble = (hash[i / 2] >> (4 * (1 - (i % 2)))) & 0x0f;
-        if ch.is_ascii_hexdigit() && ch.is_ascii_lowercase() && nibble > 7 {
-            out.push(ch.to_ascii_uppercase());
-        } else {
-            out.push(ch);
-        }
-    }
-    out
 }

@@ -1,7 +1,7 @@
 use bip39::Mnemonic;
-use name_lib::{generate_ed25519_key_pair_from_mnemonic, get_device_did_from_ed25519_jwk};
+use name_lib::{derive_bucky_key_from_mnemonic, derive_evm_key_from_mnemonic};
 
-use super::derive::{derive_btc_address, derive_eth_address, SeedCtx};
+use super::derive::{derive_btc_address, SeedCtx};
 use super::domain::{BtcAddress, BtcAddressType, BuckyIdentity, ChainAddress, WalletCollection};
 use crate::error::{CommandErrors, CommandResult};
 
@@ -141,11 +141,11 @@ pub fn derive_did_from_mnemonic(
     let ctx = SeedCtx::new(mnemonic, passphrase)?;
     let mut result = DerivedDid::default();
 
-    let need_bucky = plan
+    let need_mnemonic_phrase = plan
         .wallets
         .iter()
-        .any(|wallet| matches!(wallet.kind, WalletKind::Bucky));
-    let mnemonic_phrase = if need_bucky {
+        .any(|wallet| matches!(wallet.kind, WalletKind::Bucky | WalletKind::Eth));
+    let mnemonic_phrase = if need_mnemonic_phrase {
         Some(mnemonic.to_string())
     } else {
         None
@@ -169,11 +169,16 @@ pub fn derive_did_from_mnemonic(
                 }
             }
             WalletKind::Eth => {
+                let phrase = mnemonic_phrase
+                    .as_ref()
+                    .expect("mnemonic phrase required for evm derivation");
                 for index in &wallet.indices {
-                    let derived = derive_eth_address(&ctx, *index)?;
+                    let derived =
+                        derive_evm_key_from_mnemonic(phrase.as_str(), passphrase_opt, *index)
+                            .map_err(|e| CommandErrors::crypto_failed(e.to_string()))?;
                     result.eth.push(ChainAddress {
                         index: *index,
-                        address: derived,
+                        address: derived.address,
                     });
                 }
             }
@@ -182,18 +187,13 @@ pub fn derive_did_from_mnemonic(
                     .as_ref()
                     .expect("mnemonic phrase required for bucky derivation");
                 for index in &wallet.indices {
-                    let (_pem, public_jwk) = generate_ed25519_key_pair_from_mnemonic(
-                        phrase.as_str(),
-                        passphrase_opt,
-                        *index,
-                    )
-                    .map_err(|e| CommandErrors::crypto_failed(e.to_string()))?;
-                    let did = get_device_did_from_ed25519_jwk(&public_jwk)
-                        .map_err(|e| CommandErrors::crypto_failed(e.to_string()))?;
+                    let derived =
+                        derive_bucky_key_from_mnemonic(phrase.as_str(), passphrase_opt, *index)
+                            .map_err(|e| CommandErrors::crypto_failed(e.to_string()))?;
                     result.bucky.push(BuckyIdentity {
                         index: *index,
-                        did,
-                        public_key: public_jwk.clone(),
+                        did: derived.did,
+                        public_key: derived.public_jwk,
                     });
                 }
             }

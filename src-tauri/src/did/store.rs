@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::io::ErrorKind;
-use tauri::{AppHandle, Wry};
+use tauri::{AppHandle, Runtime};
 use tauri_plugin_store::{Error as StoreError, Store, StoreExt};
 use ulid::Ulid;
 
@@ -79,15 +79,15 @@ impl VaultStore {
     }
 }
 
-pub type AppStore = std::sync::Arc<Store<Wry>>;
+pub type AppStore<R> = std::sync::Arc<Store<R>>;
 
-pub fn open_store(app_handle: &AppHandle) -> CommandResult<AppStore> {
+pub fn open_store<R: Runtime>(app_handle: &AppHandle<R>) -> CommandResult<AppStore<R>> {
     app_handle
         .store("wallet.store")
         .map_err(|e| CommandErrors::store_unavailable(e.to_string()))
 }
 
-pub fn load_vault(store: &AppStore) -> CommandResult<VaultStore> {
+pub fn load_vault<R: Runtime>(store: &AppStore<R>) -> CommandResult<VaultStore> {
     match store.reload() {
         Ok(_) => {}
         Err(StoreError::Io(io_err)) if io_err.kind() == ErrorKind::NotFound => {
@@ -104,7 +104,7 @@ pub fn load_vault(store: &AppStore) -> CommandResult<VaultStore> {
     }
 }
 
-pub fn save_vault(store: &AppStore, vault: &VaultStore) -> CommandResult<()> {
+pub fn save_vault<R: Runtime>(store: &AppStore<R>, vault: &VaultStore) -> CommandResult<()> {
     let value =
         serde_json::to_value(vault).map_err(|e| CommandErrors::vault_corrupted(e.to_string()))?;
     store.set(STORE_KEY.to_string(), value);
