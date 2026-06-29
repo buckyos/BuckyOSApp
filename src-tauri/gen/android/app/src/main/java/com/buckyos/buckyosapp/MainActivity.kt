@@ -1,5 +1,6 @@
 package com.buckyos.buckyosapp
 
+import android.content.pm.ActivityInfo
 import android.content.res.Configuration
 import android.graphics.Color
 import android.os.Build
@@ -20,6 +21,16 @@ class MainActivity : TauriActivity() {
     applySystemBarsTheme(isSystemLightTheme())
 
     super.onCreate(savedInstanceState)
+    lockPortraitOrientation()
+  }
+
+  override fun onResume() {
+    super.onResume()
+    lockPortraitOrientation()
+  }
+
+  private fun lockPortraitOrientation() {
+    requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
   }
 
   override fun onWebViewCreate(webView: WebView) {
