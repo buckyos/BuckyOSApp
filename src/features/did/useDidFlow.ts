@@ -8,7 +8,7 @@ import { fetchSnStatus, registerSnAccount, setCachedSnStatus } from "../sn/snSta
 import type { DidInfo } from "./types";
 import { parseCommandError } from "../../utils/commandError";
 import { CommandErrorCodes } from "../../constants/commandErrorCodes";
-import { checkBuckyUsername, checkSnActiveCode, getUserByPublicKey } from "../../services/sn";
+import { checkBuckyUsername, checkSnActiveCode, getUserByPublicKey } from "../../services/sn_client";
 import { openWebView } from "../../utils/webview";
 import { isLocallyValidSnUsername, normalizeSnUsername } from "../sn/snUsername";
 

@@ -8,7 +8,7 @@ import oodIllustration from "../../../assets/ood.png";
 import { useDidContext } from "../../../features/did/DidContext";
 import { signJsonWithActiveDid } from "../../../features/did/api";
 import { fetchSnStatus, getCachedSnStatus, setCachedSnStatus } from "../../../features/sn/snStatusManager";
-import { unbindZoneConfig } from "../../../services/sn";
+import { unbindZoneConfig } from "../../../services/sn_client";
 import { parseCommandError } from "../../../utils/commandError";
 import { CommandErrorCodes } from "../../../constants/commandErrorCodes";
 

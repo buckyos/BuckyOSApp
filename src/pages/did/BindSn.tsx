@@ -2,7 +2,7 @@ import React from "react";
 import MobileHeader from "../../components/ui/MobileHeader";
 import GradientButton from "../../components/ui/GradientButton";
 import { useI18n } from "../../i18n";
-import { checkBuckyUsername, checkSnActiveCode } from "../../services/sn";
+import { checkBuckyUsername, checkSnActiveCode } from "../../services/sn_client";
 import { isLocallyValidSnUsername, normalizeSnUsername } from "../../features/sn/snUsername";
 
 interface BindSnProps {

@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { getUserByPublicKey, registerSnAccountWithPassword } from "../../services/sn";
+import { getUserByPublicKey, registerSnAccountWithPassword } from "../../services/sn_client";
 
 export interface SnStatusRecord {
     info: any;
