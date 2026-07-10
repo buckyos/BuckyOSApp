@@ -120,6 +120,10 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
             if (!wallet) {
                 return { code: BuckyErrorCodes.NoKey, message: t("settings.embedded_webview_no_key") };
             }
+            const ownerDocument = activeDid.owner_document;
+            if (!ownerDocument) {
+                throw new Error("owner_document_not_found");
+            }
             const did = getIdentityDid(activeDid);
             const username = getIdentityBnsName(activeDid);
             const public_key = publicKey;
@@ -143,6 +147,7 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
                     username,
                     public_key,
                     sn_username: snUsername,
+                    owner_document: ownerDocument,
                 },
             };
         },

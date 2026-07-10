@@ -57,15 +57,16 @@
   - `3` (NoKey)：当前没有公钥。
   - `4` (NoActiveDid)：没有激活的 DID。
 
-### `BuckyApi.getCurrentUser(): Promise<{ code, message?, data?: { did: string; username: string; public_key: string; sn_username: string | null } }>`
+### `BuckyApi.getCurrentUser(): Promise<{ code, message?, data?: { did: string; username: string; public_key: object; sn_username: string | null; owner_document: OwnerDocument } }>`
 
 - **说明**：返回宿主侧当前激活 DID 的基础信息与 SN 绑定状态，方便 iframe 了解用户身份。
 - **参数**：无。
 - **成功 data**：
   - `did`：当前激活 DID 的 Bucky DID（取自第一枚 bucky wallet）。
   - `username`：DID 的昵称。
-  - `public_key`：第一枚 bucky wallet 的公钥（JSON 字符串，与 `getPublicKey` 一致）。
+  - `public_key`：第一枚 bucky wallet 的公钥 JWK 对象（与 `getPublicKey` 一致）。
   - `sn_username`：若已绑定 SN 用户名则返回字符串，否则为 `null`。
+  - `owner_document`：当前激活 DID 保存的完整 OwnerDocument。成功返回可用用户时该字段必然存在。
 - **典型错误码**：
   - `3` (NoKey)：当前没有可用 bucky wallet。
   - `4` (NoActiveDid)：没有激活的 DID。
