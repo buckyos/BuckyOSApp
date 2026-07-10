@@ -39,9 +39,9 @@ export async function signJsonWithActiveDid(
 }
 
 export async function importDid(
-    nickname: string,
     password: string,
-    mnemonicWords: string[]
+    mnemonicWords: string[],
+    ownerDocumentJson: string
 ): Promise<DidInfo> {
-    return invoke("import_did", { nickname, password, mnemonicWords });
+    return invoke("import_did", { password, mnemonicWords, ownerDocumentJson });
 }

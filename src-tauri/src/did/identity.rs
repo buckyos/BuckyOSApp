@@ -91,7 +91,7 @@ impl DidDerivationPlan {
     }
 
     pub fn default_requests() -> Vec<WalletRequest> {
-        vec![WalletRequest::bucky(1)]
+        vec![WalletRequest::bucky(1), WalletRequest::eth(1)]
     }
 }
 

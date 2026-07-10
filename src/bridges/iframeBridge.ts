@@ -6,6 +6,7 @@ import { useDidContext } from "../features/did/DidContext";
 import InputDialog from "../components/ui/InputDialog";
 import { JsonSignPayload, signJsonWithActiveDid } from "../features/did/api";
 import { fetchSnStatus, getCachedSnStatus } from "../features/sn/snStatusManager";
+import { getIdentityBnsName, getIdentityDid } from "../features/did/identityView";
 import { createRoot, Root } from "react-dom/client";
 import { BuckyErrorCodes } from "./buckyErrorCodes";
 import { parseCommandError } from "../utils/commandError";
@@ -119,8 +120,8 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
             if (!wallet) {
                 return { code: BuckyErrorCodes.NoKey, message: t("settings.embedded_webview_no_key") };
             }
-            const did = wallet.did;
-            const username = activeDid.nickname ?? "";
+            const did = getIdentityDid(activeDid);
+            const username = getIdentityBnsName(activeDid);
             const public_key = publicKey;
             let snUsername: string | null = null;
             const cached = await getCachedSnStatus(activeDid.id);

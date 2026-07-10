@@ -42,7 +42,7 @@ rand = "0.8"
 sha2 = "0.10"
 hex = "0.4"
 ulid = "1.1"
-name-lib = { git = "https://github.com/buckyos/buckyos-base.git", package = "name-lib", branch = "beta2.2" }
+name-lib = { git = "https://github.com/buckyos/buckyos-base.git", package = "name-lib", rev = "b82e051664965e79970ae37531a530f3f282f87f" }
 secrecy = "0.8"
 zeroize = "1.7"
 jsonwebtoken = { version = "9", default-features = false, features = ["use_pem"] }

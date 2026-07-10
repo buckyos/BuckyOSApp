@@ -154,5 +154,7 @@ pub struct DidInfo {
     pub eth_addresses: Vec<ChainAddress>,
     pub bucky_wallets: Vec<BuckyIdentity>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub owner_document: Option<Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub sn_status: Option<SnStatusInfo>,
 }

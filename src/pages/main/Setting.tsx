@@ -10,6 +10,7 @@ import { openWebView } from "../../utils/webview";
 import { getTheme, toggleTheme } from "../../theme";
 import { parseCommandError } from "../../utils/commandError";
 import { CommandErrorCodes } from "../../constants/commandErrorCodes";
+import { getIdentityDisplayName } from "../../features/did/identityView";
 import { SunMoon, Globe, Users, ShieldCheck, Trash2, ExternalLink, Monitor, Info, AppWindow } from "lucide-react";
 import { getLocaleLabel } from "../../i18n/config";
 import { isTrayCapable, useTrayEnabledPreference } from "../../features/tray/trayConfig";
@@ -106,11 +107,12 @@ const Setting: React.FC = () => {
         }
     };
 
-    const deleteWarning = activeDid?.nickname
-        ? t("settings.delete_warning_named", { nickname: activeDid.nickname })
+    const identityName = getIdentityDisplayName(activeDid);
+    const deleteWarning = identityName
+        ? t("settings.delete_warning_named", { nickname: identityName })
         : t("settings.delete_warning");
-    const deletePasswordMessage = activeDid?.nickname
-        ? t("settings.delete_password_message_named", { nickname: activeDid.nickname })
+    const deletePasswordMessage = identityName
+        ? t("settings.delete_password_message_named", { nickname: identityName })
         : t("settings.delete_password_message");
 
     const openBackupDialog = () => {

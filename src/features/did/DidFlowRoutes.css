@@ -95,6 +95,7 @@
 }
 
 input[type="text"],
+input[type="email"],
 input[type="password"] {
     width: 100%;
     padding: 12px 14px;
@@ -114,11 +115,13 @@ input[type="password"]::-ms-clear {
 }
 
 input[type="text"]::placeholder,
+input[type="email"]::placeholder,
 input[type="password"]::placeholder {
     color: var(--muted-text);
 }
 
 input[type="text"]:focus,
+input[type="email"]:focus,
 input[type="password"]:focus {
     border-color: #8f96ff;
     box-shadow: none;
@@ -126,8 +129,139 @@ input[type="password"]:focus {
 
 /* Slightly stronger borders in dark theme for readability */
 [data-theme='dark'] input[type="text"],
+[data-theme='dark'] input[type="email"],
 [data-theme='dark'] input[type="password"] {
     border-width: 1.5px;
+}
+
+.identity-form {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.identity-form-intro,
+.field-hint,
+.field-success {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+.field-success {
+    color: #16a34a !important;
+}
+
+.icon-help-button {
+    width: 32px;
+    height: 32px;
+    margin: 0;
+    padding: 0;
+    border-radius: 50%;
+    background: transparent;
+    border: 1px solid var(--input-border);
+    color: var(--app-text);
+    box-shadow: none;
+}
+
+.avatar-picker {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.avatar-choice {
+    aspect-ratio: 1;
+    margin: 0;
+    padding: 5px;
+    overflow: hidden;
+    border-radius: 18px;
+    border: 2px solid transparent;
+    background: color-mix(in srgb, var(--card-bg) 88%, #756bff 12%);
+}
+
+.avatar-choice img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 13px;
+}
+
+.avatar-choice.selected {
+    border-color: #6558e8;
+    box-shadow: 0 0 0 3px rgba(101, 88, 232, 0.14);
+}
+
+.evm-owner-card {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    padding: 12px 14px;
+    border: 1px solid var(--input-border);
+    border-radius: 14px;
+    background: var(--card-bg);
+}
+
+.evm-owner-card code {
+    color: var(--app-text);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+
+.evm-owner-card span {
+    color: var(--muted-text);
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.registration-progress {
+    padding: 12px 14px;
+    border-radius: 14px;
+    color: #5146b8;
+    background: rgba(101, 88, 232, 0.1);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+[data-theme='dark'] .registration-progress {
+    color: #cdd4ff;
+    background: rgba(124, 166, 255, 0.12);
+}
+
+.import-candidate-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.import-candidate-button {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    margin: 0;
+    padding: 12px;
+    border: 1px solid var(--input-border);
+    border-radius: 16px;
+    background: var(--card-bg);
+    color: var(--app-text);
+    text-align: left;
+}
+
+.import-candidate-button img,
+.import-avatar-fallback {
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+    border-radius: 13px;
+    background: rgba(101, 88, 232, 0.12);
+}
+
+.import-avatar-fallback {
+    display: grid;
+    place-items: center;
+    color: #6558e8;
+    font-weight: 700;
 }
 
 textarea.mnemonic-textarea {

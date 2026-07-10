@@ -1,4 +1,6 @@
 import React from "react";
+import { getIdentityAvatar, getIdentityDisplayName } from "../features/did/identityView";
+import { avatarDisplayUrl } from "../features/did/ownerDocument";
 import { NavLink, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { Home as HomeIcon, PanelsTopLeft, Settings } from "lucide-react";
 import Home from "../pages/main/Home";
@@ -77,12 +79,11 @@ const MainRoutes: React.FC = () => {
         }
     }, [loading, dids.length, activeDid, normalizedPath, navigate]);
 
-    const displayName = activeDid && activeDid.nickname.trim().length > 0
-        ? activeDid.nickname
-        : t("common.account.unnamed");
+    const displayName = getIdentityDisplayName(activeDid) || t("common.account.unnamed");
 
     const accountLabel = t("common.account.current");
     const avatarInitial = displayName.trim().charAt(0).toUpperCase() || "?";
+    const avatarUrl = avatarDisplayUrl(getIdentityAvatar(activeDid));
     const hideAccountHeader =
         normalizedPath.startsWith("/main/setting/backup") ||
         normalizedPath.startsWith("/main/setting/identities") ||
@@ -96,7 +97,11 @@ const MainRoutes: React.FC = () => {
             <div className="content">
                 {!hideAccountHeader && (
                     <div className="account-header">
-                        <div className="account-avatar" aria-hidden="true">{avatarInitial}</div>
+                        {avatarUrl ? (
+                            <img className="account-avatar" src={avatarUrl} alt="" />
+                        ) : (
+                            <div className="account-avatar" aria-hidden="true">{avatarInitial}</div>
+                        )}
                         <div className="account-info">
                             <span className="account-label">{accountLabel}</span>
                             <span className="account-name">{displayName}</span>

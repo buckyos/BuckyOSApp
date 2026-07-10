@@ -2,12 +2,22 @@ import React from "react";
 import MobileHeader from "../../components/ui/MobileHeader";
 import GradientButton from "../../components/ui/GradientButton";
 import { useI18n } from "../../i18n";
-import { checkBuckyUsername, checkSnActiveCode } from "../../services/sn_client";
+import { checkSnActiveCode, checkSnUsername, isLocallyValidEmail } from "../../services/sn_client";
 import { isLocallyValidSnUsername, normalizeSnUsername } from "../../features/sn/snUsername";
+import type { RegistrationMaterial, RegistrationPhase } from "../../features/did/types";
+import { avatarDisplayUrl } from "../../features/did/ownerDocument";
 
 interface BindSnProps {
     snName: string;
     setSnName: (value: string) => void;
+    fullName: string;
+    setFullName: (value: string) => void;
+    email: string;
+    setEmail: (value: string) => void;
+    avatarSeed: string;
+    setAvatarSeed: (value: string) => void;
+    registrationMaterial: RegistrationMaterial | null;
+    registrationPhase: RegistrationPhase;
     password: string;
     setPassword: (value: string) => void;
     confirmPassword: string;
@@ -18,10 +28,6 @@ interface BindSnProps {
     error: string;
     onSubmit: () => void;
     onShowSnInfo: () => void;
-}
-
-function normalizeSnInput(value: string): string {
-    return value.toLowerCase();
 }
 
 const errorHintStyle: React.CSSProperties = {
@@ -35,25 +41,29 @@ const errorHintStyle: React.CSSProperties = {
 
 const ErrorHint: React.FC<{ message: string }> = ({ message }) => (
     <p className="error" style={errorHintStyle}>
-        <svg
-            width="14"
-            height="14"
-            viewBox="0 0 20 20"
-            fill="none"
-            aria-hidden="true"
-            style={{ flex: "0 0 auto" }}
-        >
-            <circle cx="10" cy="10" r="8.25" stroke="currentColor" strokeWidth="1.5" />
-            <path d="M10 5.5v5.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-            <circle cx="10" cy="13.8" r="1" fill="currentColor" />
-        </svg>
+        <span aria-hidden="true">ⓘ</span>
         <span>{message}</span>
     </p>
+);
+
+const Field: React.FC<React.PropsWithChildren<{ label: string }>> = ({ label, children }) => (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <label style={{ fontSize: 14, color: "var(--muted-text)" }}>{label}</label>
+        {children}
+    </div>
 );
 
 const BindSn: React.FC<BindSnProps> = ({
     snName,
     setSnName,
+    fullName,
+    setFullName,
+    email,
+    setEmail,
+    avatarSeed,
+    setAvatarSeed,
+    registrationMaterial,
+    registrationPhase,
     password,
     setPassword,
     confirmPassword,
@@ -72,6 +82,12 @@ const BindSn: React.FC<BindSnProps> = ({
     const [checkingCode, setCheckingCode] = React.useState(false);
     const [usernameError, setUsernameError] = React.useState("");
     const [inviteError, setInviteError] = React.useState("");
+    const [avatarOptions] = React.useState(() => [
+        avatarSeed,
+        `${avatarSeed}-aurora`,
+        `${avatarSeed}-forest`,
+        `${avatarSeed}-violet`,
+    ]);
 
     React.useEffect(() => {
         const normalized = normalizeSnUsername(snName);
@@ -90,7 +106,11 @@ const BindSn: React.FC<BindSnProps> = ({
         setCheckingName(true);
         const timer = setTimeout(async () => {
             try {
-                setNameValid(await checkBuckyUsername(normalized));
+                const result = await checkSnUsername(normalized);
+                setNameValid(result.valid);
+                if (result.valid && result.normalized_name && result.normalized_name !== snName) {
+                    setSnName(result.normalized_name);
+                }
             } catch (err) {
                 setNameValid(null);
                 const message = err instanceof Error ? err.message : String(err);
@@ -104,7 +124,7 @@ const BindSn: React.FC<BindSnProps> = ({
             clearTimeout(timer);
             setCheckingName(false);
         };
-    }, [snName, t]);
+    }, [snName, setSnName, t]);
 
     React.useEffect(() => {
         const code = activeCode.trim();
@@ -132,122 +152,134 @@ const BindSn: React.FC<BindSnProps> = ({
             clearTimeout(timer);
             setCheckingCode(false);
         };
-    }, [activeCode]);
+    }, [activeCode, t]);
 
+    const trimmedEmail = email.trim();
     const canSubmit =
         !loading &&
         nameValid === true &&
         activeCodeValid === true &&
+        fullName.trim().length > 0 &&
+        isLocallyValidEmail(trimmedEmail) &&
+        Boolean(registrationMaterial?.evm_address) &&
         password.length >= 6 &&
         confirmPassword.length >= 6 &&
         password === confirmPassword;
 
-    const displayedError = error;
-
     return (
-        <div className="did-container" style={{ position: "relative", overflow: "hidden" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <MobileHeader
-                    title={t("sn.bind_title")}
-                    showBack
-                    rightSlot={
-                        <button
-                            type="button"
-                            aria-label={t("sn.learn_more")}
-                            onClick={onShowSnInfo}
-                            style={{
-                                width: 28,
-                                height: 28,
-                                borderRadius: 999,
-                                border: "1px solid var(--border)",
-                                background: "var(--card-bg)",
-                                color: "var(--muted-text)",
-                                display: "inline-flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                padding: 0,
-                                cursor: "pointer",
-                                boxShadow: "none",
-                            }}
-                        >
-                            <svg
-                                width="16"
-                                height="16"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                aria-hidden="true"
-                            >
-                                <circle cx="12" cy="12" r="9" />
-                                <path d="M9.09 9a3 3 0 0 1 5.82 1c0 2-3 3-3 3" />
-                                <path d="M12 17h.01" />
-                            </svg>
-                        </button>
-                    }
-                />
-            </div>
+        <div className="did-container" style={{ position: "relative" }}>
+            <MobileHeader
+                title={t("sn.identity_title")}
+                showBack
+                rightSlot={
+                    <button type="button" className="icon-help-button" onClick={onShowSnInfo} aria-label={t("sn.learn_more")}>
+                        ?
+                    </button>
+                }
+            />
 
-            <div className="page-content" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    <label style={{ fontSize: 14, color: "var(--muted-text)" }}>{t("sn.username_label")}</label>
+            <div className="page-content identity-form">
+                <p className="identity-form-intro">{t("sn.identity_subtitle")}</p>
+
+                <Field label={t("sn.username_label")}>
                     <input
                         type="text"
                         value={snName}
-                        onChange={(event) => setSnName(normalizeSnInput(event.target.value))}
+                        onChange={(event) => setSnName(event.target.value.toLowerCase())}
                         placeholder={t("sn.username_placeholder")}
                         disabled={loading}
                     />
                     {checkingName ? (
-                        <p style={{ margin: 0, color: "var(--muted-text)", fontSize: 13 }}>{t("sn.username_checking")}</p>
+                        <p className="field-hint">{t("sn.username_checking")}</p>
                     ) : nameValid === true ? (
-                        <p
-                            style={{
-                                margin: 0,
-                                color: "#16a34a",
-                                fontSize: 13,
-                                overflowWrap: "anywhere",
-                                wordBreak: "break-word",
-                                lineHeight: 1.6,
-                            }}
-                        >
-                            {t("sn.username_ok", { username: normalizeSnUsername(snName) })}
-                        </p>
+                        <p className="field-success">{t("sn.username_ok", { username: normalizeSnUsername(snName) })}</p>
                     ) : nameValid === false ? (
                         <ErrorHint message={t("sn.username_taken")} />
                     ) : usernameError ? (
                         <ErrorHint message={usernameError} />
                     ) : null}
-                </div>
+                </Field>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    <label style={{ fontSize: 14, color: "var(--muted-text)" }}>{t("create.password_label")}</label>
+                <Field label={t("sn.full_name_label")}>
+                    <input
+                        type="text"
+                        value={fullName}
+                        onChange={(event) => setFullName(event.target.value)}
+                        placeholder={t("sn.full_name_placeholder")}
+                        maxLength={256}
+                        autoComplete="name"
+                        disabled={loading}
+                    />
+                </Field>
+
+                <Field label={t("sn.email_label")}>
+                    <input
+                        type="email"
+                        value={email}
+                        onChange={(event) => setEmail(event.target.value)}
+                        placeholder={t("sn.email_placeholder")}
+                        maxLength={320}
+                        autoComplete="email"
+                        disabled={loading}
+                    />
+                    <p className="field-hint">{t("sn.email_privacy_hint")}</p>
+                    {trimmedEmail && !isLocallyValidEmail(trimmedEmail) ? <ErrorHint message={t("sn.error.invalid_email")} /> : null}
+                </Field>
+
+                <Field label={t("sn.avatar_label")}>
+                    <div className="avatar-picker" role="radiogroup" aria-label={t("sn.avatar_label")}>
+                        {avatarOptions.map((seed) => {
+                            const source = avatarDisplayUrl(`dicebear:${seed}`);
+                            const selected = avatarSeed === seed;
+                            return (
+                                <button
+                                    type="button"
+                                    className={`avatar-choice${selected ? " selected" : ""}`}
+                                    key={seed}
+                                    onClick={() => setAvatarSeed(seed)}
+                                    role="radio"
+                                    aria-checked={selected}
+                                    disabled={loading}
+                                >
+                                    {source ? <img src={source} alt="" /> : <span>{seed.slice(0, 2).toUpperCase()}</span>}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </Field>
+
+                <Field label={t("sn.evm_owner_label")}>
+                    <div className="evm-owner-card">
+                        <code>{registrationMaterial?.evm_address ?? t("sn.evm_owner_preparing")}</code>
+                        <span>{t("sn.evm_owner_hint")}</span>
+                    </div>
+                </Field>
+
+                <Field label={t("create.password_label")}>
                     <input
                         type="password"
                         value={password}
                         onChange={(event) => setPassword(event.target.value)}
                         placeholder={t("create.password_placeholder")}
+                        autoComplete="new-password"
                         disabled={loading}
                     />
                     {password.length > 0 && password.length < 6 ? <ErrorHint message={t("common.error.password_too_short")} /> : null}
-                </div>
+                </Field>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    <label style={{ fontSize: 14, color: "var(--muted-text)" }}>{t("create.confirm_label")}</label>
+                <Field label={t("create.confirm_label")}>
                     <input
                         type="password"
                         value={confirmPassword}
                         onChange={(event) => setConfirmPassword(event.target.value)}
                         placeholder={t("create.confirm_password_placeholder")}
+                        autoComplete="new-password"
                         disabled={loading}
                     />
                     {confirmPassword.length > 0 && password !== confirmPassword ? <ErrorHint message={t("common.error.passwords_mismatch")} /> : null}
-                </div>
+                </Field>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    <label style={{ fontSize: 14, color: "var(--muted-text)" }}>{t("sn.invite_label")}</label>
+                <Field label={t("sn.invite_label")}>
                     <input
                         type="text"
                         value={activeCode}
@@ -256,22 +288,25 @@ const BindSn: React.FC<BindSnProps> = ({
                         disabled={loading}
                     />
                     {checkingCode ? (
-                        <p style={{ margin: 0, color: "var(--muted-text)", fontSize: 13 }}>{t("sn.invite_checking")}</p>
+                        <p className="field-hint">{t("sn.invite_checking")}</p>
                     ) : activeCodeValid === true ? (
-                        <p style={{ margin: 0, color: "#16a34a", fontSize: 13 }}>{t("sn.invite_ok")}</p>
+                        <p className="field-success">{t("sn.invite_ok")}</p>
                     ) : activeCodeValid === false ? (
                         <ErrorHint message={t("sn.invite_bad")} />
                     ) : inviteError ? (
                         <ErrorHint message={inviteError} />
                     ) : null}
-                </div>
+                </Field>
 
-                {displayedError ? <ErrorHint message={displayedError} /> : null}
+                {registrationPhase === "submitting" ? (
+                    <div className="registration-progress" role="status">{t("sn.submitting_hint")}</div>
+                ) : null}
+                {error ? <ErrorHint message={error} /> : null}
             </div>
 
             <div className="actions page-content">
                 <GradientButton onClick={onSubmit} disabled={!canSubmit}>
-                    {t("sn.bind_confirm")}
+                    {t("sn.register_identity_confirm")}
                 </GradientButton>
             </div>
         </div>

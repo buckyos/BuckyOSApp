@@ -32,6 +32,10 @@ pub struct StoredDid {
     pub seed: EncryptedSeed,
     #[serde(default)]
     pub wallets: WalletCollection,
+    /// Public BNS owner document. The mnemonic remains encrypted in `seed`;
+    /// this document intentionally stays as plain JSON for exact recovery.
+    #[serde(default)]
+    pub owner_document: Option<String>,
     #[serde(default)]
     pub sn_status: Option<SnStatusInfo>,
 }
@@ -59,6 +63,10 @@ impl StoredDid {
             btc_addresses,
             eth_addresses,
             bucky_wallets,
+            owner_document: self
+                .owner_document
+                .as_ref()
+                .and_then(|json| serde_json::from_str(json).ok()),
             sn_status: self.sn_status.clone(),
         }
     }

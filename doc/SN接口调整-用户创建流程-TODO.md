@@ -1,8 +1,10 @@
 # SN 接口调整：用户创建流程 TODO
 
-状态：已完成需求 Review，待实施  
+状态：App 侧实施完成，待真实 SN/BNS 环境联调验收
 日期：2026-07-09  
 参考：`/Users/liuzhicong/project/cyfs-gateway/doc/SN/SN-API.md`
+
+实施说明：代码、单元测试、Rust 测试与生产构建已完成。仍未勾选的项目均依赖真实 SN/BNS 环境，尤其是 SN 必须先兑现“BNS name 创建成功后才返回 `auth.register` 成功”的产品契约；当前参考 `SN-API.md` 仍描述 `submitted` 和未启用 bns-proxy 时的本地降级，App 不接受该半完成结果。
 
 ## 1. 结论与目标
 
@@ -111,11 +113,11 @@ owner 与 EVM/EVMP 密钥的算法、derivation path、index 和输出格式以 
 
 实现 TODO：
 
-- [ ] 将 `DidDerivationPlan::default_requests()` 从仅 `bucky(1)` 调整为 `bucky(1) + eth(1)`。
-- [ ] 新增/替换 Tauri command，例如 `derive_registration_material`，只向前端返回 owner public JWK、公用 EVM 地址与 derivation index/path，不返回任何私钥。Owner DID 由归一化后的 BNS name 构造为 `did:bns:<name>`，不是从密钥派生的 `did:dev`。
-- [ ] `create_did`、`import_did` 默认同时生成并保存 `bucky_wallets[0]` 与 `eth_addresses[0]`。
-- [ ] 私钥继续由加密助记词按需派生；不得新增明文 EVM 私钥持久化。
-- [ ] 为 owner/EVM 派生增加固定助记词测试向量，防止路径或算法在升级依赖后静默变化。
+- [x] 将 `DidDerivationPlan::default_requests()` 从仅 `bucky(1)` 调整为 `bucky(1) + eth(1)`。
+- [x] 新增/替换 Tauri command，例如 `derive_registration_material`，只向前端返回 owner public JWK、公用 EVM 地址与 derivation index/path，不返回任何私钥。Owner DID 由归一化后的 BNS name 构造为 `did:bns:<name>`，不是从密钥派生的 `did:dev`。
+- [x] `create_did`、`import_did` 默认同时生成并保存 `bucky_wallets[0]` 与 `eth_addresses[0]`。
+- [x] 私钥继续由加密助记词按需派生；不得新增明文 EVM 私钥持久化。
+- [x] 为 owner/EVM 派生增加固定助记词测试向量，防止路径或算法在升级依赖后静默变化。
 
 ## 4. OwnerDocument 构造（产品用户身份本体）
 
@@ -174,13 +176,13 @@ OwnerDocument 至少包含：
 
 构造 TODO：
 
-- [ ] 使用新版 WebSDK `namelib.newOwnerDocument` 生成基础字段，避免 App 自己复制 DID schema、时间戳和默认有效期逻辑。
-- [ ] 在基础 document 上补齐 `avatar = "dicebear:<seed>"` 与 `wallets.main`。
-- [ ] 增加统一 `validateOwnerDocumentForRegistration`：校验 DID/name 一致、owner JWK 格式、EVM 地址格式、`asset_owner` 一致、Full Name 非空和 avatar 符合 `$method:$string`。
-- [ ] 在提交 SN 前序列化一次并校验 owner document 小于单文档 4KB 上限。
-- [ ] OwnerDocument 只包含公开信息，不得包含 email、助记词、owner 私钥、EVM 私钥、密码 hash、active code 或 SN token。
-- [ ] 对 OwnerDocument 做 snapshot/round-trip 测试，确保 WebSDK 与 Rust `name-lib` 可互相反序列化。
-- [ ] 将注册成功使用的完整 OwnerDocument 原文保存在本地；OwnerDocument 是公开数据，不加密。
+- [x] 使用新版 WebSDK `namelib.newOwnerDocument` 生成基础字段，避免 App 自己复制 DID schema、时间戳和默认有效期逻辑。
+- [x] 在基础 document 上补齐 `avatar = "dicebear:<seed>"` 与 `wallets.main`。
+- [x] 增加统一 `validateOwnerDocumentForRegistration`：校验 DID/name 一致、owner JWK 格式、EVM 地址格式、`asset_owner` 一致、Full Name 非空和 avatar 符合 `$method:$string`。
+- [x] 在提交 SN 前序列化一次并校验 owner document 小于单文档 4KB 上限。
+- [x] OwnerDocument 只包含公开信息，不得包含 email、助记词、owner 私钥、EVM 私钥、密码 hash、active code 或 SN token。
+- [x] 对 OwnerDocument 做 snapshot/round-trip 测试，确保 WebSDK 与 Rust `name-lib` 可互相反序列化。
+- [x] 将注册成功使用的完整 OwnerDocument 原文保存在本地；OwnerDocument 是公开数据，不加密。
 
 ## 5. 新建用户目标流程
 
@@ -197,23 +199,23 @@ flowchart LR
 
 ### 5.1 页面与状态
 
-- [ ] 在现有绑定 SN 页面补充或新增“身份资料”步骤：头像选择、Full Name、电子邮箱、只读 EVM 地址预览。
-- [ ] Full Name 和 email 必填；name、Full Name、email 等输入在提交前统一 trim，name 使用 SN 返回的 `normalized_name`，email 由 SN 做最终规范化和唯一性校验。
-- [ ] DiceBear seed 在本地生成或由用户选择，OwnerDocument 只保存选中的 `avatar = "dicebear:<seed>"`。
-- [ ] EVM 地址只读展示，并提示它是 BNS name 的资产 owner 地址。
-- [ ] 提交按钮文案表达“注册名字并创建身份”，不再表达为单独绑定 owner key。
-- [ ] 注册状态使用 `preparing`、`submitting`、`succeeded`、`failed`；`submitting` 可能持续较长时间，期间禁用重复提交并给出明确进度提示。
+- [x] 在现有绑定 SN 页面补充或新增“身份资料”步骤：头像选择、Full Name、电子邮箱、只读 EVM 地址预览。
+- [x] Full Name 和 email 必填；name、Full Name、email 等输入在提交前统一 trim，name 使用 SN 返回的 `normalized_name`，email 由 SN 做最终规范化和唯一性校验。
+- [x] DiceBear seed 在本地生成或由用户选择，OwnerDocument 只保存选中的 `avatar = "dicebear:<seed>"`。
+- [x] EVM 地址只读展示，并提示它是 BNS name 的资产 owner 地址。
+- [x] 提交按钮文案表达“注册名字并创建身份”，不再表达为单独绑定 owner key。
+- [x] 注册状态使用 `preparing`、`submitting`、`succeeded`、`failed`；`submitting` 可能持续较长时间，期间禁用重复提交并给出明确进度提示。
 
 ### 5.2 注册前本地准备
 
-- [ ] 并行调用 `auth.check_username`、`auth.check_active_code` 和本地密钥派生；提交时仍以 `auth.register` 的最终结果为准。
-- [ ] 使用归一化 name 计算密码 hash。
-- [ ] 使用确定性的 `request_id = sn:register:<normalized-name>`；超时或失败重试时复用，不引入额外 pending registration 存储。
+- [x] 并行调用 `auth.check_username`、`auth.check_active_code` 和本地密钥派生；提交时仍以 `auth.register` 的最终结果为准。
+- [x] 使用归一化 name 计算密码 hash。
+- [x] 使用确定性的 `request_id = sn:register:<normalized-name>`；超时或失败重试时复用，不引入额外 pending registration 存储。
 
 ### 5.3 调用 SN
 
-- [ ] 用新版 WebSDK `sn.SnClient` 替换 App 内手写的旧 `SnAuthClient`、`SnBindingClient`、`SnDeviceClient`。
-- [ ] `auth.register` 传入：
+- [x] 用新版 WebSDK `sn.SnClient` 替换 App 内手写的旧 `SnAuthClient`、`SnBindingClient`、`SnDeviceClient`。
+- [x] `auth.register` 传入：
   - `name`
   - 必填 `email`
   - `pwd_hash`
@@ -222,18 +224,18 @@ flowchart LR
   - `asset_owner = derived EVM address`
   - `owner_config = complete OwnerDocument`
   - `initial_documents`：首期没有 zone/boot/dns_txt 时省略，不传空的 owner
-- [ ] 删除注册成功后调用 `user.bind_owner_key` 的逻辑。
-- [ ] 不再轮询 `device.get_by_pk`。
-- [ ] 将新版 SN 错误码映射到页面：`invalid_params`、`invalid_email`、`email_already_bound`、`username_already_exists`、`invalid_active_code`、`bns_permission_denied`、`bns_name_already_exists`、`bns_write_failed`、`bns_proxy_unavailable`、`bns_controller_unavailable`。
-- [ ] 为 `auth.register` 使用适合内部事务的长超时；SN 成功返回后直接进入本地保存，不再使用 `bns.tx_hash` 做客户端二次确认。
-- [ ] 成功响应仍应满足 `need_bind_owner_key == false`；若出现 `true`，视为 SN 未遵守新注册契约并报错。
+- [x] 删除注册成功后调用 `user.bind_owner_key` 的逻辑。
+- [x] 不再轮询 `device.get_by_pk`。
+- [x] 将新版 SN 错误码映射到页面：`invalid_params`、`invalid_email`、`email_already_bound`、`username_already_exists`、`invalid_active_code`、`bns_permission_denied`、`bns_name_already_exists`、`bns_write_failed`、`bns_proxy_unavailable`、`bns_controller_unavailable`。
+- [x] 为 `auth.register` 使用适合内部事务的长超时；SN 成功返回后直接进入本地保存，不再使用 `bns.tx_hash` 做客户端二次确认。
+- [x] 成功响应仍应满足 `need_bind_owner_key == false`；若出现 `true`，视为 SN 未遵守新注册契约并报错。
 
 ### 5.4 SN 返回后的本地保存
 
-- [ ] SN 返回成功后调用本地 create/finalize，一次性保存加密助记词、owner/Bucky wallet、EVM wallet、SN name/status 和本次注册使用的 OwnerDocument。
-- [ ] OwnerDocument 按原始 JSON 明文保存；它是公开身份文档，不进入 mnemonic 加密字段。
-- [ ] 本地写入成功后才显示“账户创建成功”。
-- [ ] SN 调用失败或超时时不标记本地身份为 active；重试使用相同 name、密钥材料、OwnerDocument 和确定性 request id。
+- [x] SN 返回成功后调用本地 create/finalize，一次性保存加密助记词、owner/Bucky wallet、EVM wallet、SN name/status 和本次注册使用的 OwnerDocument。
+- [x] OwnerDocument 按原始 JSON 明文保存；它是公开身份文档，不进入 mnemonic 加密字段。
+- [x] 本地写入成功后才显示“账户创建成功”。
+- [x] SN 调用失败或超时时不标记本地身份为 active；重试使用相同 name、密钥材料、OwnerDocument 和确定性 request id。
 
 ## 6. 导入/恢复流程
 
@@ -248,63 +250,76 @@ flowchart LR
 
 实现 TODO：
 
-- [ ] 删除 `getUserByPublicKey`、`device.get_by_pk` 及其旧返回结构依赖。
-- [ ] 按统一根域配置构造 BNS endpoint：SN 使用 `sn.<sn_host>`，BNS 使用 `bns.<sn_host>`；通过最新版 WebSDK `BnsClient` 发起分页地址查询。
-- [ ] 处理同一 EVM 地址持有多个 BNS name 的正常场景，不能默认取第一页第一项。
-- [ ] 校验候选 owner document 的 owner 公钥；只按 EVM 地址匹配不足以证明助记词与 OwnerDocument 完整一致。
-- [ ] 导入成功后默认生成 owner+Bucky 与 EVM 两套 wallet 记录。
-- [ ] 导入成功时保存从 BNS 获得的完整 OwnerDocument，不能只保存 name 或 public key。
-- [ ] SN 登录态与 BNS 身份恢复分开：BNS 找到身份不等于已经恢复 SN password/access token；需要时再走 `auth.login`。
-- [ ] 本版本是 breaking change，不提供旧 SN public-key 记录兼容或存量迁移；查不到 BNS name 或 OwnerDocument 即导入失败。
+- [x] 删除 `getUserByPublicKey`、`device.get_by_pk` 及其旧返回结构依赖。
+- [x] 按统一根域配置构造 BNS endpoint：SN 使用 `sn.<sn_host>`，BNS 使用 `bns.<sn_host>`；通过最新版 WebSDK `BnsClient` 发起分页地址查询。
+- [x] 处理同一 EVM 地址持有多个 BNS name 的正常场景，不能默认取第一页第一项。
+- [x] 校验候选 owner document 的 owner 公钥；只按 EVM 地址匹配不足以证明助记词与 OwnerDocument 完整一致。
+- [x] 导入成功后默认生成 owner+Bucky 与 EVM 两套 wallet 记录。
+- [x] 导入成功时保存从 BNS 获得的完整 OwnerDocument，不能只保存 name 或 public key。
+- [x] SN 登录态与 BNS 身份恢复分开：BNS 找到身份不等于已经恢复 SN password/access token；需要时再走 `auth.login`。
+- [x] 本版本是 breaking change，不提供旧 SN public-key 记录兼容或存量迁移；查不到 BNS name 或 OwnerDocument 即导入失败。
 
 ## 7. 代码改造清单
 
 ### 7.1 前端
 
-- [ ] `src/features/did/useDidFlow.ts`：扩展表单状态、构造 OwnerDocument、调用 SN 长事务注册，并在成功后完成本地保存。
-- [ ] `src/pages/did/BindSn.tsx`：增加 avatar、Full Name、email、EVM 地址展示及字段校验。
-- [ ] `src/features/did/types.ts`：补 registration material、OwnerDocument form、SN register response 与本地 OwnerDocument 类型，减少 `any`。
-- [ ] `src/features/sn/snStatusManager.ts`：删除“绑定后按公钥轮询”，SN 注册成功后直接缓存 name/status。
-- [ ] `src/services/sn_client.ts`：升级后尽量删除自维护协议类型，改为薄封装 WebSDK `SnClient`；保留 App 级 timeout、错误翻译和配置注入。
-- [ ] 新增 BNS service 薄封装，仅用于导入时的地址分页反查和 OwnerDocument 读取/解析。
-- [ ] 所有语言补齐 avatar、必填 Full Name、email、EVM owner、SN 长事务等待和错误文案。
+- [x] `src/features/did/useDidFlow.ts`：扩展表单状态、构造 OwnerDocument、调用 SN 长事务注册，并在成功后完成本地保存。
+- [x] `src/pages/did/BindSn.tsx`：增加 avatar、Full Name、email、EVM 地址展示及字段校验。
+- [x] `src/features/did/types.ts`：补 registration material、OwnerDocument form、SN register response 与本地 OwnerDocument 类型，减少 `any`。
+- [x] `src/features/sn/snStatusManager.ts`：删除“绑定后按公钥轮询”，SN 注册成功后直接缓存 name/status。
+- [x] `src/services/sn_client.ts`：升级后尽量删除自维护协议类型，改为薄封装 WebSDK `SnClient`；保留 App 级 timeout、错误翻译和配置注入。
+- [x] 新增 BNS service 薄封装，仅用于导入时的地址分页反查和 OwnerDocument 读取/解析。
+- [x] 所有语言补齐 avatar、必填 Full Name、email、EVM owner、SN 长事务等待和错误文案。
 
 ### 7.2 Tauri/Rust
 
-- [ ] `src-tauri/src/did/identity.rs`：默认派生 Bucky+EVM 两套 index 0 wallet。
-- [ ] `src-tauri/src/did/commands.rs`：新增只返回公开注册材料的 command；create/import 接收并保存完整 OwnerDocument。
-- [ ] `src-tauri/src/did/store.rs`：在 `StoredDid` 中保存未加密 OwnerDocument；助记词继续使用现有加密存储。
-- [ ] `src-tauri/src/config.rs`：将 `sn_host` 明确为统一根域，并集中构造 `sn.<sn_host>` 与 `bns.<sn_host>` 的 HTTPS API URL。
-- [ ] 对所有敏感 command 参数和错误实现日志脱敏。
+- [x] `src-tauri/src/did/identity.rs`：默认派生 Bucky+EVM 两套 index 0 wallet。
+- [x] `src-tauri/src/did/commands.rs`：新增只返回公开注册材料的 command；create/import 接收并保存完整 OwnerDocument。
+- [x] `src-tauri/src/did/store.rs`：在 `StoredDid` 中保存未加密 OwnerDocument；助记词继续使用现有加密存储。
+- [x] `src-tauri/src/config.rs`：将 `sn_host` 明确为统一根域，并集中构造 `sn.<sn_host>` 与 `bns.<sn_host>` 的 HTTPS API URL。
+- [x] 对所有敏感 command 参数和错误实现日志脱敏。
 
 ### 7.3 依赖
 
-- [ ] 将 `buckyos-websdk` 升级到最新版，确认包含必填 email 的 `sn_client`、`bns_client`、`namelib.newOwnerDocument`，并更新两份 lockfile。
-- [ ] 做一次 WebSDK 升级兼容清单；当前锁定版本与 beta2.2 新实现存在较大差异，不能只替换 commit 后直接提交。
-- [ ] 确认 Rust `name-lib` 版本中的类型名称（旧版 `OwnerConfig`、新版 `OwnerDocument`）与 JSON schema 一致，避免只因类型重命名产生双实现。
-- [ ] 密钥派生固定复用 Rust `name-lib::utility` 辅助函数；不得使用或复制 WebSDK 的 `dev_test_keys.ts`。
+WebSDK beta2.2 升级兼容清单（实施结果）：
+
+| 变化 | App 处理 |
+| --- | --- |
+| 包入口新增 `sn`、`bns`、`namelib` namespace | 删除旧的 `src/types/buckyos.d.ts` 单导出声明，直接使用依赖自带类型 |
+| SN client 按方法自动路由到 `/kapi/sn/auth`、`deviceinfo`、`bns-proxy` | App 只注入统一的 `https://sn.<sn_host>` 根 URL |
+| `auth.register` 新增必填 email、asset owner 与完整 owner config | 新增强类型 request builder 与 snapshot 测试 |
+| BNS 读取增加业务 envelope、地址分页与 inline document bytes | BNS service 统一分页、UTF-8/JSON 解码和 OwnerDocument 校验 |
+| Owner 类型统一为 `OwnerDocument`，规范字段为 `display_name` | 前端使用 `namelib.newOwnerDocument`，Rust 用 `name_lib::OwnerDocument` round-trip 校验 |
+| kRPC client 支持注入 fetcher | App 注入 10 秒预检查、180 秒注册、20 秒 BNS 读取超时 |
+| 旧 owner-key bind / public-key lookup 被移除 | 删除对应 client、轮询、返回结构与导入 fallback |
+| WebSDK 浏览器包体包含更多 beta2.2 能力 | 构建通过；Vite 仍报告单 chunk 大于 500KB，后续可独立做按路由拆包优化 |
+
+- [x] 将 `buckyos-websdk` 升级到最新版，确认包含必填 email 的 `sn_client`、`bns_client`、`namelib.newOwnerDocument`，并更新两份 lockfile。
+- [x] 做一次 WebSDK 升级兼容清单；当前锁定版本与 beta2.2 新实现存在较大差异，不能只替换 commit 后直接提交。
+- [x] 确认 Rust `name-lib` 版本中的类型名称（旧版 `OwnerConfig`、新版 `OwnerDocument`）与 JSON schema 一致，避免只因类型重命名产生双实现。
+- [x] 密钥派生固定复用 Rust `name-lib::utility` 辅助函数；不得使用或复制 WebSDK 的 `dev_test_keys.ts`。
 - [ ] 联调前确认 SN 已实现“BNS name 创建成功才返回 `auth.register` 成功”的内部事务语义，并同步修正仍描述 `submitted`/本地降级的接口文档或实现。
 
 ## 8. 安全与隐私 TODO
 
-- [ ] 不记录 mnemonic、owner/EVM 私钥、password/password hash、active code、完整 access/refresh token。
-- [ ] 移除当前检查 active code 时输出明文 active code 的日志。
-- [ ] email 只发送给 SN 并作为 SN 本地账号数据保存，禁止加入公开 OwnerDocument。
-- [ ] 日志中的 EVM 地址、owner public key、email 和完整 OwnerDocument 按产品隐私要求截断或脱敏；本地 OwnerDocument 虽不加密，也不得无必要写入日志。
-- [ ] OwnerDocument 在提交前做结构、字段长度与 4KB 大小限制，避免注册交易因文档不合法失败。
-- [ ] 本地 OwnerDocument 作为公开数据明文保存；助记词与私钥材料继续加密，两者存储边界必须清晰。
-- [ ] SN timeout 或网络断开后允许使用相同确定性 `request_id` 重试，不能生成新的密钥材料或 OwnerDocument。
+- [x] 不记录 mnemonic、owner/EVM 私钥、password/password hash、active code、完整 access/refresh token。
+- [x] 移除当前检查 active code 时输出明文 active code 的日志。
+- [x] email 只发送给 SN 并作为 SN 本地账号数据保存，禁止加入公开 OwnerDocument。
+- [x] 日志中的 EVM 地址、owner public key、email 和完整 OwnerDocument 按产品隐私要求截断或脱敏；本地 OwnerDocument 虽不加密，也不得无必要写入日志。
+- [x] OwnerDocument 在提交前做结构、字段长度与 4KB 大小限制，避免注册交易因文档不合法失败。
+- [x] 本地 OwnerDocument 作为公开数据明文保存；助记词与私钥材料继续加密，两者存储边界必须清晰。
+- [x] SN timeout 或网络断开后允许使用相同确定性 `request_id` 重试，不能生成新的密钥材料或 OwnerDocument。
 
 ## 9. 测试与验收
 
 ### 9.1 单元测试
 
-- [ ] 固定助记词派生 owner public JWK、EVM 地址的测试向量，并单独验证归一化 name 到 `did:bns:<name>` 的构造。
-- [ ] OwnerDocument 完整结构 snapshot：必填 Full Name、`avatar = "dicebear:<seed>"`、EVM wallet 均存在，email 和私钥均不存在。
-- [ ] SN register request snapshot：必填 email、路径和 `asset_owner`/`owner_config`/`request_id` 正确，不再调用旧 API。
-- [ ] email 为空、格式非法、已绑定时分别映射 `invalid_email`、`email_already_bound` 等正确错误。
-- [ ] BNS 地址分页、零/一/多个 name、owner 公钥不匹配等场景。
-- [ ] avatar `$method:$string` 解析，以及未知 method 的 UI 降级显示。
+- [x] 固定助记词派生 owner public JWK、EVM 地址的测试向量，并单独验证归一化 name 到 `did:bns:<name>` 的构造。
+- [x] OwnerDocument 完整结构 snapshot：必填 Full Name、`avatar = "dicebear:<seed>"`、EVM wallet 均存在，email 和私钥均不存在。
+- [x] SN register request snapshot：必填 email、路径和 `asset_owner`/`owner_config`/`request_id` 正确，不再调用旧 API。
+- [x] email 为空、格式非法、已绑定时分别映射 `invalid_email`、`email_already_bound` 等正确错误。
+- [x] BNS 地址分页、零/一/多个 name、owner 公钥不匹配等场景。
+- [x] avatar `$method:$string` 解析，以及未知 method 的 UI 降级显示。
 
 ### 9.2 集成测试
 
@@ -318,17 +333,17 @@ flowchart LR
 
 ### 9.3 完成标准
 
-- [ ] 产品中的每个用户身份都明确对应一份 `did:bns:<name>` OwnerDocument；代码和 UI 不把 SN 账号或本地 nickname 当成独立身份源。
-- [ ] 新用户本地必有 owner 与 EVM 两套可恢复密钥材料。
+- [x] 产品中的每个用户身份都明确对应一份 `did:bns:<name>` OwnerDocument；代码和 UI 不把 SN 账号或本地 nickname 当成独立身份源。
+- [x] 新用户本地必有 owner 与 EVM 两套可恢复密钥材料。
 - [ ] BNS `asset_owner` 是用户派生的 EVM 地址，不是 SN controller 地址。
 - [ ] BNS 上存在完整且可由标准 resolver 读取的 OwnerDocument。
-- [ ] OwnerDocument 包含必填 Full Name、`dicebear:<seed>` 头像和 EVM 地址，不包含 email。
-- [ ] `auth.register` 请求包含必填 email，SN 负责规范化、格式校验和唯一性约束。
+- [x] OwnerDocument 包含必填 Full Name、`dicebear:<seed>` 头像和 EVM 地址，不包含 email。
+- [x] `auth.register` 请求包含必填 email，SN 负责规范化、格式校验和唯一性约束。
 - [ ] SN 只有在内部 BNS name 创建成功后才返回注册成功；App 无需等待或查询 BNS TX。
-- [ ] 本地保存完整明文 OwnerDocument，导入时也必须从 BNS 获得并保存 OwnerDocument。
-- [ ] 注册流程不再调用任何已移除的 SN API。
-- [ ] 导入流程不依赖旧 SN public-key 反查。
-- [ ] SN 未成功返回或本地保存失败时，不显示“账户创建成功”。
+- [x] 本地保存完整明文 OwnerDocument，导入时也必须从 BNS 获得并保存 OwnerDocument。
+- [x] 注册流程不再调用任何已移除的 SN API。
+- [x] 导入流程不依赖旧 SN public-key 反查。
+- [x] SN 未成功返回或本地保存失败时，不显示“账户创建成功”。
 
 ## 10. 建议实施顺序
 

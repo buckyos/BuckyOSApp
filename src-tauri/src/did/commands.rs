@@ -1,6 +1,6 @@
 use bip39::{Language, Mnemonic};
 use rand::{rngs::OsRng, RngCore};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
 use tauri::{AppHandle, Runtime};
@@ -14,6 +14,175 @@ use super::store::{load_vault, new_did_id, open_store, save_vault, StoredDid};
 use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
 use secrecy::{ExposeSecret, SecretString};
 use std::time::{SystemTime, UNIX_EPOCH};
+
+const OWNER_DOCUMENT_MAX_BYTES: usize = 4 * 1024;
+const OWNER_DERIVATION_PATH_PREFIX: &str = "m/9777'/0'/";
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct RegistrationDerivation {
+    pub index: u32,
+    pub derivation_path: String,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct RegistrationMaterial {
+    pub normalized_name: String,
+    pub owner_did: String,
+    pub owner_public_jwk: Value,
+    pub owner_derivation: RegistrationDerivation,
+    pub evm_address: String,
+    pub evm_derivation: RegistrationDerivation,
+}
+
+struct ValidatedOwnerDocument {
+    name: String,
+    id: String,
+    raw_json: String,
+    public_key_x: String,
+    evm_address: String,
+}
+
+fn is_evm_address(value: &str) -> bool {
+    value.len() == 42
+        && value.starts_with("0x")
+        && value[2..].chars().all(|ch| ch.is_ascii_hexdigit())
+}
+
+fn contains_sensitive_owner_field(value: &Value) -> bool {
+    match value {
+        Value::Object(object) => object.iter().any(|(key, child)| {
+            matches!(
+                key.to_ascii_lowercase().as_str(),
+                "email"
+                    | "mnemonic"
+                    | "mnemonic_words"
+                    | "private_key"
+                    | "private_key_pem"
+                    | "private_key_hex"
+                    | "password"
+                    | "pwd_hash"
+                    | "password_hash"
+                    | "active_code"
+                    | "access_token"
+                    | "refresh_token"
+                    | "sn_token"
+            ) || contains_sensitive_owner_field(child)
+        }),
+        Value::Array(items) => items.iter().any(contains_sensitive_owner_field),
+        _ => false,
+    }
+}
+
+fn validate_avatar(value: &str) -> bool {
+    let Some((method, payload)) = value.split_once(':') else {
+        return false;
+    };
+    !payload.trim().is_empty()
+        && method.chars().enumerate().all(|(index, ch)| {
+            ch.is_ascii_lowercase()
+                || (index > 0 && (ch.is_ascii_digit() || ch == '_' || ch == '-'))
+        })
+}
+
+fn validate_owner_document_json(raw_json: String) -> CommandResult<ValidatedOwnerDocument> {
+    if raw_json.as_bytes().len() >= OWNER_DOCUMENT_MAX_BYTES {
+        return Err(CommandErrors::internal("owner_document_too_large"));
+    }
+
+    let value: Value = serde_json::from_str(&raw_json)
+        .map_err(|_| CommandErrors::internal("invalid_owner_document"))?;
+    if !value.is_object() || contains_sensitive_owner_field(&value) {
+        return Err(CommandErrors::internal("invalid_owner_document"));
+    }
+
+    // A successful round trip through Rust name-lib proves the WebSDK shape
+    // remains compatible with the canonical OwnerDocument schema.
+    let owner: name_lib::OwnerDocument = serde_json::from_value(value.clone())
+        .map_err(|_| CommandErrors::internal("invalid_owner_document"))?;
+    serde_json::to_value(&owner).map_err(|_| CommandErrors::internal("invalid_owner_document"))?;
+
+    let name = owner.name.trim().to_ascii_lowercase();
+    let id = owner.id.to_string();
+    if name.is_empty() || owner.name != name || id != format!("did:bns:{name}") {
+        return Err(CommandErrors::internal("invalid_owner_document_identity"));
+    }
+    if owner.display_name.trim().is_empty() {
+        return Err(CommandErrors::internal("owner_display_name_required"));
+    }
+    if owner.display_name.len() > 256 {
+        return Err(CommandErrors::internal("owner_display_name_too_long"));
+    }
+    let avatar = owner
+        .avatar
+        .as_deref()
+        .filter(|avatar| validate_avatar(avatar))
+        .ok_or_else(|| CommandErrors::internal("invalid_owner_avatar"))?;
+    if avatar.len() > 512 {
+        return Err(CommandErrors::internal("invalid_owner_avatar"));
+    }
+
+    let main_wallet = owner
+        .wallets
+        .get("main")
+        .filter(|wallet| wallet.wallet_type == "eth" && is_evm_address(&wallet.address))
+        .ok_or_else(|| CommandErrors::internal("invalid_owner_wallet"))?;
+
+    let public_key = value
+        .get("verificationMethod")
+        .and_then(Value::as_array)
+        .and_then(|methods| methods.first())
+        .and_then(|method| method.get("publicKeyJwk"))
+        .and_then(Value::as_object)
+        .ok_or_else(|| CommandErrors::internal("invalid_owner_public_key"))?;
+    if public_key.get("kty").and_then(Value::as_str) != Some("OKP")
+        || public_key.get("crv").and_then(Value::as_str) != Some("Ed25519")
+    {
+        return Err(CommandErrors::internal("invalid_owner_public_key"));
+    }
+    let public_key_x = public_key
+        .get("x")
+        .and_then(Value::as_str)
+        .filter(|x| {
+            x.len() == 43
+                && x.chars()
+                    .all(|ch| ch.is_ascii_alphanumeric() || ch == '_' || ch == '-')
+        })
+        .ok_or_else(|| CommandErrors::internal("invalid_owner_public_key"))?
+        .to_string();
+
+    Ok(ValidatedOwnerDocument {
+        name,
+        id,
+        raw_json,
+        public_key_x,
+        evm_address: main_wallet.address.clone(),
+    })
+}
+
+fn validate_document_matches_wallets(
+    document: &ValidatedOwnerDocument,
+    wallets: &super::domain::WalletCollection,
+) -> CommandResult<()> {
+    let owner_x = wallets
+        .bucky
+        .entries
+        .first()
+        .and_then(|identity| identity.public_key.get("x"))
+        .and_then(Value::as_str)
+        .ok_or_else(|| CommandErrors::key_derivation_failed("missing_bucky_public_key"))?;
+    let evm_address = wallets
+        .eth
+        .entries
+        .first()
+        .map(|entry| entry.address.as_str())
+        .ok_or_else(|| CommandErrors::key_derivation_failed("missing_evm_address"))?;
+
+    if owner_x != document.public_key_x || !evm_address.eq_ignore_ascii_case(&document.evm_address)
+    {
+        return Err(CommandErrors::internal("owner_document_key_mismatch"));
+    }
+    Ok(())
+}
 
 #[derive(Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
@@ -64,7 +233,10 @@ pub fn validate_mnemonic_words(words: Vec<String>) -> CommandResult<Option<Strin
 }
 
 #[tauri::command]
-pub fn derive_bucky_public_key(mnemonic_words: Vec<String>) -> CommandResult<Value> {
+pub fn derive_registration_material(
+    mnemonic_words: Vec<String>,
+    normalized_name: String,
+) -> CommandResult<RegistrationMaterial> {
     if mnemonic_words.is_empty() {
         return Err(CommandErrors::MnemonicRequired);
     }
@@ -73,29 +245,58 @@ pub fn derive_bucky_public_key(mnemonic_words: Vec<String>) -> CommandResult<Val
     let secret_phrase = SecretString::new(decrypted);
     let mnemonic = Mnemonic::parse_in(Language::English, secret_phrase.expose_secret())?;
     drop(secret_phrase);
-    let requests = vec![WalletRequest::bucky(1)];
-    let wallets = derive_wallets_with_requests(&mnemonic, "", &requests, None)?;
+    let normalized_name = normalized_name.trim().to_ascii_lowercase();
+    if normalized_name.is_empty() {
+        return Err(CommandErrors::internal("invalid_bns_name"));
+    }
 
-    wallets
+    let requests = vec![WalletRequest::bucky(1), WalletRequest::eth(1)];
+    let wallets = derive_wallets_with_requests(&mnemonic, "", &requests, None)?;
+    let owner = wallets
         .bucky
         .entries
         .first()
-        .map(|entry| entry.public_key.clone())
-        .ok_or_else(|| CommandErrors::key_derivation_failed("missing_bucky_public_key"))
+        .ok_or_else(|| CommandErrors::key_derivation_failed("missing_bucky_public_key"))?;
+    let evm = wallets
+        .eth
+        .entries
+        .first()
+        .ok_or_else(|| CommandErrors::key_derivation_failed("missing_evm_address"))?;
+    let owner_index = owner.index;
+    let evm_index = evm.index;
+
+    Ok(RegistrationMaterial {
+        owner_did: format!("did:bns:{normalized_name}"),
+        normalized_name,
+        owner_public_jwk: owner.public_key.clone(),
+        owner_derivation: RegistrationDerivation {
+            index: owner_index,
+            // name-lib's utility path is m/9777'/0'/{index}'. It currently
+            // exposes the derived public material but not the path string.
+            derivation_path: format!("{OWNER_DERIVATION_PATH_PREFIX}{owner_index}'"),
+        },
+        evm_address: evm.address.clone(),
+        evm_derivation: RegistrationDerivation {
+            index: evm_index,
+            derivation_path: name_lib::evm_derivation_path(evm_index),
+        },
+    })
 }
 
 #[tauri::command]
 pub fn create_did(
     app_handle: AppHandle<impl Runtime>,
-    nickname: String,
     password: String,
     mnemonic_words: Vec<String>,
+    owner_document_json: String,
 ) -> CommandResult<DidInfo> {
     let mnemonic_phrase = mnemonic_words.join(" ");
     let mnemonic = Mnemonic::parse_in(Language::English, &mnemonic_phrase)?;
 
     let requests = DidDerivationPlan::default_requests();
     let wallets = derive_wallets_with_requests(&mnemonic, "", &requests, None)?;
+    let owner_document = validate_owner_document_json(owner_document_json)?;
+    validate_document_matches_wallets(&owner_document, &wallets)?;
 
     let encrypted_seed = encrypt_mnemonic(&password, &mnemonic)?;
 
@@ -105,17 +306,21 @@ pub fn create_did(
     if vault
         .dids
         .iter()
-        .any(|did| did.nickname.eq_ignore_ascii_case(&nickname))
+        .any(|did| did.nickname.eq_ignore_ascii_case(&owner_document.name))
     {
         return Err(CommandErrors::NicknameExists);
     }
 
     let record = StoredDid {
         id: new_did_id(),
-        nickname,
+        nickname: owner_document.name.clone(),
         seed: encrypted_seed,
         wallets,
-        sn_status: None,
+        owner_document: Some(owner_document.raw_json),
+        sn_status: Some(SnStatusInfo {
+            username: Some(owner_document.name),
+            zone_config: None,
+        }),
     };
 
     vault.active_did = Some(record.id.clone());
@@ -129,9 +334,9 @@ pub fn create_did(
 #[tauri::command]
 pub fn import_did(
     app_handle: AppHandle<impl Runtime>,
-    nickname: String,
     password: String,
     mnemonic_words: Vec<String>,
+    owner_document_json: String,
 ) -> CommandResult<DidInfo> {
     if mnemonic_words.is_empty() {
         return Err(CommandErrors::MnemonicRequired);
@@ -144,38 +349,40 @@ pub fn import_did(
 
     let requests = DidDerivationPlan::default_requests();
     let wallets = derive_wallets_with_requests(&mnemonic, "", &requests, None)?;
+    let owner_document = validate_owner_document_json(owner_document_json)?;
+    validate_document_matches_wallets(&owner_document, &wallets)?;
 
     let encrypted_seed = encrypt_mnemonic(&password, &mnemonic)?;
 
     let store = open_store(&app_handle)?;
     let mut vault = load_vault(&store)?;
 
-    if let Some(new_identity) = wallets.bucky.entries.first() {
-        if vault.dids.iter().any(|existing| {
-            existing
-                .wallets
-                .bucky
-                .entries
-                .iter()
-                .any(|entry| entry.did == new_identity.did)
-        }) {
-            return Err(CommandErrors::IdentityExists);
-        }
+    if vault.dids.iter().any(|existing| {
+        existing
+            .owner_document
+            .as_ref()
+            .and_then(|json| serde_json::from_str::<Value>(json).ok())
+            .and_then(|value| value.get("id").and_then(Value::as_str).map(str::to_string))
+            .as_deref()
+            == Some(owner_document.id.as_str())
+    }) {
+        return Err(CommandErrors::IdentityExists);
     }
 
     if vault
         .dids
         .iter()
-        .any(|did| did.nickname.eq_ignore_ascii_case(&nickname))
+        .any(|did| did.nickname.eq_ignore_ascii_case(&owner_document.name))
     {
         return Err(CommandErrors::NicknameExists);
     }
 
     let record = StoredDid {
         id: new_did_id(),
-        nickname,
+        nickname: owner_document.name,
         seed: encrypted_seed,
         wallets,
+        owner_document: Some(owner_document.raw_json),
         sn_status: None,
     };
 
@@ -590,6 +797,8 @@ mod tests {
     use super::*;
     use crate::did::domain::DEFAULT_BTC_ADDRESS_TYPE;
     use crate::did::store::{save_vault, VaultStore};
+    use name_lib::{OwnerDocument, OwnerWallet, DID};
+    use std::collections::HashMap;
     use tauri::test::{mock_builder, mock_context, noop_assets, MockRuntime};
 
     static STORE_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
@@ -604,6 +813,38 @@ mod tests {
     fn reset_vault(app_handle: &AppHandle<MockRuntime>) {
         let store = open_store(app_handle).unwrap();
         save_vault(&store, &VaultStore::default()).unwrap();
+    }
+
+    fn mnemonic_words() -> Vec<String> {
+        vec![
+            "abandon", "abandon", "abandon", "abandon", "abandon", "abandon", "abandon", "abandon",
+            "abandon", "abandon", "abandon", "about",
+        ]
+        .into_iter()
+        .map(String::from)
+        .collect()
+    }
+
+    fn owner_document_json(name: &str) -> String {
+        let phrase = mnemonic_words().join(" ");
+        let bucky = name_lib::derive_bucky_key_from_mnemonic(&phrase, None, 0).unwrap();
+        let evm = name_lib::derive_evm_key_from_mnemonic(&phrase, None, 0).unwrap();
+        let public_key = serde_json::from_value(bucky.public_jwk).unwrap();
+        let mut owner = OwnerDocument::new(
+            DID::new("bns", name),
+            name.to_string(),
+            "Test User".to_string(),
+            public_key,
+        );
+        owner.avatar = Some("dicebear:test-user".to_string());
+        owner.wallets = HashMap::from([(
+            "main".to_string(),
+            OwnerWallet {
+                wallet_type: "eth".to_string(),
+                address: evm.address,
+            },
+        )]);
+        serde_json::to_string(&owner).unwrap()
     }
 
     #[test]
@@ -623,6 +864,75 @@ mod tests {
     }
 
     #[test]
+    fn test_registration_material_derivation_vector() {
+        let material = derive_registration_material(mnemonic_words(), "alice0001".to_string())
+            .expect("registration material");
+        assert_eq!(material.owner_did, "did:bns:alice0001");
+        assert_eq!(material.owner_derivation.index, 0);
+        assert_eq!(material.owner_derivation.derivation_path, "m/9777'/0'/0'");
+        assert_eq!(
+            material.owner_public_jwk,
+            serde_json::json!({
+                "kty": "OKP",
+                "crv": "Ed25519",
+                "x": "TFCczaH036J93MRNk0bMMy5zpAha29uNOO7WgcWnrWo"
+            })
+        );
+        assert_eq!(material.evm_derivation.derivation_path, "m/44'/60'/0'/0/0");
+        assert_eq!(
+            material.evm_address,
+            "0x9858EfFD232B4033E47d90003D41EC34EcaEda94"
+        );
+    }
+
+    #[test]
+    fn test_owner_document_round_trip_and_sensitive_fields() {
+        let raw = owner_document_json("alice0001");
+        let validated = validate_owner_document_json(raw.clone()).unwrap();
+        assert_eq!(validated.name, "alice0001");
+        assert_eq!(validated.id, "did:bns:alice0001");
+        assert_eq!(validated.raw_json, raw);
+
+        let websdk_snapshot = serde_json::json!({
+            "@context": [
+                "https://www.w3.org/ns/did/v1",
+                "https://buckyos.org/ns/owner/v1"
+            ],
+            "id": "did:bns:alice0001",
+            "verificationMethod": [{
+                "type": "Ed25519VerificationKey2020",
+                "id": "#main_key",
+                "controller": "did:bns:alice0001",
+                "publicKeyJwk": {
+                    "kty": "OKP",
+                    "crv": "Ed25519",
+                    "x": "TFCczaH036J93MRNk0bMMy5zpAha29uNOO7WgcWnrWo"
+                }
+            }],
+            "authentication": ["#main_key"],
+            "assertion_method": ["#main_key"],
+            "capabilityInvocation": ["#main_key"],
+            "exp": 2098915200_u64,
+            "iat": 1783555200_u64,
+            "version_seq": 0,
+            "name": "alice0001",
+            "display_name": "Alice Zhang",
+            "avatar": "dicebear:alice-avatar-01",
+            "wallets": {
+                "main": {
+                    "type": "eth",
+                    "address": "0x9858EfFD232B4033E47d90003D41EC34EcaEda94"
+                }
+            }
+        });
+        validate_owner_document_json(websdk_snapshot.to_string()).unwrap();
+
+        let mut invalid: Value = serde_json::from_str(&owner_document_json("alice0001")).unwrap();
+        invalid["email"] = Value::String("alice@example.com".to_string());
+        assert!(validate_owner_document_json(invalid.to_string()).is_err());
+    }
+
+    #[test]
     fn test_create_did_flow() {
         let _guard = STORE_TEST_LOCK.lock().unwrap();
         let app = test_app();
@@ -631,26 +941,26 @@ mod tests {
 
         let nickname = "test_user".to_string();
         let password = "password123".to_string();
-        let mnemonic_words = vec![
-            "abandon", "abandon", "abandon", "abandon", "abandon", "abandon", "abandon", "abandon",
-            "abandon", "abandon", "abandon", "about",
-        ]
-        .into_iter()
-        .map(String::from)
-        .collect();
-
         let did_info = create_did(
             app_handle.clone(),
-            nickname.clone(),
             password.clone(),
-            mnemonic_words,
+            mnemonic_words(),
+            owner_document_json(&nickname),
         )
         .unwrap();
 
         assert_eq!(did_info.nickname, nickname);
         assert!(did_info.btc_addresses.is_empty());
-        assert!(did_info.eth_addresses.is_empty());
+        assert_eq!(did_info.eth_addresses.len(), 1);
         assert_eq!(did_info.bucky_wallets.len(), 1);
+        assert_eq!(
+            did_info.owner_document.as_ref().unwrap()["id"],
+            "did:bns:test_user"
+        );
+        assert_eq!(
+            did_info.sn_status.as_ref().unwrap().username.as_deref(),
+            Some("test_user")
+        );
         let identity = &did_info.bucky_wallets[0];
         assert_eq!(identity.index, 0);
         assert!(
@@ -689,19 +999,11 @@ mod tests {
 
         let nickname = "extend_user".to_string();
         let password = "password123".to_string();
-        let mnemonic_words = vec![
-            "abandon", "abandon", "abandon", "abandon", "abandon", "abandon", "abandon", "abandon",
-            "abandon", "abandon", "abandon", "about",
-        ]
-        .into_iter()
-        .map(String::from)
-        .collect();
-
         let did_info = create_did(
             app_handle.clone(),
-            nickname.clone(),
             password.clone(),
-            mnemonic_words,
+            mnemonic_words(),
+            owner_document_json(&nickname),
         )
         .unwrap();
 
@@ -724,7 +1026,7 @@ mod tests {
             WalletExtensionKind::Eth { count: 1 },
         )
         .unwrap();
-        assert_eq!(extended_eth.eth_addresses.len(), 1);
+        assert_eq!(extended_eth.eth_addresses.len(), 2);
 
         let extended_bucky = extend_wallets(
             app_handle.clone(),
@@ -738,7 +1040,7 @@ mod tests {
         let listed = list_dids(app_handle.clone()).unwrap();
         assert_eq!(listed.len(), 1);
         assert_eq!(listed[0].btc_addresses.len(), 2);
-        assert_eq!(listed[0].eth_addresses.len(), 1);
+        assert_eq!(listed[0].eth_addresses.len(), 2);
         assert_eq!(listed[0].bucky_wallets.len(), 2);
 
         delete_wallet(app_handle.clone(), password, Some(did_info.id)).unwrap();

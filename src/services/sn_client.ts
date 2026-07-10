@@ -1,330 +1,197 @@
-import { invoke } from "@tauri-apps/api/core";
-import { buckyos } from "buckyos";
+import { buckyos, sn } from "buckyos";
+import type { OwnerDocument } from "../features/did/types";
+import { getServiceEndpoints, setServiceEndpointsForTests } from "./endpoints";
 
-const DEFAULT_SN_API_BASE_URL = "https://sn.buckyos.ai/kapi/sn";
-const SN_API_TIMEOUT_MS = 10000;
+const SN_CHECK_TIMEOUT_MS = 10_000;
+const SN_REGISTER_TIMEOUT_MS = 180_000;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const REGISTRATION_ERROR_NAMES = new Set([
+    "invalid_params",
+    "invalid_email",
+    "email_already_bound",
+    "username_already_exists",
+    "invalid_active_code",
+    "bns_permission_denied",
+    "bns_name_already_exists",
+    "bns_write_failed",
+    "bns_proxy_unavailable",
+    "bns_controller_unavailable",
+    "sn_register_timeout",
+    "sn_register_contract_violation",
+]);
 
-let snApiUrlOverride: string | null = null;
-let snApiUrlPromise: Promise<string> | null = null;
-
-interface SnRpcTransport {
-    call<TResult, TParams>(method: string, params: TParams): Promise<TResult>;
+export function isLocallyValidEmail(value: string): boolean {
+    return EMAIL_PATTERN.test(value.trim());
 }
 
-interface SnCodeResponse {
-    code?: number;
+export function snRegistrationErrorMessageKey(codeName: string): string | null {
+    return REGISTRATION_ERROR_NAMES.has(codeName) ? `sn.error.${codeName}` : null;
 }
 
-export interface SnCheckUsernameParams {
+export type SnRegistrationErrorCode =
+    | "invalid_params"
+    | "invalid_email"
+    | "email_already_bound"
+    | "username_already_exists"
+    | "invalid_active_code"
+    | "bns_permission_denied"
+    | "bns_name_already_exists"
+    | "bns_write_failed"
+    | "bns_proxy_unavailable"
+    | "bns_controller_unavailable"
+    | "sn_register_failed"
+    | "sn_register_contract_violation"
+    | "sn_register_timeout";
+
+export class SnServiceError extends Error {
+    readonly codeName: SnRegistrationErrorCode | string;
+
+    constructor(codeName: SnRegistrationErrorCode | string, detail?: string) {
+        super(detail || codeName);
+        this.name = "SnServiceError";
+        this.codeName = codeName;
+    }
+}
+
+export interface SnUsernameCheck {
+    valid: boolean;
+    reason: string;
+    message: string;
+    normalized_name: string;
+}
+
+export interface SnRegisterInput {
     name: string;
+    email: string;
+    passwordHash: string;
+    activeCode: string;
+    requestId: string;
+    assetOwner: string;
+    ownerDocument: OwnerDocument;
 }
 
-export interface SnCheckUsernameResponse extends SnCodeResponse {
-    valid?: boolean;
+export interface SnRegisterResult {
+    code: number;
+    need_bind_owner_key: false;
+    access_token: string;
+    refresh_token: string;
+    bns?: unknown;
 }
 
-export interface SnCheckActiveCodeParams {
-    active_code: string;
+export function buildSnRegisterRequest(input: SnRegisterInput): sn.SnAuthRegisterReq {
+    return {
+        name: input.name,
+        email: input.email,
+        pwd_hash: input.passwordHash,
+        active_code: input.activeCode.trim(),
+        request_id: input.requestId,
+        asset_owner: input.assetOwner,
+        owner_config: input.ownerDocument,
+    };
 }
 
-export interface SnCheckActiveCodeResponse extends SnCodeResponse {
-    valid?: boolean;
-}
-
-export interface SnRegisterParams {
-    name: string;
-    pwd_hash: string;
-    active_code: string;
-}
-
-export interface SnRegisterResponse extends SnCodeResponse {
-    access_token?: string;
-    refresh_token?: string;
-    need_bind_owner_key?: boolean;
-}
-
-export interface SnBindOwnerKeyParams {
-    public_key: string;
-}
-
-export type SnBindOwnerKeyResponse = SnCodeResponse;
-
-export interface SnGetByPublicKeyParams {
-    public_key: string;
-}
-
-export interface SnGetByPublicKeyResponse {
-    device_info?: string | null;
-    device_name?: string | null;
-    device_sn_ip?: string | null;
-    found?: boolean | null;
-    public_key?: string | null;
-    reason?: string | null;
-    sn_ips?: string[] | null;
-    user_name?: string | null;
-    zone_config?: string | null;
-}
-
-export interface SnUnbindZoneConfigParams {
-    user_name: string;
-}
-
-export type SnUnbindZoneConfigResponse = SnCodeResponse;
-
-abstract class SnRpcClient {
-    private readonly rpcClient: SnRpcTransport;
-
-    protected constructor(url: string, token?: string | null) {
-        this.rpcClient = new buckyos.kRPCClient(url, token ?? null);
-    }
-
-    protected call<TResult, TParams>(method: string, params: TParams): Promise<TResult> {
-        return this.rpcClient.call<TResult, TParams>(method, params);
-    }
-}
-
-export class SnAuthClient extends SnRpcClient {
-    constructor(url: string) {
-        super(url);
-    }
-
-    checkUsername(params: SnCheckUsernameParams): Promise<SnCheckUsernameResponse> {
-        return this.call("auth.check_username", params);
-    }
-
-    checkActiveCode(params: SnCheckActiveCodeParams): Promise<SnCheckActiveCodeResponse> {
-        return this.call("auth.check_active_code", params);
-    }
-
-    register(params: SnRegisterParams): Promise<SnRegisterResponse> {
-        return this.call("auth.register", params);
-    }
-}
-
-export class SnBindingClient extends SnRpcClient {
-    constructor(url: string, token?: string | null) {
-        super(url, token);
-    }
-
-    bindOwnerKey(params: SnBindOwnerKeyParams): Promise<SnBindOwnerKeyResponse> {
-        return this.call("user.bind_owner_key", params);
-    }
-
-    unbindZoneConfig(params: SnUnbindZoneConfigParams): Promise<SnUnbindZoneConfigResponse> {
-        return this.call("zone.unbind_config", params);
-    }
-}
-
-export class SnDeviceClient extends SnRpcClient {
-    constructor(url: string) {
-        super(url);
-    }
-
-    getByPublicKey(params: SnGetByPublicKeyParams): Promise<SnGetByPublicKeyResponse> {
-        return this.call("device.get_by_pk", params);
-    }
-}
-
-function normalizeUsername(value: string): string {
-    return value.trim().toLowerCase();
-}
-
-export function setSnApiUrl(url: string) {
-    snApiUrlOverride = url;
-    snApiUrlPromise = Promise.resolve(url);
-}
-
-function shortenValue(value: string, keep = 16): string {
-    if (value.length <= keep * 2) return value;
-    return `${value.slice(0, keep)}...${value.slice(-keep)}`;
-}
-
-function summarizePublicKeyJwk(publicKeyJwk: string): string {
-    try {
-        const parsed = JSON.parse(publicKeyJwk) as Record<string, unknown>;
-        const kty = typeof parsed.kty === "string" ? parsed.kty : "unknown";
-        const crv = typeof parsed.crv === "string" ? parsed.crv : "unknown";
-        const x = typeof parsed.x === "string" ? shortenValue(parsed.x, 10) : "missing-x";
-        return `${kty}/${crv}/${x}`;
-    } catch {
-        return shortenValue(publicKeyJwk, 24);
-    }
-}
-
-async function getSnApiBaseUrl(): Promise<string> {
-    if (snApiUrlPromise) {
-        return snApiUrlPromise;
-    }
-    snApiUrlPromise = (async () => {
-        if (snApiUrlOverride) return snApiUrlOverride;
-        try {
-            const host = await invoke<string>("get_sn_api_host");
-            if (typeof host === "string" && host.trim().length > 0) {
-                return host;
-            }
-        } catch (err) {
-            console.warn("[SN] failed to load host config, fallback to default", err);
+function timeoutFetcher(timeoutMs: number, timeoutCode: string) {
+    return async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+        const controller = new AbortController();
+        const sourceSignal = init?.signal;
+        const forwardAbort = () => controller.abort(sourceSignal?.reason);
+        if (sourceSignal) {
+            if (sourceSignal.aborted) forwardAbort();
+            else sourceSignal.addEventListener("abort", forwardAbort, { once: true });
         }
-        return DEFAULT_SN_API_BASE_URL;
-    })();
-    return snApiUrlPromise;
+        const timer = setTimeout(() => controller.abort(timeoutCode), timeoutMs);
+        try {
+            return await fetch(input, { ...init, signal: controller.signal });
+        } catch (error) {
+            if (controller.signal.aborted && !sourceSignal?.aborted) throw new SnServiceError(timeoutCode);
+            throw error;
+        } finally {
+            clearTimeout(timer);
+            sourceSignal?.removeEventListener("abort", forwardAbort);
+        }
+    };
 }
 
-async function getSnRouteUrl(route: "root" | "auth" | "bns"): Promise<string> {
-    const baseUrl = await getSnApiBaseUrl();
-    const normalizedBase = baseUrl.replace(/\/+$/, "");
-    if (route === "root") return normalizedBase;
-    if (normalizedBase.endsWith(`/${route}`)) return normalizedBase;
-    return `${normalizedBase}/${route}`;
+async function client(timeoutMs: number, timeoutCode: string): Promise<sn.SnClient> {
+    const endpoints = await getServiceEndpoints();
+    return new sn.SnClient(endpoints.sn_api_url, null, {
+        fetcher: timeoutFetcher(timeoutMs, timeoutCode),
+    });
 }
 
-async function getSnAuthClient(): Promise<SnAuthClient> {
-    return new SnAuthClient(await getSnRouteUrl("auth"));
+function translateClientError(error: unknown): never {
+    if (error instanceof SnServiceError) throw error;
+    if (error instanceof sn.SnClientError) {
+        if (error.detail.includes("sn_register_timeout") || error.message.includes("sn_register_timeout")) {
+            throw new SnServiceError("sn_register_timeout");
+        }
+        if (error.detail.includes("sn_check_timeout") || error.message.includes("sn_check_timeout")) {
+            throw new SnServiceError("sn_check_timeout");
+        }
+        throw new SnServiceError(error.codeName || "sn_register_failed", error.detail);
+    }
+    throw error;
 }
 
-async function getSnBindingClient(token?: string | null): Promise<SnBindingClient> {
-    return new SnBindingClient(await getSnRouteUrl("bns"), token ?? null);
+export function setSnApiUrl(url: string): void {
+    const parsed = new URL(url);
+    const root = parsed.hostname.replace(/^(sn|bns)\./, "");
+    setServiceEndpointsForTests({
+        sn_host: root,
+        sn_api_url: `${parsed.protocol}//sn.${root}${parsed.port ? `:${parsed.port}` : ""}`,
+        bns_api_url: `${parsed.protocol}//bns.${root}${parsed.port ? `:${parsed.port}` : ""}`,
+    });
 }
 
-async function getSnDeviceClient(): Promise<SnDeviceClient> {
-    return new SnDeviceClient(await getSnRouteUrl("root"));
-}
-
-async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> {
-    let timer: ReturnType<typeof setTimeout> | null = null;
-
+export async function checkSnUsername(username: string): Promise<SnUsernameCheck> {
+    const normalized = username.trim().toLowerCase();
+    if (!normalized) {
+        return { valid: false, reason: "invalid_username", message: "", normalized_name: "" };
+    }
     try {
-        return await Promise.race([
-            promise,
-            new Promise<T>((_, reject) => {
-                timer = setTimeout(() => reject(new Error(errorMessage)), timeoutMs);
-            }),
-        ]);
-    } finally {
-        if (timer) clearTimeout(timer);
+        return await (await client(SN_CHECK_TIMEOUT_MS, "sn_check_timeout")).checkUsername(normalized);
+    } catch (error) {
+        translateClientError(error);
     }
 }
 
 export async function checkBuckyUsername(username: string): Promise<boolean> {
-    const normalized = normalizeUsername(username);
-    if (!normalized) {
-        console.info("[SN-CHECK] auth.check_username request", { name: normalized });
-        console.info("[SN-CHECK] auth.check_username result", { name: normalized, valid: false, raw: null });
-        return false;
-    }
-    console.info("[SN-CHECK] auth.check_username request", { name: normalized });
-    const client = await getSnAuthClient();
-    const data = await withTimeout(
-        client.checkUsername({
-            name: normalized,
-        }),
-        SN_API_TIMEOUT_MS,
-        "sn_check_timeout"
-    );
-
-    let valid = false;
-    if (typeof data?.valid === "boolean") {
-        valid = data.valid;
-    } else if (typeof data?.code === "number") {
-        valid = data.code === 0;
-    }
-
-    console.info("[SN-CHECK] auth.check_username result", { name: normalized, valid, raw: data });
-    return valid;
+    return (await checkSnUsername(username)).valid;
 }
 
 export async function checkSnActiveCode(activeCode: string): Promise<boolean> {
-    const trimmedCode = activeCode.trim();
-    console.info("[SN-CHECK] auth.check_active_code request", { activeCode: trimmedCode });
-    const client = await getSnAuthClient();
-    const data = await withTimeout(
-        client.checkActiveCode({ active_code: trimmedCode }),
-        SN_API_TIMEOUT_MS,
-        "sn_check_timeout"
-    );
-
-    const valid = typeof data?.valid === "boolean" ? data.valid : false;
-    console.info("[SN-CHECK] auth.check_active_code result", { activeCode: trimmedCode, valid, raw: data });
-    return valid;
-}
-
-export async function registerSnAccountWithPassword(args: {
-    userName: string;
-    passwordHash: string;
-    activeCode: string;
-    publicKeyJwk: string;
-}): Promise<{ ok: boolean; raw: any }> {
-    const normalizedUserName = normalizeUsername(args.userName);
-    const authClient = await getSnAuthClient();
-    const registration = await withTimeout(
-        authClient.register({
-            name: normalizedUserName,
-            pwd_hash: args.passwordHash,
-            active_code: args.activeCode.trim(),
-        }),
-        SN_API_TIMEOUT_MS,
-        "register_sn_user_failed"
-    );
-
-    if ((registration?.code ?? -1) !== 0 || !registration?.access_token) {
-        return { ok: false, raw: registration };
+    const code = activeCode.trim();
+    if (!code) return false;
+    try {
+        return (await (await client(SN_CHECK_TIMEOUT_MS, "sn_check_timeout")).checkActiveCode(code)).valid;
+    } catch (error) {
+        translateClientError(error);
     }
-
-    const bindingClient = await getSnBindingClient(registration.access_token);
-    const bindResult = await withTimeout(
-        bindingClient.bindOwnerKey({ public_key: args.publicKeyJwk }),
-        SN_API_TIMEOUT_MS,
-        "register_sn_user_failed"
-    );
-
-    return {
-        ok: (bindResult?.code ?? -1) === 0,
-        raw: {
-            registration,
-            bind_owner_key: bindResult,
-        },
-    };
 }
 
-export async function getUserByPublicKey(publicKeyJwk: string): Promise<{ ok: boolean; raw: any }> {
-    const keySummary = summarizePublicKeyJwk(publicKeyJwk);
-    console.info("[OOD-CHECK] device.get_by_pk request", { keySummary });
-
-    const client = await getSnDeviceClient();
-    const data = await withTimeout(
-        client.getByPublicKey({ public_key: publicKeyJwk }),
-        SN_API_TIMEOUT_MS,
-        "sn_import_timeout"
-    );
-
-    const ok = typeof data?.user_name === "string" && data.user_name.trim().length > 0;
-    console.info("[OOD-CHECK] device.get_by_pk response", { keySummary, raw: data });
-
-    return {
-        ok,
-        raw: data,
-    };
+export async function registerSnIdentity(input: SnRegisterInput): Promise<SnRegisterResult> {
+    try {
+        const response = await (await client(SN_REGISTER_TIMEOUT_MS, "sn_register_timeout")).register(
+            buildSnRegisterRequest(input)
+        );
+        if (response.code !== 0) throw new SnServiceError("sn_register_failed");
+        if (response.need_bind_owner_key !== false) {
+            throw new SnServiceError("sn_register_contract_violation");
+        }
+        return response as SnRegisterResult;
+    } catch (error) {
+        translateClientError(error);
+    }
 }
 
+// This compatibility call is unrelated to registration and remains until the
+// OOD unbind screen migrates to the next SN profile API. New identity flows do
+// not use it, and no removed owner-key/device lookup method remains here.
 export async function unbindZoneConfig(userName: string, token: string): Promise<void> {
-    const normalizedUserName = normalizeUsername(userName);
-    console.info("[OOD-UNBIND] zone.unbind_config request", { userName: normalizedUserName });
-    const client = await getSnBindingClient(token);
-    const result = await withTimeout(
-        client.unbindZoneConfig({ user_name: normalizedUserName }),
-        SN_API_TIMEOUT_MS,
-        "sn_unbind_timeout"
-    );
-    console.info("[OOD-UNBIND] zone.unbind_config response", {
-        userName: normalizedUserName,
-        raw: result,
+    const endpoints = await getServiceEndpoints();
+    const rpc = new buckyos.kRPCClient(`${endpoints.sn_api_url}/kapi/sn/auth`, token);
+    const result = await rpc.call<{ code?: number }, { user_name: string }>("zone.unbind_config", {
+        user_name: userName.trim().toLowerCase(),
     });
-
-    if ((result?.code ?? -1) !== 0) {
-        console.error("[OOD-UNBIND] zone.unbind_config failed", {
-            userName: normalizedUserName,
-            raw: result,
-        });
-        throw new Error("sn_unbind_failed");
-    }
+    if (result.code !== 0) throw new Error("sn_unbind_failed");
 }

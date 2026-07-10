@@ -9,6 +9,8 @@ import { useDidContext } from "../../features/did/DidContext";
 import { revealMnemonic } from "../../features/did/api";
 import { parseCommandError } from "../../utils/commandError";
 import { CommandErrorCodes } from "../../constants/commandErrorCodes";
+import { getIdentityAvatar, getIdentityBnsName, getIdentityDisplayName } from "../../features/did/identityView";
+import { avatarDisplayUrl } from "../../features/did/ownerDocument";
 
 const IdentityList: React.FC = () => {
     const { t } = useI18n();
@@ -25,7 +27,7 @@ const IdentityList: React.FC = () => {
     const openPasswordDialog = (didId: string) => {
         if (activeDid?.id === didId) return; // clicking current does nothing
         const did = dids.find((d) => d.id === didId);
-        const name = (did?.nickname?.trim()?.length ?? 0) > 0 ? did!.nickname : t("common.account.unnamed");
+        const name = getIdentityDisplayName(did) || t("common.account.unnamed");
         setTargetId(didId);
         setTargetName(name);
         setPassword("");
@@ -86,7 +88,9 @@ const IdentityList: React.FC = () => {
             <div style={{ padding: "8px 16px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
                 <div className="settings-list">
                     {dids.map((did) => {
-                        const name = did.nickname?.trim()?.length ? did.nickname : t("common.account.unnamed");
+                        const name = getIdentityDisplayName(did) || t("common.account.unnamed");
+                        const bnsName = getIdentityBnsName(did);
+                        const avatarUrl = avatarDisplayUrl(getIdentityAvatar(did));
                         const isActive = activeDid?.id === did.id;
                         return (
                             <button
@@ -96,14 +100,21 @@ const IdentityList: React.FC = () => {
                                 style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}
                             >
                                 <span style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                                    <span
-                                        className="account-avatar"
-                                        aria-hidden
-                                        style={{ width: 30, height: 30, borderRadius: 15, fontSize: 14 }}
-                                    >
-                                        {name.trim().charAt(0).toUpperCase() || "?"}
+                                    {avatarUrl ? (
+                                        <img src={avatarUrl} alt="" style={{ width: 34, height: 34, borderRadius: 12 }} />
+                                    ) : (
+                                        <span
+                                            className="account-avatar"
+                                            aria-hidden
+                                            style={{ width: 30, height: 30, borderRadius: 15, fontSize: 14 }}
+                                        >
+                                            {name.trim().charAt(0).toUpperCase() || "?"}
+                                        </span>
+                                    )}
+                                    <span style={{ display: "flex", flexDirection: "column", textAlign: "left" }}>
+                                        <strong>{name}</strong>
+                                        {bnsName ? <small style={{ color: "var(--muted-text)" }}>{bnsName}</small> : null}
                                     </span>
-                                    <span style={{ textAlign: "left", fontWeight: 600 }}>{name}</span>
                                 </span>
                                 {isActive ? (
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
