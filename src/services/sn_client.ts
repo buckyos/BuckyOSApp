@@ -133,6 +133,58 @@ function translateClientError(error: unknown): never {
     throw error;
 }
 
+function rpcErrorDetails(error: unknown): Record<string, unknown> {
+    if (error instanceof sn.SnClientError) {
+        return {
+            name: error.name,
+            message: error.message,
+            kind: error.kind,
+            code: error.code,
+            codeName: error.codeName,
+            detail: error.detail,
+            stack: error.stack,
+        };
+    }
+    if (error instanceof Error) {
+        const cause = (error as Error & { cause?: unknown }).cause;
+        return {
+            name: error.name,
+            message: error.message,
+            stack: error.stack,
+            cause: cause instanceof Error
+                ? {
+                      name: cause.name,
+                      message: cause.message,
+                      stack: cause.stack,
+                  }
+                : cause,
+        };
+    }
+    return { value: String(error) };
+}
+
+async function logUsernameCheckFailure(username: string, error: unknown): Promise<void> {
+    let rpcUrl = "unavailable";
+    try {
+        const endpoints = await getServiceEndpoints();
+        rpcUrl = `${endpoints.sn_api_url}/kapi/sn/auth`;
+    } catch (endpointError) {
+        rpcUrl = `endpoint lookup failed: ${
+            endpointError instanceof Error ? endpointError.message : String(endpointError)
+        }`;
+    }
+
+    console.error("[SN RPC] auth.check_username failed", {
+        rpcUrl,
+        method: "auth.check_username",
+        params: { name: username },
+        pageOrigin: typeof window !== "undefined" ? window.location.origin : null,
+        online: typeof navigator !== "undefined" ? navigator.onLine : null,
+        error: rpcErrorDetails(error),
+        rawError: error,
+    });
+}
+
 export function setSnApiUrl(url: string): void {
     const parsed = new URL(url);
     const root = parsed.hostname.replace(/^(sn|bns)\./, "");
@@ -151,6 +203,7 @@ export async function checkSnUsername(username: string): Promise<SnUsernameCheck
     try {
         return await (await client(SN_CHECK_TIMEOUT_MS, "sn_check_timeout")).checkUsername(normalized);
     } catch (error) {
+        await logUsernameCheckFailure(normalized, error);
         translateClientError(error);
     }
 }

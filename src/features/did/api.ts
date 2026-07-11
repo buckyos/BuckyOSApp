@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import type { DidDocType, namelib } from "buckyos";
 import type { DidInfo, WalletExtensionRequest } from "./types";
 
 export async function listDids(): Promise<DidInfo[]> {
@@ -36,6 +37,13 @@ export async function signJsonWithActiveDid(
     payloads: JsonSignPayload[]
 ): Promise<(string | null)[]> {
     return invoke("sign_json_with_active_did", { password, payloads });
+}
+
+export async function resolveDid(
+    did: string,
+    docType: DidDocType | null = null
+): Promise<namelib.EncodedDocument> {
+    return invoke("resolve_did", { did, docType });
 }
 
 export async function importDid(

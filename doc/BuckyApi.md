@@ -87,6 +87,14 @@
 
 > **提示**：`signJsonWithActiveDid` 为交互式请求，可能等待用户输入较长时间。第三方页面需避免连续发送多次请求。
 
+### `BuckyApi.resolve_did(did: string, docType?: DidDocType | null): Promise<{ code, message?, data?: EncodedDocument }>`
+
+- **说明**：通过宿主 Rust 扩展调用 `name-client::resolve_did`，因此会使用机器级 DID 文档缓存。
+- **参数**：
+  - `did`：要解析的 DID 字符串。
+  - `docType`：可选的 WebSDK `DidDocType`；省略或传 `null` 时使用 `name-client` 的默认文档类型。
+- **成功 data**：与 `buckyos-websdk` 的 `namelib.EncodedDocument` 一致：`{ type: "json", value: unknown }` 或 `{ type: "jwt", jwt: string }`。
+
 ## 与宿主程序的交互
 
 一旦调用 `window.BuckyApi.xxx()`：

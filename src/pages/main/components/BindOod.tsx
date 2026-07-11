@@ -7,7 +7,13 @@ import InputDialog from "../../../components/ui/InputDialog";
 import oodIllustration from "../../../assets/ood.png";
 import { useDidContext } from "../../../features/did/DidContext";
 import { signJsonWithActiveDid } from "../../../features/did/api";
-import { fetchSnStatus, getCachedSnStatus, setCachedSnStatus } from "../../../features/sn/snStatusManager";
+import { getIdentityDid } from "../../../features/did/identityView";
+import {
+    getLastZoneBindingStatus,
+    resolveZoneBindingStatus,
+    setLastZoneBindingStatus,
+} from "../../../features/did/zoneBindingStatus";
+import { getCachedSnStatus, setCachedSnStatus } from "../../../features/sn/snStatusManager";
 import { unbindZoneConfig } from "../../../services/sn_client";
 import { parseCommandError } from "../../../utils/commandError";
 import { CommandErrorCodes } from "../../../constants/commandErrorCodes";
@@ -32,32 +38,20 @@ const BindOod: React.FC = () => {
         let cancelled = false;
 
         const loadOodBinding = async () => {
-            if (!activeDid?.id || !activeDid.bucky_wallets?.length) {
+            const currentUserDid = getIdentityDid(activeDid);
+            if (!currentUserDid) {
                 if (!cancelled) setHasBoundOod(false);
                 return;
             }
 
-            const cached = await getCachedSnStatus(activeDid.id);
-            const cachedZoneConfig =
-                typeof cached?.zoneConfig === "string" ? cached.zoneConfig.trim() : "";
-            if (cachedZoneConfig) {
-                if (!cancelled) setHasBoundOod(true);
-                return;
+            const lastStatus = getLastZoneBindingStatus(currentUserDid);
+            if (lastStatus !== null && !cancelled) {
+                setHasBoundOod(lastStatus);
             }
 
-            try {
-                const publicKeyJwk = JSON.stringify(activeDid.bucky_wallets[0].public_key as any);
-                const record = await fetchSnStatus(activeDid.id, publicKeyJwk);
-                const fetchedZoneConfig =
-                    typeof record.zoneConfig === "string" ? record.zoneConfig.trim() : "";
-                if (!cancelled) {
-                    setHasBoundOod(Boolean(fetchedZoneConfig));
-                }
-            } catch (err) {
-                console.warn("[OOD] failed to load binding status", err);
-                if (!cancelled) {
-                    setHasBoundOod(false);
-                }
+            const resolvedStatus = await resolveZoneBindingStatus(currentUserDid);
+            if (!cancelled && resolvedStatus !== null) {
+                setHasBoundOod(resolvedStatus);
             }
         };
 
@@ -121,11 +115,10 @@ const BindOod: React.FC = () => {
                 info: {
                     ...(cached?.info ?? {}),
                     user_name: userName,
-                    zone_config: "",
                 },
                 username: userName,
-                zoneConfig: null,
             });
+            setLastZoneBindingStatus(getIdentityDid(activeDid), false);
             setHasBoundOod(false);
             setPasswordDialogOpen(false);
             setPassword("");

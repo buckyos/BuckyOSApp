@@ -55,6 +55,9 @@
             console.info("[BuckyApi] openExternalUrl", url);
             return callNative("openExternalUrl", { url });
         },
+        resolve_did(did, docType = null) {
+            return callNative("resolve_did", { did, docType });
+        },
         signJsonWithActiveDid(payloads) {
             return callNative("signJsonWithActiveDid", { payloads });
         },

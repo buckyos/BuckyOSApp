@@ -36,6 +36,7 @@ mod applist;
 mod config;
 mod did;
 mod error;
+mod name_resolution;
 mod network;
 #[cfg(desktop)]
 mod node_control;
@@ -104,6 +105,7 @@ pub fn run() {
         applist::get_applist,
         network::local_ipv4_list,
         network::scan_device_batch,
+        name_resolution::resolve_did,
         config::get_service_endpoints,
         tray::tray_set_enabled,
         tray::tray_set_labels,
@@ -138,6 +140,7 @@ pub fn run() {
         applist::get_applist,
         network::local_ipv4_list,
         network::scan_device_batch,
+        name_resolution::resolve_did,
         config::get_service_endpoints,
     ]);
 

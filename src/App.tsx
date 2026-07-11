@@ -24,6 +24,12 @@ function App() {
         };
 
         const preventContextMenu = (event: Event) => {
+            // Keep the native WebKit context menu in development so Tauri's
+            // "Inspect Element" entry remains available for frontend debugging.
+            if (import.meta.env.DEV) {
+                return;
+            }
+
             if (allowNativeContextMenu(event)) {
                 return;
             }
