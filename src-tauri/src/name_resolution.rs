@@ -1,6 +1,8 @@
+use buckyos_kit::BuckyOSMachineConfig;
 use name_lib::{DidDocType, EncodedDocument, DID};
 use serde::Serialize;
 use serde_json::Value;
+use std::collections::HashMap;
 
 use crate::error::{CommandErrors, CommandResult};
 
@@ -25,6 +27,24 @@ impl From<EncodedDocument> for WebEncodedDocument {
     }
 }
 
+fn name_client_bridge_config(machine_config: BuckyOSMachineConfig) -> HashMap<String, String> {
+    // `web3_bridge.bns` can point at the Web3 service, whose API is not the
+    // DID HTTP resolver. NameClient's `bns` provider calls /1.0/identifiers,
+    // so that entry must come from the dedicated machine-level bns_host.
+    let bns_host = machine_config.bns_host_or_default().to_string();
+    let bns_resolver = if machine_config.force_https
+        || bns_host.starts_with("http://")
+        || bns_host.starts_with("https://")
+    {
+        bns_host
+    } else {
+        format!("http://{bns_host}")
+    };
+    let mut bridge_config = machine_config.web3_bridge;
+    bridge_config.insert("bns".to_string(), bns_resolver);
+    bridge_config
+}
+
 #[tauri::command]
 pub async fn resolve_did(
     did: String,
@@ -45,9 +65,10 @@ pub async fn resolve_did(
         .filter(|value| !value.is_empty())
         .map(DidDocType::from);
 
-    // NameClient's production defaults use the machine-level filesystem cache.
-    // Initialization is idempotent and concurrency-safe inside name-client.
-    let web3_bridge = name_client::get_default_web3_bridge_config();
+    // Name resolution follows the system-wide BuckyOS environment. Both the
+    // bridge map and the DID resolver host come from machine.json.
+    let web3_bridge =
+        name_client_bridge_config(BuckyOSMachineConfig::load_machine_config().unwrap_or_default());
     name_client::init_name_lib(&web3_bridge)
         .await
         .map_err(|error| CommandErrors::internal(format!("name_client_init_failed: {error}")))?;
@@ -90,6 +111,48 @@ mod tests {
         assert_eq!(
             serde_json::to_value(document).unwrap(),
             json!({ "type": "jwt", "jwt": "a.b.c" })
+        );
+    }
+
+    #[test]
+    fn uses_machine_bns_host_for_the_name_client_resolver() {
+        let machine_config = serde_json::from_value::<BuckyOSMachineConfig>(json!({
+            "web3_bridge": {
+                "bns": "web3.devtests.org",
+                "eth": "eth.devtests.org"
+            },
+            "bns_host": "bns.devtests.org"
+        }))
+        .unwrap();
+
+        let bridge_config = name_client_bridge_config(machine_config);
+
+        assert_eq!(
+            bridge_config.get("bns").map(String::as_str),
+            Some("bns.devtests.org")
+        );
+        assert_eq!(
+            bridge_config.get("eth").map(String::as_str),
+            Some("eth.devtests.org")
+        );
+    }
+
+    #[test]
+    fn uses_http_when_machine_config_disables_forced_https() {
+        let machine_config = serde_json::from_value::<BuckyOSMachineConfig>(json!({
+            "web3_bridge": {
+                "bns": "web3.devtests.org"
+            },
+            "bns_host": "bns.devtests.org",
+            "force_https": false
+        }))
+        .unwrap();
+
+        let bridge_config = name_client_bridge_config(machine_config);
+
+        assert_eq!(
+            bridge_config.get("bns").map(String::as_str),
+            Some("http://bns.devtests.org")
         );
     }
 }

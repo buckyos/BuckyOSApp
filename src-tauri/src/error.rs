@@ -57,7 +57,7 @@ pub type CommandResult<T> = Result<T, CommandErrors>;
 
 #[derive(Debug, Serialize)]
 pub struct CommandErrorPayload {
-    pub code: CommandErrorCode,
+    pub code: u32,
     pub message: String,
 }
 
@@ -151,7 +151,7 @@ impl From<jsonwebtoken::errors::Error> for CommandErrors {
 impl From<CommandErrors> for CommandErrorPayload {
     fn from(value: CommandErrors) -> Self {
         Self {
-            code: value.code(),
+            code: value.code() as u32,
             message: value.message(),
         }
     }
@@ -160,5 +160,21 @@ impl From<CommandErrors> for CommandErrorPayload {
 impl From<CommandErrors> for InvokeError {
     fn from(value: CommandErrors) -> Self {
         InvokeError::from(CommandErrorPayload::from(value))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn serializes_command_error_codes_as_protocol_numbers() {
+        let payload = CommandErrorPayload::from(CommandErrors::not_found("missing"));
+
+        assert_eq!(
+            serde_json::to_value(payload).unwrap(),
+            json!({ "code": 1001, "message": "missing" })
+        );
     }
 }

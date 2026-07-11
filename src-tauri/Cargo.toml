@@ -42,8 +42,9 @@ rand = "0.8"
 sha2 = "0.10"
 hex = "0.4"
 ulid = "1.1"
-name-lib = { git = "https://github.com/buckyos/buckyos-base.git", package = "name-lib", rev = "7e5791da331e2954bd24b367c553db95e2f82934" }
-name-client = { git = "https://github.com/buckyos/buckyos-base.git", package = "name-client", rev = "7e5791da331e2954bd24b367c553db95e2f82934" }
+name-lib = { git = "https://github.com/buckyos/buckyos-base.git", package = "name-lib", branch = "beta2.2" }
+name-client = { git = "https://github.com/buckyos/buckyos-base.git", package = "name-client", branch = "beta2.2" }
+buckyos-kit = { git = "https://github.com/buckyos/buckyos-base.git", package = "buckyos-kit", branch = "beta2.2" }
 secrecy = "0.8"
 zeroize = "1.7"
 jsonwebtoken = { version = "9", default-features = false, features = ["use_pem"] }
