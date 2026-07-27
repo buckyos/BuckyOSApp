@@ -27,3 +27,5 @@ build_log
 /src-tauri/ios/AudioPlugin/.build
 /.codex
 pnpm-lock.yaml
+/tmp/
+/auto_test/
