@@ -41,7 +41,18 @@ const errorHintStyle: React.CSSProperties = {
 
 const ErrorHint: React.FC<{ message: string }> = ({ message }) => (
     <p className="error" style={errorHintStyle}>
-        <span aria-hidden="true">ⓘ</span>
+        <svg
+            width="14"
+            height="14"
+            viewBox="0 0 20 20"
+            fill="none"
+            aria-hidden="true"
+            style={{ flex: "0 0 auto" }}
+        >
+            <circle cx="10" cy="10" r="8.25" stroke="currentColor" strokeWidth="1.5" />
+            <path d="M10 5.5v5.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+            <circle cx="10" cy="13.8" r="1" fill="currentColor" />
+        </svg>
         <span>{message}</span>
     </p>
 );
@@ -173,7 +184,21 @@ const BindSn: React.FC<BindSnProps> = ({
                 showBack
                 rightSlot={
                     <button type="button" className="icon-help-button" onClick={onShowSnInfo} aria-label={t("sn.learn_more")}>
-                        ?
+                        <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            aria-hidden="true"
+                        >
+                            <circle cx="12" cy="12" r="9" />
+                            <path d="M9.09 9a3 3 0 0 1 5.82 1c0 2-3 3-3 3" />
+                            <path d="M12 17h.01" />
+                        </svg>
                     </button>
                 }
             />
@@ -192,7 +217,12 @@ const BindSn: React.FC<BindSnProps> = ({
                     {checkingName ? (
                         <p className="field-hint">{t("sn.username_checking")}</p>
                     ) : nameValid === true ? (
-                        <p className="field-success">{t("sn.username_ok", { username: normalizeSnUsername(snName) })}</p>
+                        <p
+                            className="field-success"
+                            style={{ overflowWrap: "anywhere", wordBreak: "break-word", lineHeight: 1.6 }}
+                        >
+                            {t("sn.username_ok", { username: normalizeSnUsername(snName) })}
+                        </p>
                     ) : nameValid === false ? (
                         <ErrorHint message={t("sn.username_taken")} />
                     ) : usernameError ? (

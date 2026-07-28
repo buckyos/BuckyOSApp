@@ -34,6 +34,7 @@ const InputDialog: React.FC<InputDialogProps> = ({
     children,
 }) => {
     const inputRef = React.useRef<HTMLInputElement | null>(null);
+    const [pressedAction, setPressedAction] = React.useState<"cancel" | "confirm" | null>(null);
 
     React.useEffect(() => {
         if (open) {
@@ -52,6 +53,17 @@ const InputDialog: React.FC<InputDialogProps> = ({
             onConfirm();
         }
     };
+
+    const pressHandlers = (action: "cancel" | "confirm") => ({
+        onPointerDown: () => {
+            if (!loading) {
+                setPressedAction(action);
+            }
+        },
+        onPointerUp: () => setPressedAction(null),
+        onPointerCancel: () => setPressedAction(null),
+        onPointerLeave: () => setPressedAction(null),
+    });
 
     return (
         <div
@@ -117,12 +129,17 @@ const InputDialog: React.FC<InputDialogProps> = ({
                         className="soft-btn"
                         style={{
                             borderRadius: 12,
-                            padding: "10px 14px",
+                            width: 128,
+                            height: 48,
+                            padding: "0 16px",
                             background: "#a9b1bbff",
                             color: "#fff",
+                            whiteSpace: "nowrap",
+                            opacity: !loading && pressedAction === "cancel" ? 0.82 : 1,
                         }}
                         onClick={onCancel}
                         disabled={loading}
+                        {...pressHandlers("cancel")}
                     >
                         {cancelText}
                     </button>
@@ -130,18 +147,21 @@ const InputDialog: React.FC<InputDialogProps> = ({
                         type="submit"
                         style={{
                             borderRadius: 12,
-                            padding: "10px 18px",
-                            minWidth: 110,
+                            width: 128,
+                            height: 48,
+                            padding: "0 16px",
                             background: loading
                                 ? "linear-gradient(90deg, #9ca3af 0%, #d1d5db 100%)"
                                 : "linear-gradient(90deg, #6366f1 0%, #6c5ce7 100%)",
                             color: "#fff",
                             border: "none",
                             boxShadow: "none",
-                            opacity: loading ? 0.85 : 1,
+                            opacity: loading ? 0.85 : pressedAction === "confirm" ? 0.82 : 1,
                             cursor: loading ? "progress" : "pointer",
+                            whiteSpace: "nowrap",
                         }}
                         disabled={loading}
+                        {...pressHandlers("confirm")}
                     >
                         {confirmText}
                     </button>

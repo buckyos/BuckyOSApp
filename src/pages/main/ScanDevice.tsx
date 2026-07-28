@@ -309,7 +309,7 @@ const ScanDevice: React.FC = () => {
     return (
         <div className="bind-ood-scan-page">
             {showTapHint ? <div className="scan-device-mobile-hint">Locating...</div> : null}
-            <MobileHeader title={t("device_scan.title")} showBack />
+            <MobileHeader title={t("device_scan.title")} showBack safeAreaTop />
 
             <div className="scan-device-body">
                 <div className="scan-device-hero" aria-hidden="true">
@@ -393,7 +393,7 @@ const ScanDevice: React.FC = () => {
                 </div>
             </div>
 
-            <div className="sn-page-actions scan-device-actions">
+            <div className="scan-device-actions">
                 <GradientButton onClick={scanning ? handleCancelScan : startScan}>
                     {scanning ? t("device_scan.stop_button") : t("device_scan.rescan_button")}
                 </GradientButton>

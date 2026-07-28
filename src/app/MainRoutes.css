@@ -10,7 +10,7 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 16px;
+    padding: max(16px, var(--mobile-system-top)) 16px 12px;
     padding-bottom: 12px;
     background: transparent;
 }
@@ -98,11 +98,19 @@
     color: var(--muted-text);
     font-size: 0.75rem;
     font-weight: 500;
-    transition: color 0.2s ease, transform 0.2s ease;
+    transition: color 0.2s ease, opacity 0.12s ease;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
 }
 
-.tabbar .tab:hover {
-    color: #335dff;
+@media (hover: hover) and (pointer: fine) {
+    .tabbar .tab:hover {
+        color: #335dff;
+    }
+
+    [data-theme='dark'] .tabbar .tab:hover {
+        color: #6f9dff;
+    }
 }
 
 .tabbar .tab-icon {
@@ -121,17 +129,21 @@
     border-radius: 14px;
 }
 
+.tabbar .tab:active {
+    opacity: 0.65;
+}
+
 .tabbar .tab.active {
     color: #2f6bff;
     font-weight: 600;
 }
 
-[data-theme='dark'] .tabbar {
-    box-shadow: none;
+.tabbar .tab.active:active {
+    opacity: 0.9;
 }
 
-[data-theme='dark'] .tabbar .tab:hover {
-    color: #6f9dff;
+[data-theme='dark'] .tabbar {
+    box-shadow: none;
 }
 
 [data-theme='dark'] .tabbar .tab.active {

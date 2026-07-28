@@ -22,6 +22,7 @@ const Setting: React.FC = () => {
     const { t, locale } = useI18n();
     const [theme, setTheme] = React.useState<string>(getTheme());
     const isDev = import.meta.env.DEV;
+    const showDebugTools = isDev || import.meta.env.VITE_SHOW_DEBUG_TOOLS === "true";
     const trayCapable = isTrayCapable();
     const [trayEnabled, setTrayEnabled] = useTrayEnabledPreference();
     const { activeDid, refresh } = useDidContext();
@@ -134,16 +135,15 @@ const Setting: React.FC = () => {
             setOpenUrlError(t("settings.openurl_invalid"));
             return;
         }
-        let url = raw;
-        if (!/^https?:\/\//i.test(url)) {
-            url = `https://${url}`;
-        }
         try {
             setOpenUrlError("");
             setOpenUrlLoading(true);
-            const userData = { source: "settings-openurl", url };
-            await openWebView(url, undefined, undefined, undefined, userData, (data) => {
-                console.info("[WebView] closed", data);
+            const userData = { source: "settings-openurl", url: raw };
+            await openWebView(raw, {
+                userData,
+                onClosed: (data) => {
+                    console.info("[WebView] closed", data);
+                },
             });
             setOpenUrlLoading(false);
             setOpenUrlOpen(false);
@@ -218,7 +218,7 @@ const Setting: React.FC = () => {
                         </svg>
                     </button>
 
-                    {isDev && (
+                    {showDebugTools && (
                         <button className="settings-item" onClick={() => { setOpenUrlValue(defaultOpenUrl); setOpenUrlError(""); setOpenUrlOpen(true); }}>
                             <span className="settings-left">
                                 <ExternalLink className="settings-icon" aria-hidden="true" strokeWidth={1.8} />
@@ -230,8 +230,17 @@ const Setting: React.FC = () => {
                         </button>
                     )}
 
-                    {isDev && (
-                        <button className="settings-item" onClick={() => navigate("/main/setting/embedded-webview")}>
+                    {showDebugTools && (
+                        <button
+                            className="settings-item"
+                            onClick={() => {
+                                void openWebView(defaultOpenUrl, {
+                                    title: t("settings.embedded_webview_title"),
+                                    label: "embedded-webview",
+                                    mode: "inapp",
+                                });
+                            }}
+                        >
                             <span className="settings-left">
                                 <Monitor className="settings-icon" aria-hidden="true" strokeWidth={1.8} />
                                 <span className="label">{t("settings.embedded_webview")}</span>
@@ -319,7 +328,7 @@ const Setting: React.FC = () => {
                 loading={backupLoading}
                 error={backupError}
             />
-            {isDev && (
+            {showDebugTools && (
                 <InputDialog
                     open={openUrlOpen}
                     title={t("settings.openurl_title")}

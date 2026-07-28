@@ -12,7 +12,7 @@ interface ShowMnemonicProps {
 const ShowMnemonic: React.FC<ShowMnemonicProps> = ({ mnemonic, onNext, onBack }) => {
     const { t } = useI18n();
     return (
-        <div className="did-container" style={{ position: "relative" }}>
+        <div className="did-container show-mnemonic-page" style={{ position: "relative" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <MobileHeader title={t("showMnemonic.title")} showBack onBack={onBack} />
             </div>

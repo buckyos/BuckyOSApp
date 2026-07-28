@@ -12,6 +12,8 @@ const GradientButton: React.FC<React.PropsWithChildren<GradientButtonProps>> = (
     style,
     ...rest
 }) => {
+    const [pressed, setPressed] = React.useState(false);
+    const isDisabled = Boolean(rest.disabled);
     const base: React.CSSProperties = {
         width: fullWidth ? "100%" : undefined,
         height: 56,
@@ -21,13 +23,15 @@ const GradientButton: React.FC<React.PropsWithChildren<GradientButtonProps>> = (
         fontSize: 17,
         fontWeight: "normal",
         letterSpacing: 0.2,
-        cursor: rest.disabled ? "not-allowed" : "pointer",
-        opacity: rest.disabled ? 0.5 : 1,
-        transition: "transform .06s ease, opacity .12s ease",
+        cursor: isDisabled ? "not-allowed" : "pointer",
+        opacity: isDisabled ? 0.5 : pressed ? 0.82 : 1,
+        transition: "opacity .12s ease",
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
         whiteSpace: "nowrap",
+        WebkitTapHighlightColor: "transparent",
+        touchAction: "manipulation",
     };
     const primary: React.CSSProperties = {
         color: "#fff",
@@ -44,13 +48,21 @@ const GradientButton: React.FC<React.PropsWithChildren<GradientButtonProps>> = (
         <button
             {...rest}
             style={{ ...(base as any), ...(variant === "primary" ? primary : secondary), ...style }}
-            onMouseDown={(e) => {
-                rest.onMouseDown?.(e);
-                (e.currentTarget as HTMLButtonElement).style.transform = "translateY(1px)";
+            onPointerDown={(e) => {
+                rest.onPointerDown?.(e);
+                if (!isDisabled) setPressed(true);
             }}
-            onMouseUp={(e) => {
-                rest.onMouseUp?.(e);
-                (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)";
+            onPointerUp={(e) => {
+                rest.onPointerUp?.(e);
+                setPressed(false);
+            }}
+            onPointerCancel={(e) => {
+                rest.onPointerCancel?.(e);
+                setPressed(false);
+            }}
+            onPointerLeave={(e) => {
+                rest.onPointerLeave?.(e);
+                setPressed(false);
             }}
         >
             {children}

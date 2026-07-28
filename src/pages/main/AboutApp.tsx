@@ -31,8 +31,8 @@ const AboutApp: React.FC = () => {
     }, []);
 
     return (
-        <div className="App about-app-page">
-            <MobileHeader title={t("settings.about_title")} showBack />
+        <div className="mobile-page about-app-page">
+            <MobileHeader title={t("settings.about_title")} showBack safeAreaTop />
 
             <div className="about-app-content">
                 <div className="about-app-logo-wrap">

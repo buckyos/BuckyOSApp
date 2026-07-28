@@ -1,6 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { CircleAlert, LoaderCircle, PanelsTopLeft } from "lucide-react";
+import { useI18n } from "../../i18n";
 import { parseCommandError } from "../../utils/commandError";
+import "./Apps.css";
 
 type AppMeta = {
     pkg_name: string;
@@ -27,24 +30,19 @@ const accentPalette = [
 ];
 
 const Apps: React.FC = () => {
+    const { t } = useI18n();
     const [apps, setApps] = useState<AppDoc[]>([]);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-
-    // auto-clear transient errors
-    useEffect(() => {
-        if (!error) return;
-        const timer = setTimeout(() => setError(null), 3000);
-        return () => clearTimeout(timer);
-    }, [error]);
 
     useEffect(() => {
         let mounted = true;
+
         const load = async () => {
             try {
                 setLoading(true);
                 setError(null);
-                const result: AppDoc[] = await invoke("get_applist");
+                const result = await invoke<AppDoc[]>("get_applist");
                 if (mounted) {
                     setApps(result);
                 }
@@ -60,7 +58,8 @@ const Apps: React.FC = () => {
                 }
             }
         };
-        load();
+
+        void load();
         return () => {
             mounted = false;
         };
@@ -68,123 +67,60 @@ const Apps: React.FC = () => {
 
     const displayCards = useMemo(
         () =>
-            apps.map((app, idx) => {
-                const pkgName = app.meta?.pkg_name || app.pkg_name || `app-${idx}`;
+            apps.map((app, index) => {
+                const pkgName = app.meta?.pkg_name || app.pkg_name || `app-${index}`;
                 return {
                     key: pkgName,
                     title: app.show_name || pkgName,
                     description: app.install_config_tips || app.selector_type || "",
                     icon: app.app_icon_url || undefined,
-                    accent: accentPalette[idx % accentPalette.length],
+                    accent: accentPalette[index % accentPalette.length],
                 };
             }),
         [apps]
     );
 
     return (
-        <>
-            {/* transient error overlay that doesn't shift layout */}
+        <div className="apps-page">
             {error && (
-                <div
-                    role="alert"
-                    style={{
-                        position: "fixed",
-                        top: "calc(24px + var(--mobile-system-top))",
-                        right: "calc(24px + var(--safe-area-inset-right))",
-                        zIndex: 20,
-                        maxWidth: 320,
-                        background: "var(--card-bg)",
-                        border: "1px solid var(--border)",
-                        boxShadow: "0 12px 30px rgba(0,0,0,0.12)",
-                        borderRadius: 12,
-                        padding: "12px 14px",
-                        color: "var(--error, #ef4444)",
-                        fontSize: 14,
-                    }}
-                >
-                    <div style={{ fontWeight: 600, marginBottom: 4 }}>加载失败</div>
-                    <div style={{ color: "var(--app-text)" }}>{error}</div>
+                <div className="apps-alert" role="alert">
+                    <CircleAlert size={20} strokeWidth={1.8} aria-hidden="true" />
+                    <div>
+                        <div className="apps-alert-title">{t("appsPage.error_title")}</div>
+                        <div className="apps-alert-message">{error}</div>
+                    </div>
                 </div>
             )}
-            <div
-                style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 16,
-                    padding: "0 16px 16px",
-                }}
-            >
-                {loading && (
-                    <p style={{ margin: 0, color: "var(--muted-text)", fontSize: 14 }}>正在加载应用列表…</p>
-                )}
-                {!loading && displayCards.length === 0 && (
-                    <div
-                        style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 10,
-                            color: "var(--muted-text)",
-                            fontSize: 14,
-                            padding: "12px 0",
-                        }}
-                    >
-                        <span aria-hidden="true" style={{ fontSize: 20 }}>
-                            🗂️
-                        </span>
-                        <span>{error ? "加载失败，暂无应用。" : "暂无可用应用。"}</span>
-                    </div>
-                )}
-                {displayCards.map(({ key, title, description, accent, icon }) => (
-                    <article
-                        key={key}
-                        style={{
-                            background: "var(--card-bg)",
-                            border: "1px solid var(--border)",
-                            borderRadius: 16,
-                            padding: 18,
-                            display: "flex",
-                            gap: 16,
-                            alignItems: "center",
-                            boxShadow: "none",
-                        }}
-                    >
-                        <div
-                            style={{
-                                width: 56,
-                                height: 56,
-                                borderRadius: 16,
-                                background: accent,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                color: "#fff",
-                                fontSize: 22,
-                                fontWeight: 600,
-                                boxShadow: "none",
-                                overflow: "hidden",
-                            }}
-                            aria-hidden="true"
-                        >
-                            {icon ? (
-                                <img
-                                    src={icon}
-                                    alt=""
-                                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                                />
-                            ) : (
-                                title.slice(0, 1)
-                            )}
+
+            {loading ? (
+                <div className="apps-state">
+                    <LoaderCircle
+                        className="apps-state-icon apps-state-spinner"
+                        size={22}
+                        strokeWidth={1.8}
+                        aria-hidden="true"
+                    />
+                    <span>{t("appsPage.loading")}</span>
+                </div>
+            ) : displayCards.length === 0 ? (
+                <div className="apps-state">
+                    <PanelsTopLeft className="apps-state-icon" size={22} strokeWidth={1.8} aria-hidden="true" />
+                    <span>{t(error ? "appsPage.empty_after_error" : "appsPage.empty")}</span>
+                </div>
+            ) : (
+                displayCards.map(({ key, title, description, accent, icon }) => (
+                    <article className="apps-card" key={key}>
+                        <div className="apps-card-icon" style={{ background: accent }} aria-hidden="true">
+                            {icon ? <img src={icon} alt="" /> : title.slice(0, 1).toUpperCase()}
                         </div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                            <h2 style={{ margin: 0, fontSize: 17, color: "var(--app-text)" }}>{title}</h2>
-                            <p style={{ margin: 0, fontSize: 14, color: "var(--muted-text)", lineHeight: 1.45 }}>
-                                {description || "暂无描述"}
-                            </p>
+                        <div className="apps-card-copy">
+                            <h2>{title}</h2>
+                            <p>{description || t("appsPage.no_description")}</p>
                         </div>
                     </article>
-                ))}
-            </div>
-        </>
+                ))
+            )}
+        </div>
     );
 };
 
