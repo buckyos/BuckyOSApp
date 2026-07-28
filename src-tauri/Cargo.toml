@@ -36,6 +36,7 @@ anyhow = "1.0"
 thiserror = "1.0"
 bip39 = "2.0"
 bitcoin = { version = "0.31.1", features = ["rand-std", "serde"] }
+sha3 = "0.10"
 aes-gcm = "0.10"
 pbkdf2 = { version = "0.12", features = ["simple"] }
 rand = "0.8"

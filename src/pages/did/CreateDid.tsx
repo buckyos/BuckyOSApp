@@ -35,7 +35,7 @@ const CreateDid: React.FC<CreateDidProps> = ({ onNext, onShowDidInfo, onShowSnIn
     const { t } = useI18n();
 
     return (
-        <div className="did-container" style={{ position: "relative", overflow: "hidden" }}>
+        <div className="did-container" style={{ position: "relative" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <MobileHeader title={t("create.title_new")} showBack />
             </div>

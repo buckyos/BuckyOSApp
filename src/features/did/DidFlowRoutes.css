@@ -14,15 +14,31 @@
     /* IE, Edge */
     scrollbar-width: none;
     /* Firefox */
-    padding:
-        calc(12px + var(--mobile-system-top))
-        16px
-        calc(24px + var(--mobile-system-bottom))
-        16px;
+    padding: 0;
+    scroll-padding-bottom: var(--bottom-action-gap);
+}
+
+[data-mobile-shell] .did-container {
+    /*
+     * Android draws the IME over the WebView. Reserve the reported keyboard
+     * inset inside the scroll container so controls near the end of long DID
+     * forms can move above the keyboard. Keep only a small comfort gap while
+     * the IME is open instead of stacking the full action-area spacing.
+     */
+    padding-bottom: var(--keyboard-inset-bottom);
+    scroll-padding-bottom: max(
+        var(--flow-bottom-action-gap),
+        calc(
+            var(--keyboard-inset-bottom)
+            - var(--bottom-action-gap)
+            - var(--mobile-system-bottom)
+            + 16px
+        )
+    );
 }
 
 .page-content {
-    width: 100%;
+    width: calc(100% - 32px);
     max-width: 520px;
     /* unify visual width across pages */
     margin: 0 auto;
@@ -313,6 +329,19 @@ button:disabled {
     gap: 8px;
 }
 
+.show-mnemonic-page {
+    gap: 10px;
+}
+
+.show-mnemonic-page .mnemonic-grid {
+    gap: 8px;
+    padding: 10px;
+}
+
+.show-mnemonic-page .mnemonic-item {
+    height: 40px;
+}
+
 .mnemonic-index {
     width: 24px;
     min-width: 24px;
@@ -366,26 +395,6 @@ button:disabled {
     color: var(--app-text);
 }
 
-@media (prefers-color-scheme: dark) {
-    .mnemonic-item {
-        background: #141a2b; /* slightly lighter than app bg */
-        border-color: #3a4252;
-    }
-
-    .mnemonic-index {
-        background: rgba(124, 166, 255, 0.18);
-        color: #a9b7ff;
-    }
-
-    .mnemonic-word,
-    .selected-box .mnemonic-word,
-    .selected-grid .mnemonic-word {
-        background: #141a2b;
-        border-color: #3a4252;
-        color: var(--app-text);
-    }
-}
-
 .mnemonic-info {
     background: #f5f6ff;
     color: #5960a9;
@@ -395,6 +404,11 @@ button:disabled {
     text-align: center;
     font-size: 13px;
     line-height: 1.45;
+}
+
+.show-mnemonic-page .mnemonic-info {
+    margin-top: 8px;
+    padding: 8px 12px;
 }
 
 [data-theme='dark'] .mnemonic-info {
@@ -425,11 +439,12 @@ button:disabled {
 
 /* bottom actions */
 .actions {
-    width: 100%;
-    padding: 0;
+    width: calc(100% - 32px);
+    padding: 0 0 var(--flow-bottom-action-gap);
     margin: auto auto 0;
     max-width: 520px;
     display: flex;
     flex-direction: column;
     gap: 12px;
+    padding-top: 8px;
 }
