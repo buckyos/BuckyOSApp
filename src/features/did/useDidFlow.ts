@@ -1,21 +1,58 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/core";
 import { buckyos } from "buckyos";
 import { useI18n } from "../../i18n";
 import { importDid } from "./api";
-import { fetchSnStatus, registerSnAccount, setCachedSnStatus } from "../sn/snStatusManager";
-import type { DidInfo } from "./types";
+import { primeCachedSnStatus } from "../sn/snStatusManager";
+import type {
+    BnsIdentityCandidate,
+    DidInfo,
+    OwnerDocument,
+    RegistrationMaterial,
+    RegistrationPhase,
+} from "./types";
 import { parseCommandError } from "../../utils/commandError";
 import { CommandErrorCodes } from "../../constants/commandErrorCodes";
-import { checkBuckyUsername, checkSnActiveCode, getUserByPublicKey } from "../../services/sn";
+import {
+    checkSnActiveCode,
+    checkSnUsername,
+    isLocallyValidEmail,
+    registerSnIdentity,
+    snRegistrationErrorMessageKey,
+    SnServiceError,
+} from "../../services/sn_client";
+import { findBnsIdentitiesForMaterial } from "../../services/bns_client";
 import { openWebView } from "../../utils/webview";
 import { isLocallyValidSnUsername, normalizeSnUsername } from "../sn/snUsername";
+import {
+    buildOwnerDocument,
+    serializeOwnerDocumentForRegistration,
+} from "./ownerDocument";
 
-function isSnImportTimeoutError(message: string) {
+interface RegistrationAttempt {
+    fingerprint: string;
+    material: RegistrationMaterial;
+    ownerDocument: OwnerDocument;
+    ownerDocumentJson: string;
+    requestId: string;
+}
+
+interface PendingImport {
+    password: string;
+    mnemonicWords: string[];
+}
+
+function randomAvatarSeed(): string {
+    const values = new Uint32Array(2);
+    crypto.getRandomValues(values);
+    return `${values[0].toString(16).padStart(8, "0")}${values[1].toString(16).padStart(8, "0")}`;
+}
+
+function isImportTimeoutError(message: string) {
     const normalized = message.trim().toLowerCase();
     return (
-        normalized === "sn_import_timeout" ||
+        normalized === "bns_import_timeout" ||
         normalized.includes("failed to fetch") ||
         normalized.includes("networkerror") ||
         normalized.includes("load failed") ||
@@ -25,6 +62,23 @@ function isSnImportTimeoutError(message: string) {
     );
 }
 
+function registrationFingerprint(
+    normalizedName: string,
+    trimmedFullName: string,
+    normalizedEmail: string,
+    avatarSeed: string,
+    material: RegistrationMaterial
+): string {
+    return JSON.stringify({
+        normalizedName,
+        trimmedFullName,
+        normalizedEmail,
+        avatar: `dicebear:${avatarSeed}`,
+        ownerKey: material.owner_public_jwk.x,
+        evmAddress: material.evm_address.toLowerCase(),
+    });
+}
+
 export function useDidFlow() {
     const navigate = useNavigate();
     const { t } = useI18n();
@@ -32,20 +86,36 @@ export function useDidFlow() {
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [snName, setSnName] = useState("");
+    const [fullName, setFullName] = useState("");
+    const [email, setEmail] = useState("");
+    const [avatarSeed, setAvatarSeed] = useState(randomAvatarSeed);
     const [activeCode, setActiveCode] = useState("");
     const [mnemonic, setMnemonic] = useState<string[]>([]);
     const [confirmedMnemonic, setConfirmedMnemonic] = useState<string[]>([]);
+    const [registrationMaterial, setRegistrationMaterial] = useState<RegistrationMaterial | null>(null);
+    const [registrationPhase, setRegistrationPhase] = useState<RegistrationPhase>("idle");
+    const [importCandidates, setImportCandidates] = useState<BnsIdentityCandidate[]>([]);
     const [didInfo, setDidInfo] = useState<DidInfo | null>(null);
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    const registrationAttemptRef = useRef<RegistrationAttempt | null>(null);
+    const pendingImportRef = useRef<PendingImport | null>(null);
 
     const clearCreateFlowSensitiveState = () => {
         setPassword("");
         setConfirmPassword("");
         setSnName("");
+        setFullName("");
+        setEmail("");
+        setAvatarSeed(randomAvatarSeed());
         setActiveCode("");
         setMnemonic([]);
         setConfirmedMnemonic([]);
+        setRegistrationMaterial(null);
+        setRegistrationPhase("idle");
+        setImportCandidates([]);
+        registrationAttemptRef.current = null;
+        pendingImportRef.current = null;
     };
 
     const handleGenerateMnemonic = async () => {
@@ -53,11 +123,52 @@ export function useDidFlow() {
             const generatedMnemonic: string[] = await invoke("generate_mnemonic");
             setMnemonic(generatedMnemonic);
             setConfirmedMnemonic(Array(generatedMnemonic.length).fill(""));
+            setAvatarSeed(randomAvatarSeed());
             navigate("/show-mnemonic");
         } catch (err) {
             const { message } = parseCommandError(err);
             setError(t("common.error.generate_mnemonic_failed", { message }));
         }
+    };
+
+    const getRegistrationAttempt = (
+        normalizedName: string,
+        trimmedFullName: string,
+        normalizedEmail: string,
+        material: RegistrationMaterial
+    ): RegistrationAttempt => {
+        const avatar = `dicebear:${avatarSeed}`;
+        const fingerprint = registrationFingerprint(
+            normalizedName,
+            trimmedFullName,
+            normalizedEmail,
+            avatarSeed,
+            material
+        );
+        if (registrationAttemptRef.current?.fingerprint === fingerprint) {
+            return registrationAttemptRef.current;
+        }
+
+        const ownerDocument = buildOwnerDocument({
+            normalizedName,
+            displayName: trimmedFullName,
+            avatar,
+            ownerPublicJwk: material.owner_public_jwk,
+            evmAddress: material.evm_address,
+        });
+        const ownerDocumentJson = serializeOwnerDocumentForRegistration(
+            ownerDocument,
+            material.evm_address
+        );
+        const attempt: RegistrationAttempt = {
+            fingerprint,
+            material,
+            ownerDocument,
+            ownerDocumentJson,
+            requestId: `sn:register:${normalizedName}`,
+        };
+        registrationAttemptRef.current = attempt;
+        return attempt;
     };
 
     const handleBindSnAndCreateDid = async () => {
@@ -66,9 +177,19 @@ export function useDidFlow() {
             return;
         }
 
-        const normalizedName = normalizeSnUsername(snName);
-        if (!isLocallyValidSnUsername(normalizedName)) {
+        const requestedName = normalizeSnUsername(snName);
+        const trimmedFullName = fullName.trim();
+        const normalizedEmail = email.trim();
+        if (!isLocallyValidSnUsername(requestedName)) {
             setError(t("sn.username_format_hint"));
+            return;
+        }
+        if (!trimmedFullName) {
+            setError(t("sn.error.full_name_required"));
+            return;
+        }
+        if (!normalizedEmail || !isLocallyValidEmail(normalizedEmail)) {
+            setError(t("sn.error.invalid_email"));
             return;
         }
         if (password !== confirmPassword) {
@@ -86,66 +207,117 @@ export function useDidFlow() {
 
         setError("");
         setLoading(true);
+        setRegistrationPhase("preparing");
 
         try {
-            const [usernameValid, activeCodeValid, publicKey] = await Promise.all([
-                checkBuckyUsername(normalizedName),
+            const [usernameCheck, activeCodeValid, initialMaterial] = await Promise.all([
+                checkSnUsername(requestedName),
                 checkSnActiveCode(activeCode.trim()),
-                invoke<Record<string, unknown>>("derive_bucky_public_key", {
+                invoke<RegistrationMaterial>("derive_registration_material", {
                     mnemonicWords: mnemonic,
+                    normalizedName: requestedName,
                 }),
             ]);
 
-            if (!usernameValid) {
+            const existingAttempt = registrationAttemptRef.current;
+            const isIdempotentRetry = Boolean(
+                existingAttempt &&
+                    existingAttempt.material.normalized_name === requestedName &&
+                    existingAttempt.fingerprint ===
+                        registrationFingerprint(
+                            requestedName,
+                            trimmedFullName,
+                            normalizedEmail,
+                            avatarSeed,
+                            existingAttempt.material
+                        )
+            );
+            if (!usernameCheck.valid && !isIdempotentRetry) {
                 setError(t("sn.username_taken"));
+                setRegistrationPhase("failed");
                 return;
             }
-            if (!activeCodeValid) {
+            if (!activeCodeValid && !isIdempotentRetry) {
                 setError(t("sn.invite_bad"));
+                setRegistrationPhase("failed");
                 return;
             }
 
-            const publicKeyJwk = JSON.stringify(publicKey);
+            const normalizedName = isIdempotentRetry
+                ? requestedName
+                : usernameCheck.normalized_name.trim().toLowerCase();
+            const material =
+                normalizedName === initialMaterial.normalized_name
+                    ? initialMaterial
+                    : await invoke<RegistrationMaterial>("derive_registration_material", {
+                          mnemonicWords: mnemonic,
+                          normalizedName,
+                      });
+            setRegistrationMaterial(material);
+            const attempt = getRegistrationAttempt(
+                normalizedName,
+                trimmedFullName,
+                normalizedEmail,
+                material
+            );
+
+            setRegistrationPhase("submitting");
             const passwordHash = buckyos.hashPassword(normalizedName, password);
-            const record = await registerSnAccount({
-                username: normalizedName,
+            await registerSnIdentity({
+                name: normalizedName,
+                email: normalizedEmail,
                 passwordHash,
-                inviteCode: activeCode.trim(),
-                publicKeyJwk,
+                activeCode: activeCode.trim(),
+                requestId: attempt.requestId,
+                assetOwner: attempt.material.evm_address,
+                ownerDocument: attempt.ownerDocument,
             });
 
             const createdDid = await invoke<DidInfo>("create_did", {
-                nickname: normalizedName,
                 password,
                 mnemonicWords: mnemonic,
+                ownerDocumentJson: attempt.ownerDocumentJson,
             });
-            await setCachedSnStatus(createdDid.id, record);
-
-            setDidInfo({
-                ...createdDid,
-                nickname: record.username || normalizedName,
-                sn_status: {
-                    username: record.username || normalizedName,
-                },
-            });
+            await primeCachedSnStatus(createdDid.id, normalizedName);
+            setDidInfo(createdDid);
+            setRegistrationPhase("succeeded");
             clearCreateFlowSensitiveState();
             navigate("/success");
         } catch (err) {
+            setRegistrationPhase("failed");
             const { code, message } = parseCommandError(err);
-            let translated = message;
-            if (code === CommandErrorCodes.NicknameExists || message === "nickname_already_exists") {
+            let translated: string;
+            if (err instanceof SnServiceError) {
+                const messageKey = snRegistrationErrorMessageKey(err.codeName);
+                translated = messageKey
+                    ? t(messageKey)
+                    : t("sn.error.register_failed_with_reason", { message: err.message });
+            } else if (code === CommandErrorCodes.NicknameExists || message === "nickname_already_exists") {
                 translated = t("sn.error.username_exists_local");
-            } else if (message === "register_sn_user_failed") {
-                translated = t("sn.error.register_failed");
-            } else if (message === "sn_bind_timeout") {
-                translated = t("sn.error.poll_timeout");
+            } else if (message.startsWith("owner_") || message.startsWith("invalid_owner") || message === "asset_owner_mismatch") {
+                translated = t("sn.error.owner_document_invalid");
             } else {
-                translated = t("sn.error.bind_failed", { message });
+                translated = t("sn.error.register_failed_with_reason", { message });
             }
             setError(translated);
         } finally {
             setLoading(false);
         }
+    };
+
+    const finalizeImport = async (
+        candidate: BnsIdentityCandidate,
+        credentials: PendingImport
+    ): Promise<void> => {
+        const importedDid = await importDid(
+            credentials.password,
+            credentials.mnemonicWords,
+            candidate.ownerDocumentJson
+        );
+        setDidInfo(importedDid);
+        setImportCandidates([]);
+        pendingImportRef.current = null;
+        navigate("/main/home");
     };
 
     const handleImportDid = async ({
@@ -156,28 +328,23 @@ export function useDidFlow() {
         mnemonicWords: string[];
     }) => {
         setError("");
+        setImportCandidates([]);
+        setLoading(true);
         try {
-            setLoading(true);
-            const publicKey = await invoke<Record<string, unknown>>("derive_bucky_public_key", {
+            const material = await invoke<RegistrationMaterial>("derive_registration_material", {
                 mnemonicWords,
+                normalizedName: "imported",
             });
-            const publicKeyJwk = JSON.stringify(publicKey);
-            const snRecord = await getUserByPublicKey(publicKeyJwk);
+            const candidates = await findBnsIdentitiesForMaterial(material);
+            if (candidates.length === 0) throw new Error("bns_identity_not_found");
 
-            if (!snRecord.ok || typeof snRecord.raw?.user_name !== "string") {
-                setError(t("import.error.sn_not_found"));
-                return;
+            const credentials = { password: importPassword, mnemonicWords };
+            if (candidates.length === 1) {
+                await finalizeImport(candidates[0], credentials);
+            } else {
+                pendingImportRef.current = credentials;
+                setImportCandidates(candidates);
             }
-
-            const importedDid = await importDid(
-                snRecord.raw.user_name.trim(),
-                importPassword,
-                mnemonicWords
-            );
-
-            await fetchSnStatus(importedDid.id, publicKeyJwk);
-            setDidInfo(importedDid);
-            navigate("/main/home");
         } catch (err) {
             const { code, message } = parseCommandError(err);
             let translated = message;
@@ -187,12 +354,31 @@ export function useDidFlow() {
                 translated = t("import.error.mnemonic_required");
             } else if (code === CommandErrorCodes.IdentityExists || message === "identity_already_exists") {
                 translated = t("import.error.identity_exists");
-            } else if (isSnImportTimeoutError(message)) {
+            } else if (message === "bns_identity_not_found") {
+                translated = t("import.error.bns_not_found");
+            } else if (message === "owner_document_key_mismatch") {
+                translated = t("import.error.owner_key_mismatch");
+            } else if (isImportTimeoutError(message)) {
                 translated = t("import.error.timeout");
             } else {
                 translated = t("common.error.import_did_failed", { message });
             }
             setError(translated);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSelectImportCandidate = async (candidate: BnsIdentityCandidate) => {
+        const credentials = pendingImportRef.current;
+        if (!credentials) return;
+        setError("");
+        setLoading(true);
+        try {
+            await finalizeImport(candidate, credentials);
+        } catch (err) {
+            const { message } = parseCommandError(err);
+            setError(t("common.error.import_did_failed", { message }));
         } finally {
             setLoading(false);
         }
@@ -205,6 +391,7 @@ export function useDidFlow() {
 
     const goToImportDid = () => {
         setError("");
+        setImportCandidates([]);
         navigate("/import");
     };
 
@@ -222,18 +409,34 @@ export function useDidFlow() {
         }
     };
 
-    const goToShowMnemonic = async () => {
+    const goToShowMnemonic = () => {
         setError("");
-        handleGenerateMnemonic();
+        void handleGenerateMnemonic();
     };
 
-    const goToBindSn = () => {
+    const goToBindSn = async () => {
         if (mnemonic.join(" ") !== confirmedMnemonic.join(" ")) {
             setError(t("common.error.mnemonic_mismatch"));
             return;
         }
         setError("");
-        navigate("/bind-sn");
+        setLoading(true);
+        setRegistrationPhase("preparing");
+        try {
+            const material = await invoke<RegistrationMaterial>("derive_registration_material", {
+                mnemonicWords: mnemonic,
+                normalizedName: "pending",
+            });
+            setRegistrationMaterial(material);
+            setRegistrationPhase("idle");
+            navigate("/bind-sn");
+        } catch (err) {
+            const { message } = parseCommandError(err);
+            setRegistrationPhase("failed");
+            setError(t("sn.error.prepare_failed", { message }));
+        } finally {
+            setLoading(false);
+        }
     };
 
     const goToConfirmMnemonic = () => {
@@ -262,11 +465,20 @@ export function useDidFlow() {
         setConfirmPassword,
         snName,
         setSnName,
+        fullName,
+        setFullName,
+        email,
+        setEmail,
+        avatarSeed,
+        setAvatarSeed,
         activeCode,
         setActiveCode,
         mnemonic,
         confirmedMnemonic,
         setConfirmedMnemonic,
+        registrationMaterial,
+        registrationPhase,
+        importCandidates,
         didInfo,
         error,
         loading,
@@ -276,6 +488,7 @@ export function useDidFlow() {
         goToBindSn,
         handleBindSnAndCreateDid,
         handleImportDid,
+        handleSelectImportCandidate,
         goToImportDid,
         goToDidInfo,
         goToSnInfo,

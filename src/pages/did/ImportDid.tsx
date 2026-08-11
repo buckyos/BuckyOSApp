@@ -3,15 +3,26 @@ import { invoke } from "@tauri-apps/api/core";
 import MobileHeader from "../../components/ui/MobileHeader";
 import GradientButton from "../../components/ui/GradientButton";
 import { useI18n } from "../../i18n";
+import type { BnsIdentityCandidate } from "../../features/did/types";
+import { avatarDisplayUrl } from "../../features/did/ownerDocument";
 
 interface ImportDidProps {
     loading: boolean;
     error: string;
+    candidates: BnsIdentityCandidate[];
     onImport: (payload: { password: string; mnemonicWords: string[] }) => void;
+    onSelectCandidate: (candidate: BnsIdentityCandidate) => void;
     onBack: () => void;
 }
 
-const ImportDid: React.FC<ImportDidProps> = ({ loading, error, onImport, onBack }) => {
+const ImportDid: React.FC<ImportDidProps> = ({
+    loading,
+    error,
+    candidates,
+    onImport,
+    onSelectCandidate,
+    onBack,
+}) => {
     const { t } = useI18n();
     const [password, setPassword] = React.useState("");
     const [confirmPassword, setConfirmPassword] = React.useState("");
@@ -90,6 +101,39 @@ const ImportDid: React.FC<ImportDidProps> = ({ loading, error, onImport, onBack 
             </div>
 
             <div className="page-content" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                {candidates.length > 1 ? (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                        <strong>{t("import.choose_identity_title")}</strong>
+                        <p>{t("import.choose_identity_hint")}</p>
+                        <div className="import-candidate-list">
+                            {candidates.map((candidate) => {
+                                const avatarUrl = avatarDisplayUrl(candidate.ownerDocument.avatar);
+                                return (
+                                    <button
+                                        type="button"
+                                        className="import-candidate-button"
+                                        key={candidate.ownerDocument.id}
+                                        disabled={loading}
+                                        onClick={() => onSelectCandidate(candidate)}
+                                    >
+                                        {avatarUrl ? (
+                                            <img src={avatarUrl} alt="" />
+                                        ) : (
+                                            <span className="import-avatar-fallback">
+                                                {candidate.name.slice(0, 2).toUpperCase()}
+                                            </span>
+                                        )}
+                                        <span style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                                            <strong>{candidate.ownerDocument.display_name}</strong>
+                                            <code style={{ color: "var(--muted-text)" }}>{candidate.name}</code>
+                                        </span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                ) : null}
+
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                     <label style={{ fontSize: 14, color: "var(--muted-text)" }}>
                         {t("import.mnemonic_label")}
@@ -114,7 +158,7 @@ const ImportDid: React.FC<ImportDidProps> = ({ loading, error, onImport, onBack 
                             resize: "vertical",                            fontSize: 14,
                             lineHeight: 1.45,
                         }}
-                        disabled={loading}
+                        disabled={loading || candidates.length > 1}
                     />
                 </div>
 
@@ -130,7 +174,7 @@ const ImportDid: React.FC<ImportDidProps> = ({ loading, error, onImport, onBack 
                             setLocalError("");
                         }}
                         placeholder={t("create.password_placeholder")}
-                        disabled={loading}
+                        disabled={loading || candidates.length > 1}
                     />
                 </div>
 
@@ -146,7 +190,7 @@ const ImportDid: React.FC<ImportDidProps> = ({ loading, error, onImport, onBack 
                             setLocalError("");
                         }}
                         placeholder={t("create.confirm_password_placeholder")}
-                        disabled={loading}
+                        disabled={loading || candidates.length > 1}
                     />
                 </div>
 
@@ -158,7 +202,7 @@ const ImportDid: React.FC<ImportDidProps> = ({ loading, error, onImport, onBack 
             </div>
 
             <div className="actions page-content">
-                <GradientButton onClick={handleSubmit} disabled={loading}>
+                <GradientButton onClick={handleSubmit} disabled={loading || candidates.length > 1}>
                     {t("import.submit")}
                 </GradientButton>
             </div>

@@ -2,6 +2,7 @@ import React from "react";
 import type { DidInfo } from "../../features/did/useDidFlow";
 import { useI18n } from "../../i18n";
 import GradientButton from "../../components/ui/GradientButton";
+import { getIdentityDisplayName } from "../../features/did/identityView";
 
 interface SuccessProps {
     didInfo: DidInfo | null;
@@ -10,7 +11,7 @@ interface SuccessProps {
 
 const Success: React.FC<SuccessProps> = ({ didInfo, onDone }) => {
     const { t } = useI18n();
-    const accountName = didInfo?.nickname?.trim() || t("common.account.unnamed");
+    const accountName = getIdentityDisplayName(didInfo) || t("common.account.unnamed");
 
     return (
         <div className="did-container" style={{ position: "relative", overflow: "hidden" }}>

@@ -1,20 +1,10 @@
 import { invoke } from "@tauri-apps/api/core";
-import { getUserByPublicKey, registerSnAccountWithPassword } from "../../services/sn";
+import type { DidInfo } from "../did/types";
 
 export interface SnStatusRecord {
-    info: any;
+    info: Record<string, unknown> | null;
     username?: string | null;
     zoneConfig?: string | null;
-}
-
-export interface RegisterSnOptions {
-    didId?: string;
-    username: string;
-    passwordHash: string;
-    inviteCode: string;
-    publicKeyJwk: string;
-    maxPollAttempts?: number;
-    pollIntervalMs?: number;
 }
 
 type SnStatusStoreRecord = {
@@ -25,28 +15,26 @@ type SnStatusStoreRecord = {
 const memoryCache: Record<string, SnStatusRecord | undefined> = {};
 let cachePromise: Promise<void> | null = null;
 
+function fromStored(record?: SnStatusStoreRecord | null): SnStatusRecord {
+    const username = record?.username?.trim() || null;
+    const zoneConfig = record?.zone_config?.trim() || null;
+    return {
+        username,
+        zoneConfig,
+        info: username || zoneConfig ? { user_name: username, zone_config: zoneConfig } : null,
+    };
+}
+
 async function ensureCacheLoaded(): Promise<void> {
     if (!cachePromise) {
         cachePromise = (async () => {
             try {
                 const stored = await invoke<Record<string, SnStatusStoreRecord>>("list_sn_statuses");
-                if (stored && typeof stored === "object") {
-                    Object.entries(stored).forEach(([did, record]) => {
-                        if (!record) return;
-                        const username = record.username ?? null;
-                        const zoneConfig = record.zone_config ?? null;
-                        memoryCache[did] = {
-                            username,
-                            zoneConfig,
-                            info: {
-                                user_name: username,
-                                zone_config: zoneConfig,
-                            },
-                        };
-                    });
-                }
-            } catch (err) {
-                console.warn("[SN] failed to load persisted SN status", err);
+                Object.entries(stored ?? {}).forEach(([did, record]) => {
+                    memoryCache[did] = fromStored(record);
+                });
+            } catch (error) {
+                console.warn("[SN] failed to load persisted SN status", error);
             }
         })();
     }
@@ -58,15 +46,19 @@ export async function getCachedSnStatus(didId: string): Promise<SnStatusRecord |
     return memoryCache[didId];
 }
 
+export async function primeCachedSnStatus(didId: string, username: string): Promise<void> {
+    await ensureCacheLoaded();
+    memoryCache[didId] = fromStored({ username });
+}
+
 export async function setCachedSnStatus(didId: string, record: SnStatusRecord): Promise<void> {
     await ensureCacheLoaded();
-    const normalized: SnStatusRecord = { ...record };
-    memoryCache[didId] = normalized;
+    memoryCache[didId] = { ...record };
     await invoke("set_sn_status", {
         didId,
         status: {
-            username: normalized.username ?? null,
-            zone_config: normalized.zoneConfig ?? null,
+            username: record.username ?? null,
+            zone_config: record.zoneConfig ?? null,
         },
     });
 }
@@ -77,72 +69,19 @@ export async function clearCachedSnStatus(didId: string): Promise<void> {
     await invoke("clear_sn_status", { didId });
 }
 
-export async function fetchSnStatus(didId: string, publicKeyJwk: string): Promise<SnStatusRecord> {
-    const { ok, raw } = await getUserByPublicKey(publicKeyJwk);
-    const username = ok && typeof raw?.user_name === "string" ? raw.user_name.trim() : null;
-    const zoneConfig = ok && typeof raw?.zone_config === "string" ? raw.zone_config : null;
-    const record: SnStatusRecord = username
-        ? { info: raw, username, zoneConfig }
-        : { info: raw ?? null, username: null, zoneConfig: zoneConfig ?? null };
-    await setCachedSnStatus(didId, record);
-    return record;
-}
+// SN no longer exposes public-key lookup. Refreshing status is therefore a
+// local read of the registration/login state already persisted with the DID.
+export async function fetchSnStatus(
+    didId: string,
+    _publicKeyJwk?: string
+): Promise<SnStatusRecord> {
+    await ensureCacheLoaded();
+    const cached = memoryCache[didId];
+    if (cached) return cached;
 
-export async function registerSnAccount(options: RegisterSnOptions): Promise<SnStatusRecord> {
-    const {
-        didId,
-        username,
-        passwordHash,
-        inviteCode,
-        publicKeyJwk,
-        maxPollAttempts = 20,
-        pollIntervalMs = 2000,
-    } = options;
-
-    const registration = await registerSnAccountWithPassword({
-        userName: username,
-        passwordHash,
-        activeCode: inviteCode,
-        publicKeyJwk,
-    });
-    if (!registration.ok) {
-        console.error("[SN-BIND]", "registerSnAccountWithPassword: failed");
-        throw new Error("register_sn_user_failed");
-    }
-
-    let info: any = null;
-    for (let attempt = 1; attempt <= maxPollAttempts; attempt += 1) {
-        try {
-            console.debug("[SN-BIND]", "poll", { attempt });
-            const { ok, raw } = await getUserByPublicKey(publicKeyJwk);
-            if (ok) {
-                info = raw;
-                break;
-            }
-        } catch (err) {
-            console.error("[SN-BIND]", "poll error", { attempt, err });
-        }
-        if (attempt < maxPollAttempts) {
-            await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
-        }
-    }
-
-    if (!info) {
-        console.error("[SN-BIND]", "bind timeout");
-        throw new Error("sn_bind_timeout");
-    }
-
-    const finalUsername =
-        (typeof info?.user_name === "string" && info.user_name.trim()) || username.trim() || null;
-    const zoneConfig =
-        (typeof info?.zone_config === "string" && info.zone_config.trim()) || null;
-    const record: SnStatusRecord = {
-        info,
-        username: finalUsername,
-        zoneConfig,
-    };
-    if (didId) {
-        await setCachedSnStatus(didId, record);
-    }
+    const dids = await invoke<DidInfo[]>("list_dids");
+    const localStatus = dids.find((did) => did.id === didId)?.sn_status;
+    const record = fromStored(localStatus ? { username: localStatus.username } : null);
+    memoryCache[didId] = record;
     return record;
 }

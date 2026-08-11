@@ -103,8 +103,14 @@
     touch-action: manipulation;
 }
 
-.tabbar .tab:hover {
-    color: #335dff;
+@media (hover: hover) and (pointer: fine) {
+    .tabbar .tab:hover {
+        color: #335dff;
+    }
+
+    [data-theme='dark'] .tabbar .tab:hover {
+        color: #6f9dff;
+    }
 }
 
 .tabbar .tab-icon {
@@ -138,10 +144,6 @@
 
 [data-theme='dark'] .tabbar {
     box-shadow: none;
-}
-
-[data-theme='dark'] .tabbar .tab:hover {
-    color: #6f9dff;
 }
 
 [data-theme='dark'] .tabbar .tab.active {

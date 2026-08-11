@@ -4,8 +4,10 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { useI18n } from "../i18n";
 import { useDidContext } from "../features/did/DidContext";
 import InputDialog from "../components/ui/InputDialog";
-import { JsonSignPayload, signJsonWithActiveDid } from "../features/did/api";
+import { JsonSignPayload, resolveDid, signJsonWithActiveDid } from "../features/did/api";
+import type { DidDocType } from "buckyos";
 import { fetchSnStatus, getCachedSnStatus } from "../features/sn/snStatusManager";
+import { getIdentityBnsName, getIdentityDid } from "../features/did/identityView";
 import { createRoot, Root } from "react-dom/client";
 import { BuckyErrorCodes } from "./buckyErrorCodes";
 import { parseCommandError } from "../utils/commandError";
@@ -119,8 +121,12 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
             if (!wallet) {
                 return { code: BuckyErrorCodes.NoKey, message: t("settings.embedded_webview_no_key") };
             }
-            const did = wallet.did;
-            const username = activeDid.nickname ?? "";
+            const ownerDocument = activeDid.owner_document;
+            if (!ownerDocument) {
+                throw new Error("owner_document_not_found");
+            }
+            const did = getIdentityDid(activeDid);
+            const username = getIdentityBnsName(activeDid);
             const public_key = publicKey;
             let snUsername: string | null = null;
             const cached = await getCachedSnStatus(activeDid.id);
@@ -142,6 +148,7 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
                     username,
                     public_key,
                     sn_username: snUsername,
+                    owner_document: ownerDocument,
                 },
             };
         },
@@ -149,6 +156,23 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
             const url = normalizeExternalUrl(payload?.url);
             await openUrl(url);
             return { code: BuckyErrorCodes.Success, data: { url } };
+        },
+        resolve_did: async (payload: { did?: unknown; docType?: unknown }) => {
+            if (typeof payload?.did !== "string" || !payload.did.trim()) {
+                throw new Error("invalid_did");
+            }
+            if (
+                payload.docType !== undefined
+                && payload.docType !== null
+                && typeof payload.docType !== "string"
+            ) {
+                throw new Error("invalid_did_doc_type");
+            }
+            const docType = typeof payload.docType === "string"
+                ? payload.docType as DidDocType
+                : null;
+            const document = await resolveDid(payload.did, docType);
+            return { code: BuckyErrorCodes.Success, data: document };
         },
         signJsonWithActiveDid: (payload: { payloads?: unknown[] }) => {
             const payloads = Array.isArray(payload?.payloads)

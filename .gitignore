@@ -35,6 +35,7 @@ doc/screenshots/test-*.png
 doc/*.log
 /src-tauri/ios/AudioPlugin/.build
 /.codex
-auto_test
-tmp/
+pnpm-lock.yaml
+/tmp/
+/auto_test/
 test-results/

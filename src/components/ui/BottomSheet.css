@@ -47,7 +47,7 @@
     font-weight: 600;
 }
 
-.bs-btn-primary {
+.bs-btn.bs-btn-primary {
     color: #fff;
     background: linear-gradient(90deg, #6366f1 0%, #6c5ce7 100%);
 }
@@ -64,7 +64,7 @@
     color: var(--app-text);
 }
 
-.bs-btn-danger {
+.bs-btn.bs-btn-danger {
     color: #fff;
     background: linear-gradient(90deg, #ef4444 0%, #f97316 100%);
 }

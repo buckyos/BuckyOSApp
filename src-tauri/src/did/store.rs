@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::io::ErrorKind;
-use tauri::{AppHandle, Wry};
+use tauri::{AppHandle, Runtime};
 use tauri_plugin_store::{Error as StoreError, Store, StoreExt};
 use ulid::Ulid;
 
@@ -32,6 +32,10 @@ pub struct StoredDid {
     pub seed: EncryptedSeed,
     #[serde(default)]
     pub wallets: WalletCollection,
+    /// Public BNS owner document. The mnemonic remains encrypted in `seed`;
+    /// this document intentionally stays as plain JSON for exact recovery.
+    #[serde(default)]
+    pub owner_document: Option<String>,
     #[serde(default)]
     pub sn_status: Option<SnStatusInfo>,
 }
@@ -59,6 +63,10 @@ impl StoredDid {
             btc_addresses,
             eth_addresses,
             bucky_wallets,
+            owner_document: self
+                .owner_document
+                .as_ref()
+                .and_then(|json| serde_json::from_str(json).ok()),
             sn_status: self.sn_status.clone(),
         }
     }
@@ -79,15 +87,15 @@ impl VaultStore {
     }
 }
 
-pub type AppStore = std::sync::Arc<Store<Wry>>;
+pub type AppStore<R> = std::sync::Arc<Store<R>>;
 
-pub fn open_store(app_handle: &AppHandle) -> CommandResult<AppStore> {
+pub fn open_store<R: Runtime>(app_handle: &AppHandle<R>) -> CommandResult<AppStore<R>> {
     app_handle
         .store("wallet.store")
         .map_err(|e| CommandErrors::store_unavailable(e.to_string()))
 }
 
-pub fn load_vault(store: &AppStore) -> CommandResult<VaultStore> {
+pub fn load_vault<R: Runtime>(store: &AppStore<R>) -> CommandResult<VaultStore> {
     match store.reload() {
         Ok(_) => {}
         Err(StoreError::Io(io_err)) if io_err.kind() == ErrorKind::NotFound => {
@@ -104,7 +112,7 @@ pub fn load_vault(store: &AppStore) -> CommandResult<VaultStore> {
     }
 }
 
-pub fn save_vault(store: &AppStore, vault: &VaultStore) -> CommandResult<()> {
+pub fn save_vault<R: Runtime>(store: &AppStore<R>, vault: &VaultStore) -> CommandResult<()> {
     let value =
         serde_json::to_value(vault).map_err(|e| CommandErrors::vault_corrupted(e.to_string()))?;
     store.set(STORE_KEY.to_string(), value);

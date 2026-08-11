@@ -15,12 +15,19 @@ name = "buckyosapp_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-tauri-build = { version = "=2.6.1", features = [] }
+tauri-build = { version = "=2.5.6", features = [] }
+
+[dev-dependencies]
+tauri = { version = "=2.10.3", features = ["test"] }
 
 [dependencies]
-tauri = { version = "=2.11.1", features = [] }
-tauri-plugin-store = "=2.4.3"
-tauri-plugin-opener = "=2.5.4"
+tauri = { version = "=2.10.3", features = ["tray-icon", "image-png"] }
+# Pinned to match tauri 2.10.3 — newer 2.11.x breaks an internal trait
+# bound and won't compile against this tauri version.
+tauri-runtime = "=2.10.1"
+tauri-runtime-wry = "=2.10.1"
+tauri-plugin-store = "=2.4.0"
+tauri-plugin-opener = "=2.5.0"
 tauri-plugin-log = "=2.8.0"
 log = "0.4"
 serde = { version = "1", features = ["derive"] }
@@ -36,14 +43,21 @@ rand = "0.8"
 sha2 = "0.10"
 hex = "0.4"
 ulid = "1.1"
-name-lib = { git = "https://github.com/buckyos/buckyos-base.git", package = "name-lib"}
+name-lib = { git = "https://github.com/buckyos/buckyos-base.git", package = "name-lib", branch = "beta2.2" }
+name-client = { git = "https://github.com/buckyos/buckyos-base.git", package = "name-client", branch = "beta2.2" }
+buckyos-kit = { git = "https://github.com/buckyos/buckyos-base.git", package = "buckyos-kit", branch = "beta2.2" }
 secrecy = "0.8"
 zeroize = "1.7"
 jsonwebtoken = { version = "9", default-features = false, features = ["use_pem"] }
 if-addrs = "*"
-tauri-plugin-http = "=2.5.9"
+tauri-plugin-http = "=2.5.4"
 futures = "0.3"
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+tokio = { version = "1", features = ["time"] }
+
+# Used by the vendored node_control module (Unix-only setsid call).
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem

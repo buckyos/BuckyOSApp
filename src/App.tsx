@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import "./App.css";
 import AppRoutes from "./app/AppRoutes";
+import TrayController from "./features/tray/TrayController";
 import { initTheme } from "./theme";
 import { applyPlatformAttributes } from "./utils/platform";
 
@@ -23,6 +24,12 @@ function App() {
         };
 
         const preventContextMenu = (event: Event) => {
+            // Keep the native WebKit context menu in development so Tauri's
+            // "Inspect Element" entry remains available for frontend debugging.
+            if (import.meta.env.DEV) {
+                return;
+            }
+
             if (allowNativeContextMenu(event)) {
                 return;
             }
@@ -84,7 +91,12 @@ function App() {
         };
     }, []);
 
-    return <AppRoutes />;
+    return (
+        <>
+            <AppRoutes />
+            <TrayController />
+        </>
+    );
 }
 
 export default App;

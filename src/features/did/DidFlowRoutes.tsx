@@ -24,12 +24,21 @@ const DidFlowRoutes: React.FC = () => {
         setConfirmPassword,
         snName,
         setSnName,
+        fullName,
+        setFullName,
+        email,
+        setEmail,
+        avatarSeed,
+        setAvatarSeed,
         activeCode,
         setActiveCode,
         mnemonic,
         confirmedMnemonic,
         setConfirmedMnemonic,
         didInfo,
+        registrationMaterial,
+        registrationPhase,
+        importCandidates,
         error,
         loading,
         goToCreateDid,
@@ -39,13 +48,19 @@ const DidFlowRoutes: React.FC = () => {
         goToBindSn,
         handleBindSnAndCreateDid,
         handleImportDid,
+        handleSelectImportCandidate,
         goToWelcome,
         goToDidInfo,
         goToSnInfo,
         resetFlow,
     } = useDidFlow();
 
-    const loadingTextKey = location.pathname === "/import" ? "common.importing" : "common.creating";
+    const loadingTextKey =
+        location.pathname === "/import"
+            ? "common.importing"
+            : registrationPhase === "submitting"
+              ? "sn.submitting"
+              : "sn.preparing";
 
     return (
         <div className="App">
@@ -63,7 +78,9 @@ const DidFlowRoutes: React.FC = () => {
                         <ImportDid
                             loading={loading}
                             error={error}
+                            candidates={importCandidates}
                             onImport={handleImportDid}
+                            onSelectCandidate={handleSelectImportCandidate}
                             onBack={goToWelcome}
                         />
                     }
@@ -102,6 +119,14 @@ const DidFlowRoutes: React.FC = () => {
                         <BindSn
                             snName={snName}
                             setSnName={setSnName}
+                            fullName={fullName}
+                            setFullName={setFullName}
+                            email={email}
+                            setEmail={setEmail}
+                            avatarSeed={avatarSeed}
+                            setAvatarSeed={setAvatarSeed}
+                            registrationMaterial={registrationMaterial}
+                            registrationPhase={registrationPhase}
                             password={password}
                             setPassword={setPassword}
                             confirmPassword={confirmPassword}

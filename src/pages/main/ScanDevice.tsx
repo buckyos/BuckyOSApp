@@ -5,7 +5,8 @@ import MobileHeader from "../../components/ui/MobileHeader";
 import GradientButton from "../../components/ui/GradientButton";
 import { useI18n } from "../../i18n";
 import { useDidContext } from "../../features/did/DidContext";
-import { fetchSnStatus, getCachedSnStatus } from "../../features/sn/snStatusManager";
+import { getIdentityDid } from "../../features/did/identityView";
+import { resolveZoneBindingStatus } from "../../features/did/zoneBindingStatus";
 import { getLocalIPv4List } from "../../utils/network";
 import { openWebView } from "../../utils/webview";
 import oodIllustration from "../../assets/ood.png";
@@ -270,32 +271,13 @@ const ScanDevice: React.FC = () => {
         let timer: number | undefined;
 
         const pollOodBinding = async () => {
-            if (!activeDid?.bucky_wallets?.length) return;
-            const cached = await getCachedSnStatus(activeDid.id);
-            const hasUsername = Boolean(
-                (typeof cached?.username === "string" && cached.username.trim().length > 0) ||
-                (typeof activeDid.sn_status?.username === "string" &&
-                    activeDid.sn_status.username.trim().length > 0)
-            );
-            const hasZoneConfig =
-                typeof cached?.zoneConfig === "string" && cached.zoneConfig.trim().length > 0;
-
-            if (cancelled) return;
-            if (hasZoneConfig) {
-                navigate("/main/home");
-                return;
-            }
-            if (!hasUsername) return;
+            const currentUserDid = getIdentityDid(activeDid);
+            if (!currentUserDid) return;
 
             try {
                 oodCheckInFlightRef.current = true;
-                const jwk = JSON.stringify(activeDid.bucky_wallets[0].public_key as any);
-                const record = await fetchSnStatus(activeDid.id, jwk);
-                if (
-                    !cancelled &&
-                    typeof record.zoneConfig === "string" &&
-                    record.zoneConfig.trim().length > 0
-                ) {
+                const hasBoundZone = await resolveZoneBindingStatus(currentUserDid);
+                if (!cancelled && hasBoundZone === true) {
                     navigate("/main/home");
                     return;
                 }

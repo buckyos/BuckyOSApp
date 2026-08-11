@@ -57,15 +57,16 @@
   - `3` (NoKey)：当前没有公钥。
   - `4` (NoActiveDid)：没有激活的 DID。
 
-### `BuckyApi.getCurrentUser(): Promise<{ code, message?, data?: { did: string; username: string; public_key: string; sn_username: string | null } }>`
+### `BuckyApi.getCurrentUser(): Promise<{ code, message?, data?: { did: string; username: string; public_key: object; sn_username: string | null; owner_document: OwnerDocument } }>`
 
 - **说明**：返回宿主侧当前激活 DID 的基础信息与 SN 绑定状态，方便 iframe 了解用户身份。
 - **参数**：无。
 - **成功 data**：
   - `did`：当前激活 DID 的 Bucky DID（取自第一枚 bucky wallet）。
   - `username`：DID 的昵称。
-  - `public_key`：第一枚 bucky wallet 的公钥（JSON 字符串，与 `getPublicKey` 一致）。
+  - `public_key`：第一枚 bucky wallet 的公钥 JWK 对象（与 `getPublicKey` 一致）。
   - `sn_username`：若已绑定 SN 用户名则返回字符串，否则为 `null`。
+  - `owner_document`：当前激活 DID 保存的完整 OwnerDocument。成功返回可用用户时该字段必然存在。
 - **典型错误码**：
   - `3` (NoKey)：当前没有可用 bucky wallet。
   - `4` (NoActiveDid)：没有激活的 DID。
@@ -85,6 +86,14 @@
   - `8` (Busy)：当前已有签名请求在进行中，请稍后再发起新的请求。
 
 > **提示**：`signJsonWithActiveDid` 为交互式请求，可能等待用户输入较长时间。第三方页面需避免连续发送多次请求。
+
+### `BuckyApi.resolve_did(did: string, docType?: DidDocType | null): Promise<{ code, message?, data?: EncodedDocument }>`
+
+- **说明**：通过宿主 Rust 扩展调用 `name-client::resolve_did`，因此会使用机器级 DID 文档缓存。
+- **参数**：
+  - `did`：要解析的 DID 字符串。
+  - `docType`：可选的 WebSDK `DidDocType`；省略或传 `null` 时使用 `name-client` 的默认文档类型。
+- **成功 data**：与 `buckyos-websdk` 的 `namelib.EncodedDocument` 一致：`{ type: "json", value: unknown }` 或 `{ type: "jwt", jwt: string }`。
 
 ## 与宿主程序的交互
 

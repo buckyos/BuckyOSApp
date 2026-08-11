@@ -56,7 +56,7 @@ function scrollFocusedControlIntoView(targetDocument: Document, delay = 120) {
             return;
         }
 
-        active.scrollIntoView({ block: "center", inline: "nearest", behavior: "auto" });
+        active.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "auto" });
     }, delay);
 
     keyboardScrollTimers.set(targetDocument, timer);
