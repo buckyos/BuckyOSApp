@@ -16,7 +16,7 @@
         "@tauri-apps/plugin-log": "2.8.0",
         "@tauri-apps/plugin-opener": "2.5.0",
         "@types/react-router-dom": "^5.3.3",
-        "buckyos": "github:buckyos/buckyos-websdk#12dd3f71ba5efbb727d94fa2c9e82930f665b1f0",
+        "buckyos": "github:buckyos/buckyos-websdk#main",
         "lucide-react": "^0.544.0",
         "react": "^19.1.0",
         "react-dom": "^19.1.0",
