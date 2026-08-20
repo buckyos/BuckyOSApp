@@ -11,7 +11,8 @@ use crate::error::{CommandErrors, CommandResult};
 pub const NETWORK: bitcoin::Network = bitcoin::Network::Bitcoin;
 pub const STORE_KEY: &str = "vault";
 const DID_PREFIX: &str = "did:bk:1:";
-const VAULT_VERSION: u32 = 1;
+const VAULT_VERSION: u32 = 2;
+const SN_USERNAME_MIGRATION_VERSION: u32 = 2;
 
 pub fn new_did_id() -> String {
     format!("{}{}", DID_PREFIX, Ulid::new())
@@ -41,6 +42,49 @@ pub struct StoredDid {
 }
 
 impl StoredDid {
+    fn recover_sn_username(&self) -> Option<String> {
+        let owner_document = self.owner_document.as_ref()?;
+        let value: serde_json::Value = serde_json::from_str(owner_document).ok()?;
+        let name = value.get("name")?.as_str()?.trim();
+        let normalized_name = name.to_ascii_lowercase();
+        let owner_did = value.get("id")?.as_str()?.trim();
+
+        if name.is_empty()
+            || name != normalized_name
+            || owner_did != format!("did:bns:{normalized_name}")
+        {
+            return None;
+        }
+
+        Some(normalized_name)
+    }
+
+    fn migrate_legacy_sn_status(&mut self) -> bool {
+        let has_username = self
+            .sn_status
+            .as_ref()
+            .and_then(|status| status.username.as_deref())
+            .is_some_and(|username| !username.trim().is_empty());
+        if has_username {
+            return false;
+        }
+
+        let Some(username) = self.recover_sn_username() else {
+            return false;
+        };
+
+        match &mut self.sn_status {
+            Some(status) => status.username = Some(username),
+            None => {
+                self.sn_status = Some(SnStatusInfo {
+                    username: Some(username),
+                    zone_config: None,
+                });
+            }
+        }
+        true
+    }
+
     pub fn to_info(&self) -> DidInfo {
         let mut btc_addresses: Vec<BtcAddress> = self
             .wallets
@@ -72,7 +116,7 @@ impl StoredDid {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct VaultStore {
     version: u32,
     pub active_did: Option<String>,
@@ -81,9 +125,37 @@ pub struct VaultStore {
 }
 
 impl VaultStore {
-    pub fn ensure_version(mut self) -> Self {
-        self.version = VAULT_VERSION;
-        self
+    fn migrate_to_current(&mut self) -> bool {
+        let mut changed = false;
+        if self.version < SN_USERNAME_MIGRATION_VERSION {
+            changed = self.migrate_legacy_sn_statuses();
+        }
+        if self.version < VAULT_VERSION {
+            self.version = VAULT_VERSION;
+            changed = true;
+        }
+        changed
+    }
+
+    fn migrate_legacy_sn_statuses(&mut self) -> bool {
+        self.dids.iter_mut().fold(false, |migrated, did| {
+            did.migrate_legacy_sn_status() || migrated
+        })
+    }
+
+    #[cfg(test)]
+    pub(crate) fn mark_legacy_for_test(&mut self) {
+        self.version = SN_USERNAME_MIGRATION_VERSION - 1;
+    }
+}
+
+impl Default for VaultStore {
+    fn default() -> Self {
+        Self {
+            version: VAULT_VERSION,
+            active_did: None,
+            dids: Vec::new(),
+        }
     }
 }
 
@@ -104,12 +176,17 @@ pub fn load_vault<R: Runtime>(store: &AppStore<R>) -> CommandResult<VaultStore> 
         Err(err) => return Err(CommandErrors::store_unavailable(err.to_string())),
     }
 
-    match store.get(STORE_KEY) {
+    let mut vault = match store.get(STORE_KEY) {
         Some(value) => serde_json::from_value::<VaultStore>(value)
-            .map(VaultStore::ensure_version)
             .map_err(|e| CommandErrors::vault_corrupted(e.to_string())),
         None => Ok(VaultStore::default()),
+    }?;
+
+    if vault.migrate_to_current() {
+        save_vault(store, &vault)?;
     }
+
+    Ok(vault)
 }
 
 pub fn save_vault<R: Runtime>(store: &AppStore<R>, vault: &VaultStore) -> CommandResult<()> {

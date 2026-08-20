@@ -377,13 +377,17 @@ pub fn import_did(
         return Err(CommandErrors::NicknameExists);
     }
 
+    let username = owner_document.name.clone();
     let record = StoredDid {
         id: new_did_id(),
         nickname: owner_document.name,
         seed: encrypted_seed,
         wallets,
         owner_document: Some(owner_document.raw_json),
-        sn_status: None,
+        sn_status: Some(SnStatusInfo {
+            username: Some(username),
+            zone_config: None,
+        }),
     };
 
     vault.active_did = Some(record.id.clone());
@@ -796,7 +800,7 @@ pub fn generate_zone_boot_config_jwt(
 mod tests {
     use super::*;
     use crate::did::domain::DEFAULT_BTC_ADDRESS_TYPE;
-    use crate::did::store::{save_vault, VaultStore};
+    use crate::did::store::{save_vault, VaultStore, STORE_KEY};
     use name_lib::{OwnerDocument, OwnerWallet, DID};
     use std::collections::HashMap;
     use tauri::test::{mock_builder, mock_context, noop_assets, MockRuntime};
@@ -988,6 +992,52 @@ mod tests {
         delete_wallet(app_handle.clone(), password, Some(did_info.id)).unwrap();
         let dids_after = list_dids(app_handle.clone()).unwrap();
         assert!(dids_after.is_empty());
+    }
+
+    #[test]
+    fn test_import_did_persists_sn_username_and_migrates_legacy_record() {
+        let _guard = STORE_TEST_LOCK.lock().unwrap();
+        let app = test_app();
+        let app_handle = app.handle();
+        reset_vault(app_handle);
+
+        let nickname = "import_user".to_string();
+        let imported = import_did(
+            app_handle.clone(),
+            "password123".to_string(),
+            mnemonic_words(),
+            owner_document_json(&nickname),
+        )
+        .unwrap();
+
+        assert_eq!(
+            imported.sn_status.as_ref().unwrap().username.as_deref(),
+            Some("import_user")
+        );
+
+        let store = open_store(app_handle).unwrap();
+        let mut legacy_vault = load_vault(&store).unwrap();
+        legacy_vault.dids[0].sn_status = None;
+        legacy_vault.mark_legacy_for_test();
+        save_vault(&store, &legacy_vault).unwrap();
+
+        let migrated = active_did(app_handle.clone()).unwrap().unwrap();
+        assert_eq!(
+            migrated.sn_status.as_ref().unwrap().username.as_deref(),
+            Some("import_user")
+        );
+
+        store.reload().unwrap();
+        let persisted: VaultStore = serde_json::from_value(store.get(STORE_KEY).unwrap()).unwrap();
+        assert_eq!(
+            persisted.dids[0]
+                .sn_status
+                .as_ref()
+                .unwrap()
+                .username
+                .as_deref(),
+            Some("import_user")
+        );
     }
 
     #[test]
