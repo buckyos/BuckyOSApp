@@ -45,7 +45,18 @@ mod tray;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let builder = tauri::Builder::default()
+    let builder = tauri::Builder::default();
+
+    // This must be the first registered plugin so a second desktop process is
+    // stopped before it can create another main window or tray icon.
+    #[cfg(desktop)]
+    let builder = builder.plugin(tauri_plugin_single_instance::init(
+        |app, _arguments, _working_directory| {
+            tray::show_main_window(app);
+        },
+    ));
+
+    let builder = builder
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_log::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
