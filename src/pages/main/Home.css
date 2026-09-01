@@ -556,6 +556,26 @@
     margin-top: 12px;
 }
 
+.bind-ood-zone-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+    color: var(--muted-text);
+    font-size: 13px;
+}
+
+.bind-ood-zone-field select {
+    width: 100%;
+    min-height: 42px;
+    padding: 0 12px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--app-bg);
+    color: var(--app-text);
+    font-size: 14px;
+}
+
 .bind-ood-image-wrapper {
     display: flex;
     justify-content: center;

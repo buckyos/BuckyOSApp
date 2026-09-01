@@ -34,9 +34,10 @@ export type JsonSignPayload = Record<string, unknown>;
 
 export async function signJsonWithActiveDid(
     password: string,
-    payloads: JsonSignPayload[]
+    payloads: JsonSignPayload[],
+    keyId?: string
 ): Promise<(string | null)[]> {
-    return invoke("sign_json_with_active_did", { password, payloads });
+    return invoke("sign_json_with_active_did", { password, payloads, keyId });
 }
 
 export async function resolveDid(

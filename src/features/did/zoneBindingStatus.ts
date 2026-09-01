@@ -1,6 +1,5 @@
-import { CommandErrorCodes } from "../../constants/commandErrorCodes";
-import { parseCommandError } from "../../utils/commandError";
-import { resolveDid } from "./api";
+import { bnsDocumentExists, resolveBnsOwnerDocument } from "../../services/bns_client";
+import { isLegacyOwnerZoneBinding, ownerBoundZoneDids } from "./ownerZoneBinding";
 
 const STORAGE_KEY = "buckyos.zone-binding-status.v1";
 
@@ -8,6 +7,12 @@ type PersistedZoneBindingStatuses = Record<string, boolean>;
 
 let cachedStatuses: PersistedZoneBindingStatuses | null = null;
 const pendingResolutions = new Map<string, Promise<boolean | null>>();
+
+export interface ZoneBindingSnapshot {
+    isBound: boolean;
+    zoneDids: string[];
+    legacy: boolean;
+}
 
 function loadStatuses(): PersistedZoneBindingStatuses {
     if (cachedStatuses) return cachedStatuses;
@@ -53,9 +58,33 @@ export function setLastZoneBindingStatus(currentUserDid: string, status: boolean
     persistStatuses();
 }
 
+export async function resolveZoneBindingSnapshot(currentUserDid: string): Promise<ZoneBindingSnapshot | null> {
+    const did = currentUserDid.trim();
+    if (!did) return null;
+
+    try {
+        if (!did.startsWith("did:bns:")) throw new Error("unsupported_owner_did");
+        const name = did.slice("did:bns:".length);
+        const resolved = await resolveBnsOwnerDocument(name);
+        const explicitZones = ownerBoundZoneDids(resolved.document);
+        const legacy = isLegacyOwnerZoneBinding(resolved.document);
+        const zoneDids = explicitZones.length > 0
+            ? explicitZones
+            : legacy && await bnsDocumentExists(name, "zone")
+                ? [did]
+                : [];
+        setLastZoneBindingStatus(did, zoneDids.length > 0);
+        return { isBound: zoneDids.length > 0, zoneDids, legacy };
+    } catch (error) {
+        console.warn("[OOD] failed to resolve zone binding status; using last result", error);
+        const last = getLastZoneBindingStatus(did);
+        return last === null ? null : { isBound: last, zoneDids: [], legacy: false };
+    }
+}
+
 // Call this from UI-facing flows only: every uncached invocation can access the network.
-// A confirmed missing zone document means "not bound". Other failures (including an
-// unavailable network) preserve and return the last successfully resolved status.
+// Other failures (including an unavailable network) preserve and return the last
+// successfully resolved status.
 export function resolveZoneBindingStatus(currentUserDid: string): Promise<boolean | null> {
     const did = currentUserDid.trim();
     if (!did) return Promise.resolve(null);
@@ -65,18 +94,7 @@ export function resolveZoneBindingStatus(currentUserDid: string): Promise<boolea
 
     const resolution = (async () => {
         try {
-            await resolveDid(did, "zone");
-            setLastZoneBindingStatus(did, true);
-            return true;
-        } catch (error) {
-            const parsed = parseCommandError(error);
-            if (parsed.code === CommandErrorCodes.NotFound) {
-                setLastZoneBindingStatus(did, false);
-                return false;
-            }
-
-            console.warn("[OOD] failed to resolve zone binding status; using last result", error);
-            return getLastZoneBindingStatus(did);
+            return (await resolveZoneBindingSnapshot(did))?.isBound ?? null;
         } finally {
             pendingResolutions.delete(did);
         }

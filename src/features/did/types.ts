@@ -57,6 +57,8 @@ export interface OwnerDocument {
     exp: number;
     iat: number;
     version_seq?: number;
+    zone_binding_model_version?: number;
+    binded_zone_list?: string[];
     name: string;
     display_name: string;
     avatar: string;

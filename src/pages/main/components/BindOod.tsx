@@ -10,12 +10,22 @@ import { useDidContext } from "../../../features/did/DidContext";
 import { signJsonWithActiveDid } from "../../../features/did/api";
 import { getIdentityDid } from "../../../features/did/identityView";
 import {
+    buildOwnerRemoveBoundZoneClaims,
+    canonicalOwnerDocumentHash,
+    createOwnerUnbindRequestId,
+    defaultBoundZoneDid,
+    ownerAuthenticationKeyId,
+    resolveOwnerUnbindTarget,
+    waitForOwnerZoneUnbound,
+} from "../../../features/did/ownerZoneBinding";
+import {
     getLastZoneBindingStatus,
-    resolveZoneBindingStatus,
+    resolveZoneBindingSnapshot,
     setLastZoneBindingStatus,
 } from "../../../features/did/zoneBindingStatus";
 import { getCachedSnStatus, setCachedSnStatus } from "../../../features/sn/snStatusManager";
-import { unbindZoneConfig } from "../../../services/sn_client";
+import { bnsDocumentExists, resolveBnsOwnerDocument } from "../../../services/bns_client";
+import { removeOwnerBoundZone } from "../../../services/sn_client";
 import { parseCommandError } from "../../../utils/commandError";
 import { CommandErrorCodes } from "../../../constants/commandErrorCodes";
 import { openWebView } from "../../../utils/webview";
@@ -102,6 +112,8 @@ const BindOod: React.FC = () => {
     const navigate = useNavigate();
     const { activeDid } = useDidContext();
     const [hasBoundOod, setHasBoundOod] = React.useState(false);
+    const [boundZoneDids, setBoundZoneDids] = React.useState<string[]>([]);
+    const [selectedZoneDid, setSelectedZoneDid] = React.useState<string | null>(null);
     const [confirmUnbindOpen, setConfirmUnbindOpen] = React.useState(false);
     const [passwordDialogOpen, setPasswordDialogOpen] = React.useState(false);
     const [password, setPassword] = React.useState("");
@@ -135,9 +147,13 @@ const BindOod: React.FC = () => {
                 setHasBoundOod(lastStatus);
             }
 
-            const resolvedStatus = await resolveZoneBindingStatus(currentUserDid);
-            if (!cancelled && resolvedStatus !== null) {
-                setHasBoundOod(resolvedStatus);
+            const snapshot = await resolveZoneBindingSnapshot(currentUserDid);
+            if (!cancelled && snapshot !== null) {
+                setHasBoundOod(snapshot.isBound);
+                setBoundZoneDids(snapshot.zoneDids);
+                setSelectedZoneDid((current) =>
+                    current && snapshot.zoneDids.includes(current) ? current : snapshot.zoneDids[0] ?? null
+                );
             }
         };
 
@@ -259,17 +275,58 @@ const BindOod: React.FC = () => {
         setUnbindLoading(true);
         setPasswordError("");
         try {
-            const now = Math.floor(Date.now() / 1000);
-            const [token] = await signJsonWithActiveDid(trimmedPassword, [{
-                sub: userName,
-                iat: now,
-                exp: now + 300,
-            }]);
+            const owner = await resolveBnsOwnerDocument(userName);
+            const zoneDid = await resolveOwnerUnbindTarget(
+                owner.document,
+                selectedZoneDid,
+                () => bnsDocumentExists(userName, "zone")
+            );
+            if (!zoneDid) {
+                setLastZoneBindingStatus(getIdentityDid(activeDid), false);
+                setHasBoundOod(false);
+                setBoundZoneDids([]);
+                setSelectedZoneDid(null);
+                setPasswordDialogOpen(false);
+                setPassword("");
+                openResultDialog(t("ood.unbind_result_success_title"), t("ood.unbind_result_success_message"));
+                return;
+            }
+
+            const expectedOwnerHash = await canonicalOwnerDocumentHash(owner.document);
+            const requestId = await createOwnerUnbindRequestId(userName, zoneDid, expectedOwnerHash);
+            const claims = buildOwnerRemoveBoundZoneClaims({
+                name: userName,
+                zoneDid,
+                expectedOwnerHash,
+                requestId,
+            });
+            const [token] = await signJsonWithActiveDid(
+                trimmedPassword,
+                [claims],
+                ownerAuthenticationKeyId(owner.document)
+            );
             if (!token) {
                 throw new Error("unbind_sign_failed");
             }
 
-            await unbindZoneConfig(userName, token);
+            const submitted = await removeOwnerBoundZone({
+                name: userName.trim().toLowerCase(),
+                zone_did: zoneDid,
+                expected_owner_hash: expectedOwnerHash,
+                request_id: requestId,
+                owner_authorization: token,
+            });
+            if (
+                submitted.source_owner_hash !== expectedOwnerHash ||
+                submitted.name !== userName.trim().toLowerCase() ||
+                submitted.operation !== "owner.remove_bound_zone" ||
+                submitted.request_id !== requestId ||
+                !/^sha256:[0-9a-f]{64}$/.test(submitted.result_owner_hash) ||
+                (owner.version !== null && submitted.source_version !== owner.version)
+            ) {
+                throw new Error("sn_unbind_contract_violation");
+            }
+            const confirmed = await waitForOwnerZoneUnbound(userName, zoneDid, submitted.result_owner_hash);
             await setCachedSnStatus(activeDid.id, {
                 info: {
                     ...(cached?.info ?? {}),
@@ -277,8 +334,12 @@ const BindOod: React.FC = () => {
                 },
                 username: userName,
             });
-            setLastZoneBindingStatus(getIdentityDid(activeDid), false);
-            setHasBoundOod(false);
+            const stillBound = defaultBoundZoneDid(confirmed.document) !== null;
+            const remainingZones = confirmed.document.binded_zone_list ?? [];
+            setLastZoneBindingStatus(getIdentityDid(activeDid), stillBound);
+            setHasBoundOod(stillBound);
+            setBoundZoneDids(remainingZones);
+            setSelectedZoneDid(remainingZones[0] ?? null);
             setPasswordDialogOpen(false);
             setPassword("");
             openResultDialog(t("ood.unbind_result_success_title"), t("ood.unbind_result_success_message"));
@@ -298,7 +359,7 @@ const BindOod: React.FC = () => {
         } finally {
             setUnbindLoading(false);
         }
-    }, [password, t, activeDid, openResultDialog]);
+    }, [password, t, activeDid, openResultDialog, selectedZoneDid]);
 
     return (
         <section className="did-section bind-ood-section">
@@ -311,6 +372,20 @@ const BindOod: React.FC = () => {
 
             <div className="ood-info-card bind-ood-info">
                 <p>{hasBoundOod ? t("ood.bound_desc") : t("ood.activate_desc_inline")}</p>
+                {hasBoundOod && boundZoneDids.length > 0 && (
+                    <label className="bind-ood-zone-field">
+                        <span>{t("ood.bound_zone_label")}</span>
+                        <select
+                            value={selectedZoneDid ?? ""}
+                            onChange={(event) => setSelectedZoneDid(event.target.value)}
+                            aria-label={t("ood.bound_zone_label")}
+                        >
+                            {boundZoneDids.map((zoneDid) => (
+                                <option key={zoneDid} value={zoneDid}>{zoneDid}</option>
+                            ))}
+                        </select>
+                    </label>
+                )}
             </div>
 
             <div className="bind-ood-image-wrapper">
@@ -331,6 +406,7 @@ const BindOod: React.FC = () => {
                         <GradientButton
                             fullWidth
                             variant="secondary"
+                            disabled={!selectedZoneDid}
                             onClick={() => setConfirmUnbindOpen(true)}
                         >
                             {t("ood.unbind_button")}
@@ -467,7 +543,9 @@ const BindOod: React.FC = () => {
             <ConfirmDialog
                 open={confirmUnbindOpen}
                 title={t("ood.unbind_confirm_title")}
-                message={t("ood.unbind_confirm_message")}
+                message={selectedZoneDid
+                    ? `${t("ood.unbind_confirm_message")}\n\n${t("ood.bound_zone_label")}: ${selectedZoneDid}`
+                    : t("ood.unbind_confirm_message")}
                 confirmText={t("ood.unbind_continue")}
                 cancelText={t("common.actions.cancel")}
                 confirmVariant="danger"
