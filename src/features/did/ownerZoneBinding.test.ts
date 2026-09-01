@@ -133,4 +133,25 @@ describe("OwnerDocument zone unlink contract", () => {
         expect(resolveOwner).toHaveBeenCalledTimes(2);
         expect(confirmed.version).toBe(8);
     });
+
+    it("times out while BNS still exposes the source owner document", async () => {
+        const source = owner();
+        const resolveOwner = vi.fn().mockResolvedValue({ document: source, rawJson: "{}", version: 7 });
+        let elapsed = 0;
+
+        await expect(waitForOwnerZoneUnbound(
+            "alice",
+            "did:web:home.example",
+            `sha256:${"f".repeat(64)}`,
+            {
+                timeoutMs: 4,
+                intervalMs: 2,
+                resolveOwner,
+                sleep: async (milliseconds) => { elapsed += milliseconds; },
+                now: () => elapsed,
+            }
+        )).rejects.toThrow("sn_unbind_timeout");
+
+        expect(resolveOwner).toHaveBeenCalledTimes(3);
+    });
 });
