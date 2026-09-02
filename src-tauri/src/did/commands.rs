@@ -702,6 +702,7 @@ pub fn sign_json_with_active_did(
     app_handle: AppHandle<impl Runtime>,
     password: String,
     payloads: Vec<Value>,
+    key_id: Option<String>,
 ) -> CommandResult<Vec<Option<String>>> {
     let mut sanitized = Vec::with_capacity(payloads.len());
     let mut invalid_found = false;
@@ -724,7 +725,7 @@ pub fn sign_json_with_active_did(
     let mut signatures = Vec::with_capacity(sanitized.len());
     for payload in sanitized {
         let mut header = Header::new(Algorithm::EdDSA);
-        header.kid = None;
+        header.kid = key_id.clone();
         header.typ = None;
 
         match encode(&header, &payload, &pem_key) {

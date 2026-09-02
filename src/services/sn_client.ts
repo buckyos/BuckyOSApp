@@ -1,4 +1,4 @@
-import { buckyos, sn } from "buckyos";
+import { sn } from "buckyos";
 import type { OwnerDocument } from "../features/did/types";
 import { getServiceEndpoints, setServiceEndpointsForTests } from "./endpoints";
 
@@ -237,14 +237,12 @@ export async function registerSnIdentity(input: SnRegisterInput): Promise<SnRegi
     }
 }
 
-// This compatibility call is unrelated to registration and remains until the
-// OOD unbind screen migrates to the next SN profile API. New identity flows do
-// not use it, and no removed owner-key/device lookup method remains here.
-export async function unbindZoneConfig(userName: string, token: string): Promise<void> {
-    const endpoints = await getServiceEndpoints();
-    const rpc = new buckyos.kRPCClient(`${endpoints.sn_api_url}/kapi/sn/auth`, token);
-    const result = await rpc.call<{ code?: number }, { user_name: string }>("zone.unbind_config", {
-        user_name: userName.trim().toLowerCase(),
-    });
+// Owner-key-authorized atomic/CAS unlink. The App confirms the submitted
+// result through BNS readback before changing any local binding state.
+export async function removeOwnerBoundZone(
+    request: sn.SnOwnerRemoveBoundZoneReq
+): Promise<sn.SnOwnerRemoveBoundZoneResp> {
+    const result = await (await client(SN_REGISTER_TIMEOUT_MS, "sn_unbind_timeout")).removeBoundZone(request);
     if (result.code !== 0) throw new Error("sn_unbind_failed");
+    return result;
 }

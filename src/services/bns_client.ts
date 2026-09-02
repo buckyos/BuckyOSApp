@@ -17,12 +17,19 @@ export interface BnsReadClient {
     }>;
     resolveDocument(name: string, docType: string): Promise<{
         document_state: {
+            version?: number;
             document: {
                 storage_type: string;
                 inline_document: number[];
             };
         };
     }>;
+}
+
+export interface ResolvedBnsOwnerDocument {
+    document: OwnerDocument;
+    rawJson: string;
+    version: number | null;
 }
 
 function timeoutFetcher(timeoutMs: number) {
@@ -54,6 +61,43 @@ function decodeInlineOwnerDocument(bytes: number[]): { document: OwnerDocument; 
         throw new Error("invalid_owner_document");
     }
     return { document: parsed as OwnerDocument, rawJson: raw };
+}
+
+export async function resolveBnsOwnerDocument(name: string): Promise<ResolvedBnsOwnerDocument> {
+    return resolveBnsOwnerDocumentWithClient(await getBnsClient(), name);
+}
+
+export async function bnsDocumentExists(name: string, docType: string): Promise<boolean> {
+    try {
+        await (await getBnsClient()).resolveDocument(name.trim().toLowerCase(), docType);
+        return true;
+    } catch (error) {
+        if (error instanceof bns.BnsClientError && error.isRegistryCode("DOCUMENT_NOT_FOUND")) {
+            return false;
+        }
+        throw error;
+    }
+}
+
+export async function resolveBnsOwnerDocumentWithClient(
+    client: BnsReadClient,
+    name: string
+): Promise<ResolvedBnsOwnerDocument> {
+    const normalizedName = name.trim().toLowerCase();
+    if (!normalizedName) throw new Error("invalid_bns_name");
+    const resolved = await client.resolveDocument(normalizedName, "owner");
+    const state = resolved.document_state;
+    if (state.document.storage_type !== "inline" || state.document.inline_document.length === 0) {
+        throw new Error("owner_document_not_inline");
+    }
+    const decoded = decodeInlineOwnerDocument(state.document.inline_document);
+    if (decoded.document.id !== `did:bns:${normalizedName}` || decoded.document.name !== normalizedName) {
+        throw new Error("invalid_owner_document_identity");
+    }
+    return {
+        ...decoded,
+        version: typeof state.version === "number" ? state.version : null,
+    };
 }
 
 export async function queryAllNamesByAddress(evmAddress: string): Promise<string[]> {

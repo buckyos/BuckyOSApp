@@ -364,6 +364,7 @@ export default {
         content: "SN是XXXX",
     },
     ood: {
+        bound_zone_label: "要解除绑定的 Zone DID",
         activate_title: "激活 OOD",
         activate_subtitle: "激活您的 OOD 设备以加入 BuckyOS 网络。",
         about_title: "关于 OOD",

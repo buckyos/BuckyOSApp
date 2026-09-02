@@ -4,6 +4,7 @@ import type { RegistrationMaterial } from "../features/did/types";
 import {
     findBnsIdentitiesForMaterialWithClient,
     queryAllNamesByAddressWithClient,
+    resolveBnsOwnerDocumentWithClient,
     type BnsReadClient,
 } from "./bns_client";
 
@@ -56,6 +57,20 @@ function clientFor(names: string[]): BnsReadClient {
 }
 
 describe("BNS address recovery", () => {
+    it("returns the exact inline OwnerDocument and projection version", async () => {
+        const client = clientFor(["alice0001"]);
+        const originalResolve = client.resolveDocument;
+        client.resolveDocument = async (name, docType) => {
+            const resolved = await originalResolve(name, docType);
+            return { document_state: { ...resolved.document_state, version: 7 } };
+        };
+
+        const resolved = await resolveBnsOwnerDocumentWithClient(client, "Alice0001");
+
+        expect(resolved.document.id).toBe("did:bns:alice0001");
+        expect(resolved.version).toBe(7);
+    });
+
     it("follows cursor pagination without taking only the first name", async () => {
         const client = clientFor(["alice0001", "bob00001"]);
         await expect(queryAllNamesByAddressWithClient(client, EVM_ADDRESS)).resolves.toEqual([
