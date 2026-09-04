@@ -1,4 +1,4 @@
-import { namelib } from "buckyos";
+import { namelib, ndn } from "buckyos";
 import type { OwnerDocument } from "./types";
 import { resolveBnsOwnerDocument, type ResolvedBnsOwnerDocument } from "../../services/bns_client";
 
@@ -20,31 +20,8 @@ export interface OwnerRemoveBoundZoneClaims extends Record<string, unknown> {
     exp: number;
 }
 
-function canonicalJson(value: unknown): string {
-    if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
-    if (value && typeof value === "object") {
-        const entries = Object.entries(value as Record<string, unknown>)
-            .sort(([left], [right]) => compareUtf8(left, right));
-        return `{${entries.map(([key, child]) => `${JSON.stringify(key)}:${canonicalJson(child)}`).join(",")}}`;
-    }
-    const serialized = JSON.stringify(value);
-    if (serialized === undefined) throw new Error("owner_document_not_json");
-    return serialized;
-}
-
-function compareUtf8(left: string, right: string): number {
-    const encoder = new TextEncoder();
-    const leftBytes = encoder.encode(left);
-    const rightBytes = encoder.encode(right);
-    const length = Math.min(leftBytes.length, rightBytes.length);
-    for (let index = 0; index < length; index += 1) {
-        if (leftBytes[index] !== rightBytes[index]) return leftBytes[index] - rightBytes[index];
-    }
-    return leftBytes.length - rightBytes.length;
-}
-
 export async function canonicalOwnerDocumentHash(document: OwnerDocument): Promise<string> {
-    const bytes = new TextEncoder().encode(canonicalJson(document));
+    const bytes = new TextEncoder().encode(ndn.toCanonicalJsonString(document));
     return `sha256:${await sha256Hex(bytes)}`;
 }
 

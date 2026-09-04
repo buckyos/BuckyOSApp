@@ -88,6 +88,17 @@ describe("OwnerDocument zone unlink contract", () => {
         await expect(canonicalOwnerDocumentHash({ "2": 2, "10": 10 } as unknown as OwnerDocument)).resolves.toBe(
             "sha256:5355e5c9c48ddb40379a8a11e74e08cf4c2a364f10bf4b2324e32d5d20489385"
         );
+        await expect(canonicalOwnerDocumentHash({
+            numbers: [333333333.33333329, 1e30, 4.50, 2e-3, 1e-27],
+        } as unknown as OwnerDocument)).resolves.toBe(
+            "sha256:7c892d3452ad85ad65857a43e8dcac93b79475d2334fc3e85bac5c599142c158"
+        );
+        await expect(canonicalOwnerDocumentHash({
+            small: 0.000001,
+            large: 1e20,
+        } as unknown as OwnerDocument)).resolves.toBe(
+            "sha256:ce6cb4ba83bb705700ff9761d727f1f32126cbe558abb6ac4ecd2597234b628a"
+        );
     });
 
     it("binds every compare-and-swap field into a five-minute owner JWT", async () => {
