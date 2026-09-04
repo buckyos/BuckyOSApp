@@ -1,65 +1,53 @@
-name: Build All
+name: Build All BuckyOSApp Artifacts
 
 on:
   workflow_dispatch:
     inputs:
-      version:
-        description: 'Version number'
+      android_version_code:
+        description: 'Android versionCode'
         required: true
-        type: string
-  workflow_call:
-    inputs:
-      version:
-        description: 'Version number'
-        required: true
+        default: '1'
         type: string
 
 jobs:
+  prepare-version:
+    runs-on: ubuntu-latest
+    outputs:
+      base_version: ${{ steps.version.outputs.base_version }}
+      artifact_version: ${{ steps.version.outputs.artifact_version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Generate BuckyOSApp version
+        id: version
+        run: |
+          base_version="$(node -p "require('./package.json').version")"
+          echo "base_version=$base_version" >> "$GITHUB_OUTPUT"
+          echo "artifact_version=$base_version+build$(date -u +%y%m%d)" >> "$GITHUB_OUTPUT"
   build-windows:
+    needs: prepare-version
     strategy:
+      fail-fast: false
       matrix:
         arch: ["x86_64"]
     uses: ./.github/workflows/build-windows.yml
     with:
-      version: ${{ inputs.version }}
       arch: ${{ matrix.arch }}
-    secrets: inherit
+      version: ${{ needs.prepare-version.outputs.artifact_version }}
   build-macos:
+    needs: prepare-version
     strategy:
+      fail-fast: false
       matrix:
         arch: ["x86_64", "aarch64"]
     uses: ./.github/workflows/build-macos.yml
     with:
-      version: ${{ inputs.version }}
       arch: ${{ matrix.arch }}
-    secrets: inherit
-  publish-release:
-    needs: [build-windows, build-macos]
-    runs-on: ubuntu-latest
-    steps:
-    - name: Set up current date and time
-      uses: Kaven-Universe/github-action-current-date-time@v1
-      id: date
-      with:
-        format: 'YYYYMMDD'
-    - name: short time
-      id: short_time
-      run: |
-        val="${{ steps.date.outputs.time }}"
-        echo "time=${val: -6}" >> $GITHUB_OUTPUT
-    - name: Download All Artifacts
-      uses: actions/download-artifact@v5
-      with: 
-        merge-multiple: true
-    - name: List Files
-      run: ls -alh .
-    - name: Create Github Release
-      uses: softprops/action-gh-release@v2
-      with:
-        tag_name: ${{ inputs.version }}+build${{ steps.short_time.outputs.time }}
-        name: BuckyOSApp Release ${{ inputs.version }}+build${{ steps.short_time.outputs.time }}
-        generate_release_notes: true
-        fail_on_unmatched_files: true
-        files: "*.tar.gz"
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      version: ${{ needs.prepare-version.outputs.artifact_version }}
+  build-android:
+    needs: prepare-version
+    uses: ./.github/workflows/build-android.yml
+    with:
+      version_name: ${{ needs.prepare-version.outputs.base_version }}
+      artifact_version: ${{ needs.prepare-version.outputs.artifact_version }}
+      version_code: ${{ inputs.android_version_code }}
