@@ -1,6 +1,8 @@
 name: Build All BuckyOSApp Artifacts
 
 on:
+  push:
+    branches: ["main"]
   workflow_dispatch:
     inputs:
       android_version_code:
@@ -50,4 +52,4 @@ jobs:
     with:
       version_name: ${{ needs.prepare-version.outputs.base_version }}
       artifact_version: ${{ needs.prepare-version.outputs.artifact_version }}
-      version_code: ${{ inputs.android_version_code }}
+      version_code: ${{ github.event_name == 'workflow_dispatch' && inputs.android_version_code || '1' }}
