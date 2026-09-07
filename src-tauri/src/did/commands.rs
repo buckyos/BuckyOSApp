@@ -399,6 +399,35 @@ pub fn import_did(
 }
 
 #[tauri::command]
+pub fn update_owner_document(
+    app_handle: AppHandle<impl Runtime>,
+    did_id: String,
+    owner_document_json: String,
+) -> CommandResult<DidInfo> {
+    let document = validate_owner_document_json(owner_document_json)?;
+    let store = open_store(&app_handle)?;
+    let mut vault = load_vault(&store)?;
+    let record = vault
+        .dids
+        .iter_mut()
+        .find(|did| did.id == did_id)
+        .ok_or_else(|| CommandErrors::not_found("wallet_not_found"))?;
+    let current = record
+        .owner_document
+        .as_ref()
+        .ok_or_else(|| CommandErrors::internal("owner_document_not_found"))?;
+    let current = validate_owner_document_json(current.clone())?;
+    if current.id != document.id {
+        return Err(CommandErrors::internal("invalid_owner_document_identity"));
+    }
+    validate_document_matches_wallets(&document, &record.wallets)?;
+    record.owner_document = Some(document.raw_json);
+    let info = record.to_info();
+    save_vault(&store, &vault)?;
+    Ok(info)
+}
+
+#[tauri::command]
 pub fn extend_wallets(
     app_handle: AppHandle<impl Runtime>,
     password: String,
@@ -935,6 +964,65 @@ mod tests {
         let mut invalid: Value = serde_json::from_str(&owner_document_json("alice0001")).unwrap();
         invalid["email"] = Value::String("alice@example.com".to_string());
         assert!(validate_owner_document_json(invalid.to_string()).is_err());
+    }
+
+    #[test]
+    fn test_owner_document_sync_persists_unbind_without_changing_wallet() {
+        let _guard = STORE_TEST_LOCK.lock().unwrap();
+        let app = test_app();
+        let handle = app.handle();
+        reset_vault(handle);
+        let mut owner: OwnerDocument =
+            serde_json::from_str(&owner_document_json("sync_user")).unwrap();
+        owner.set_default_zone_did(DID::new("web", "other.example.com"));
+        owner.set_default_zone_did(owner.id.clone());
+        let did = import_did(
+            handle.clone(),
+            "password123".to_string(),
+            mnemonic_words(),
+            serde_json::to_string(&owner).unwrap(),
+        )
+        .unwrap();
+        let before = load_vault(&open_store(handle).unwrap()).unwrap();
+        let mut confirmed = serde_json::to_value(&owner).unwrap();
+        confirmed["binded_zone_list"] = serde_json::json!(["did:web:other.example.com"]);
+        confirmed["display_name"] = serde_json::json!("Updated remote profile");
+        let updated =
+            update_owner_document(handle.clone(), did.id.clone(), confirmed.to_string()).unwrap();
+        assert_eq!(updated.owner_document.as_ref().unwrap(), &confirmed);
+        let after = load_vault(&open_store(handle).unwrap()).unwrap();
+        assert_eq!(after.active_did, before.active_did);
+        assert_eq!(
+            serde_json::to_value(&after.dids[0].seed).unwrap(),
+            serde_json::to_value(&before.dids[0].seed).unwrap()
+        );
+        assert_eq!(
+            serde_json::to_value(&after.dids[0].wallets).unwrap(),
+            serde_json::to_value(&before.dids[0].wallets).unwrap()
+        );
+        assert_eq!(
+            active_did(handle.clone()).unwrap().unwrap().owner_document,
+            Some(confirmed.clone())
+        );
+        confirmed.as_object_mut().unwrap().remove("binded_zone_list");
+        update_owner_document(handle.clone(), did.id.clone(), confirmed.to_string()).unwrap();
+        assert_eq!(
+            active_did(handle.clone()).unwrap().unwrap().owner_document,
+            Some(confirmed.clone())
+        );
+        assert!(update_owner_document(
+            handle.clone(),
+            did.id.clone(),
+            owner_document_json("another_user")
+        )
+        .is_err());
+        confirmed["verificationMethod"][0]["publicKeyJwk"]["x"] =
+            serde_json::json!("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+        assert!(update_owner_document(handle.clone(), did.id, confirmed.to_string()).is_err());
+        assert_eq!(
+            reveal_mnemonic(handle.clone(), "password123".to_string(), Some(updated.id)).unwrap(),
+            mnemonic_words()
+        );
     }
 
     #[test]

@@ -1,12 +1,13 @@
 import React from "react";
-import { listDids, fetchActiveDid, setActiveDid as setActiveDidOnBackend, extendWallets } from "./api";
-import type { DidInfo, WalletExtensionRequest } from "./types";
+import { listDids, fetchActiveDid, setActiveDid as setActiveDidOnBackend, extendWallets, updateOwnerDocument } from "./api";
+import type { DidInfo, OwnerDocument, WalletExtensionRequest } from "./types";
 
 interface DidContextValue {
     dids: DidInfo[];
     activeDid: DidInfo | null;
     loading: boolean;
     refresh: () => Promise<void>;
+    syncOwnerDocument: (didId: string, document: OwnerDocument) => Promise<void>;
     setActiveDid: (id: string) => Promise<void>;
     addWallet: (password: string, didId: string, request: WalletExtensionRequest) => Promise<void>;
 }
@@ -66,14 +67,21 @@ export const DidProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
         setActiveDid((current) => (current && current.id === didId ? updated : current));
     }, []);
 
+    const syncOwnerDocument = React.useCallback(async (didId: string, document: OwnerDocument) => {
+        const updated = await updateOwnerDocument(didId, document);
+        setDids((prev) => prev.map((item) => item.id === didId ? updated : item));
+        setActiveDid((current) => current?.id === didId ? updated : current);
+    }, []);
+
     const value = React.useMemo<DidContextValue>(() => ({
         dids,
         activeDid,
         loading,
         refresh,
+        syncOwnerDocument,
         setActiveDid: setActiveDidHandler,
         addWallet,
-    }), [dids, activeDid, loading, refresh, setActiveDidHandler, addWallet]);
+    }), [dids, activeDid, loading, refresh, syncOwnerDocument, setActiveDidHandler, addWallet]);
 
     return <DidContext.Provider value={value}>{children}</DidContext.Provider>;
 };

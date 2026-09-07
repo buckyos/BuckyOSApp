@@ -1,6 +1,10 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { DidDocType, namelib } from "buckyos";
-import type { DidInfo, WalletExtensionRequest } from "./types";
+import type { DidInfo, OwnerDocument, WalletExtensionRequest } from "./types";
+
+export async function updateOwnerDocument(didId: string, ownerDocument: OwnerDocument): Promise<DidInfo> {
+    return invoke("update_owner_document", { didId, ownerDocumentJson: JSON.stringify(ownerDocument) });
+}
 
 export async function listDids(): Promise<DidInfo[]> {
     return invoke("list_dids");
