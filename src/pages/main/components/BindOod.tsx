@@ -372,7 +372,7 @@ const BindOod: React.FC = () => {
 
             <div className="ood-info-card bind-ood-info">
                 <p>{hasBoundOod ? t("ood.bound_desc") : t("ood.activate_desc_inline")}</p>
-                {hasBoundOod && boundZoneDids.length > 0 && (
+                {hasBoundOod && boundZoneDids.length > 1 && (
                     <label className="bind-ood-zone-field">
                         <span>{t("ood.bound_zone_label")}</span>
                         <select
