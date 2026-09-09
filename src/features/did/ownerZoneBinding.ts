@@ -76,9 +76,13 @@ export function ownerAuthenticationKeyId(document: OwnerDocument): string {
 export async function createOwnerUnbindRequestId(
     name: string,
     zoneDid: string,
-    expectedOwnerHash: string
+    expectedOwnerHash: string,
+    ownerVersion: number | null
 ): Promise<string> {
-    const intent = `${name.trim().toLowerCase()}\u0000${zoneDid.trim()}\u0000${expectedOwnerHash}`;
+    if (ownerVersion === null || !Number.isSafeInteger(ownerVersion) || ownerVersion <= 0) {
+        throw new Error("owner_document_version_invalid");
+    }
+    const intent = `${name.trim().toLowerCase()}\u0000${zoneDid.trim()}\u0000${expectedOwnerHash}\u0000${ownerVersion}`;
     return `owner-unbind:${await sha256Hex(new TextEncoder().encode(intent))}`;
 }
 

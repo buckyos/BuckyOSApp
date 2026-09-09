@@ -103,8 +103,8 @@ describe("OwnerDocument zone unlink contract", () => {
 
     it("binds every compare-and-swap field into a five-minute owner JWT", async () => {
         const ownerHash = `sha256:${"a".repeat(64)}`;
-        const requestId = await createOwnerUnbindRequestId("Alice", "did:web:home.example", ownerHash);
-        await expect(createOwnerUnbindRequestId("alice", "did:web:home.example", ownerHash)).resolves.toBe(requestId);
+        const requestId = await createOwnerUnbindRequestId("Alice", "did:web:home.example", ownerHash, 2);
+        await expect(createOwnerUnbindRequestId("alice", "did:web:home.example", ownerHash, 2)).resolves.toBe(requestId);
         expect(requestId).toMatch(/^owner-unbind:[0-9a-f]{64}$/);
         expect(ownerAuthenticationKeyId(owner())).toBe("#main_key");
         expect(buildOwnerRemoveBoundZoneClaims({
@@ -125,6 +125,23 @@ describe("OwnerDocument zone unlink contract", () => {
             exp: 400,
         });
     });
+
+    it("keeps retries stable but starts a new unlink after rebinding identical owner content", async () => {
+        const ownerHash = await canonicalOwnerDocumentHash(owner());
+        const first = await createOwnerUnbindRequestId("alice", "did:bns:alice", ownerHash, 2);
+        const rebound = await createOwnerUnbindRequestId("alice", "did:bns:alice", ownerHash, 4);
+        expect(rebound).not.toBe(first);
+        await expect(createOwnerUnbindRequestId("alice", "did:bns:alice", ownerHash, 4)).resolves.toBe(rebound);
+    });
+
+    it.each([null, 0, -1, 1.5, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1])(
+        "rejects unavailable or unsafe owner version %s before creating an unlink request",
+        async (version) => {
+            await expect(createOwnerUnbindRequestId(
+                "alice", "did:bns:alice", `sha256:${"a".repeat(64)}`, version
+            )).rejects.toThrow("owner_document_version_invalid");
+        }
+    );
 
     it("does not confirm until BNS returns the exact result hash without the target zone", async () => {
         const source = owner();

@@ -293,7 +293,7 @@ const BindOod: React.FC = () => {
             }
 
             const expectedOwnerHash = await canonicalOwnerDocumentHash(owner.document);
-            const requestId = await createOwnerUnbindRequestId(userName, zoneDid, expectedOwnerHash);
+            const requestId = await createOwnerUnbindRequestId(userName, zoneDid, expectedOwnerHash, owner.version);
             const claims = buildOwnerRemoveBoundZoneClaims({
                 name: userName,
                 zoneDid,
