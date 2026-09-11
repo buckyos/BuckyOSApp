@@ -110,7 +110,7 @@ function resolveActiveUrl(baseUrl: string, activeUrl: string) {
 const BindOod: React.FC = () => {
     const { t } = useI18n();
     const navigate = useNavigate();
-    const { activeDid } = useDidContext();
+    const { activeDid, syncOwnerDocument } = useDidContext();
     const [hasBoundOod, setHasBoundOod] = React.useState(false);
     const [boundZoneDids, setBoundZoneDids] = React.useState<string[]>([]);
     const [selectedZoneDid, setSelectedZoneDid] = React.useState<string | null>(null);
@@ -282,6 +282,7 @@ const BindOod: React.FC = () => {
                 () => bnsDocumentExists(userName, "zone")
             );
             if (!zoneDid) {
+                await syncOwnerDocument(activeDid.id, owner.document);
                 setLastZoneBindingStatus(getIdentityDid(activeDid), false);
                 setHasBoundOod(false);
                 setBoundZoneDids([]);
@@ -327,6 +328,7 @@ const BindOod: React.FC = () => {
                 throw new Error("sn_unbind_contract_violation");
             }
             const confirmed = await waitForOwnerZoneUnbound(userName, zoneDid, submitted.result_owner_hash);
+            await syncOwnerDocument(activeDid.id, confirmed.document);
             await setCachedSnStatus(activeDid.id, {
                 info: {
                     ...(cached?.info ?? {}),
@@ -359,7 +361,7 @@ const BindOod: React.FC = () => {
         } finally {
             setUnbindLoading(false);
         }
-    }, [password, t, activeDid, openResultDialog, selectedZoneDid]);
+    }, [password, t, activeDid, openResultDialog, selectedZoneDid, syncOwnerDocument]);
 
     return (
         <section className="did-section bind-ood-section">
