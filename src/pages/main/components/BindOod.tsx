@@ -108,7 +108,7 @@ function resolveActiveUrl(baseUrl: string, activeUrl: string) {
 }
 
 const BindOod: React.FC = () => {
-    const { t } = useI18n();
+    const { t, locale } = useI18n();
     const navigate = useNavigate();
     const { activeDid, syncOwnerDocument } = useDidContext();
     const [hasBoundOod, setHasBoundOod] = React.useState(false);
@@ -227,7 +227,9 @@ const BindOod: React.FC = () => {
                 "remote";
             const label = `active-remote-${title}-${typeLabel}-${normalized.host}-${normalized.port}`;
 
-            await openWebView(target, title, label, { center: true });
+            const activationUrl = new URL(target);
+            activationUrl.searchParams.set("lang", locale);
+            await openWebView(activationUrl.toString(), title, label, { center: true });
             setRemoteDialogOpen(false);
             setRemoteAddress("");
             setRemoteProtocol("http://");
@@ -239,7 +241,7 @@ const BindOod: React.FC = () => {
             window.clearTimeout(timeoutId);
             setRemoteLoading(false);
         }
-    }, [remoteProtocol, remoteAddress, t]);
+    }, [remoteProtocol, remoteAddress, t, locale]);
 
     const handleStartUnbind = React.useCallback(() => {
         setConfirmUnbindOpen(false);

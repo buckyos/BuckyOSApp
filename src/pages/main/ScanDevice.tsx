@@ -35,7 +35,7 @@ function hasUsableActiveUrl(value: unknown): value is string {
 }
 
 const ScanDevice: React.FC = () => {
-    const { t } = useI18n();
+    const { t, locale } = useI18n();
     const navigate = useNavigate();
     const { activeDid } = useDidContext();
     const [devices, setDevices] = React.useState<DeviceRecord[]>([]);
@@ -367,7 +367,9 @@ const ScanDevice: React.FC = () => {
                                                     : `http://${device.display_ip || device.ip}:3182${
                                                         activeUrl.startsWith("/") ? activeUrl : `/${activeUrl}`
                                                     }`;
-                                                void openWebView(target, title, label, baseWindowOptions).catch((err) => {
+                                                const activationUrl = new URL(target);
+                                                activationUrl.searchParams.set("lang", locale);
+                                                void openWebView(activationUrl.toString(), title, label, baseWindowOptions).catch((err) => {
                                                     console.warn("[ScanDevice] open device webview failed", {
                                                         ip: device.ip,
                                                         target,
