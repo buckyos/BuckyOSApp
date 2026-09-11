@@ -1,8 +1,7 @@
-// Vendored file — keep byte-identical to upstream apart from this header
-// and the surrounding `#![allow(...)]` block. See provenance below.
+// Vendored file with the local desktop adaptation documented below.
 #![allow(dead_code, unused_imports, unused_variables, clippy::all)]
 
-// VENDORED FILE — DO NOT EDIT IN-PLACE.
+// VENDORED FILE — keep unrelated upstream code unchanged.
 //
 // Source: buckyos.git src/kernel/buckyos-api/src/node_control.rs
 // Commit: 52ebd67b1c793cf3c2d172f11dd6481801b7fc99 ("fix bug")
@@ -15,6 +14,11 @@
 // crate. When that happens, delete this file and replace usages with
 // the upstream crate. Keep the file otherwise byte-identical to make
 // future re-vendoring a clean diff.
+//
+// Local adaptation (BuckyOSApp #45): all child processes go through
+// background_command so Windows service probes and actions do not open
+// console windows. Preserve this helper, its call sites, and the Windows
+// regression tests when re-vendoring until upstream includes the fix.
 //
 // ---------------------------------------------------------------------
 // Original file follows:
@@ -1210,8 +1214,25 @@ fn normalize_name(value: &str) -> String {
     normalized
 }
 
+fn background_command(program: impl AsRef<OsStr>) -> Command {
+    let command = Command::new(program);
+    #[cfg(windows)]
+    let command = {
+        use std::os::windows::process::CommandExt;
+
+        // The app's windows_subsystem attribute only hides its own console.
+        // Child processes need CREATE_NO_WINDOW even when their I/O is piped
+        // or redirected to null.
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        let mut command = command;
+        command.creation_flags(CREATE_NO_WINDOW);
+        command
+    };
+    command
+}
+
 fn run_capture(program: &str, args: &[&str]) -> Option<String> {
-    let output = Command::new(program)
+    let output = background_command(program)
         .args(args)
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
@@ -2110,7 +2131,7 @@ fn spawn_node_daemon_direct(
         ));
     }
 
-    let mut cmd = Command::new(&host.node_daemon_binary);
+    let mut cmd = background_command(&host.node_daemon_binary);
     if matches!(mode, NodeStartMode::Activation | NodeStartMode::Normal) {
         cmd.arg("--enable_active");
     }
@@ -2161,7 +2182,7 @@ fn start_via_launchd(
 
     run_quiet("launchctl", &["enable", &target], actions);
     // bootstrap; if already loaded, bootout-then-bootstrap.
-    let bs = Command::new("launchctl")
+    let bs = background_command("launchctl")
         .args(["bootstrap", "system", plist.to_str().unwrap_or_default()])
         .output();
     match bs {
@@ -2205,7 +2226,7 @@ fn start_via_scheduled_task(
 
 fn run_quiet(program: &str, args: &[&str], actions: &mut Vec<String>) {
     let label = format!("{} {}", program, args.join(" "));
-    match Command::new(program).args(args).output() {
+    match background_command(program).args(args).output() {
         Ok(out) if out.status.success() => actions.push(format!("ok: {}", label)),
         Ok(out) => actions.push(format!(
             "warn: {} exit={:?} stderr={}",
@@ -2219,7 +2240,7 @@ fn run_quiet(program: &str, args: &[&str], actions: &mut Vec<String>) {
 
 fn run_must(program: &str, args: &[&str], actions: &mut Vec<String>) -> Result<(), String> {
     let label = format!("{} {}", program, args.join(" "));
-    let out = Command::new(program)
+    let out = background_command(program)
         .args(args)
         .output()
         .map_err(|e| format!("execute {} failed: {}", label, e))?;
@@ -2478,7 +2499,7 @@ fn blackbox_stop(
         }
 
         for target in targets {
-            let r = Command::new("docker").args(["rm", "-f", &target]).output();
+            let r = background_command("docker").args(["rm", "-f", &target]).output();
             match r {
                 Ok(out) if out.status.success() => {
                     report.stopped_containers.push(target);
@@ -2506,7 +2527,7 @@ fn blackbox_stop(
 
 fn kill_process_by_pid(pid: u32) -> Result<(), String> {
     if cfg!(target_os = "windows") {
-        let out = Command::new("taskkill")
+        let out = background_command("taskkill")
             .args(["/F", "/PID", &pid.to_string()])
             .output()
             .map_err(|e| e.to_string())?;
@@ -2528,13 +2549,13 @@ fn kill_process_by_pid(pid: u32) -> Result<(), String> {
 pub fn kill_process_by_name(name: &str) -> Result<bool, String> {
     if cfg!(target_os = "windows") {
         let exe_name = format!("{}.exe", name);
-        let out = Command::new("taskkill")
+        let out = background_command("taskkill")
             .args(["/F", "/IM", &exe_name])
             .output()
             .map_err(|e| e.to_string())?;
         Ok(out.status.success())
     } else {
-        let out = Command::new("killall")
+        let out = background_command("killall")
             .arg(name)
             .output()
             .map_err(|e| e.to_string())?;
@@ -2549,6 +2570,43 @@ pub fn kill_process_by_name(name: &str) -> Result<bool, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(windows)]
+    const CONSOLE_PROBE: &str = r#"
+        $ErrorActionPreference = 'Stop'
+        Add-Type -Namespace BuckyOSApp -Name ConsoleProbe -MemberDefinition '
+            [System.Runtime.InteropServices.DllImport("kernel32.dll")]
+            public static extern System.IntPtr GetConsoleWindow();
+        '
+        if ([BuckyOSApp.ConsoleProbe]::GetConsoleWindow() -ne [IntPtr]::Zero) {
+            exit 1
+        }
+        [Console]::Out.Write('no console')
+    "#;
+
+    #[cfg(windows)]
+    #[test]
+    fn service_probe_captures_output_without_a_console() {
+        let output = run_capture("powershell", &["-NoProfile", "-Command", CONSOLE_PROBE])
+            .expect("run console probe");
+        assert_eq!(output, "no console");
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn direct_spawn_runs_without_a_console() {
+        // Match the daemon's spawn path, including null standard streams.
+        let status = background_command("powershell")
+            .args(["-NoProfile", "-Command", CONSOLE_PROBE])
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()
+            .expect("spawn console probe")
+            .wait()
+            .expect("wait for console probe");
+        assert!(status.success(), "console probe failed: {status}");
+    }
 
     #[test]
     fn run_plist_path_unix_prefix() {
