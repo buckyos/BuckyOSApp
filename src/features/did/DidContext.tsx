@@ -1,5 +1,5 @@
 import React from "react";
-import { listDids, fetchActiveDid, setActiveDid as setActiveDidOnBackend, extendWallets, updateOwnerDocument } from "./api";
+import { listDids, fetchActiveDid, setActiveDid as setActiveDidOnBackend, extendWallets, updateOwnerDocument, refreshOwnerDocument as refreshOwnerDocumentFromBackend } from "./api";
 import type { DidInfo, OwnerDocument, WalletExtensionRequest } from "./types";
 
 interface DidContextValue {
@@ -8,11 +8,20 @@ interface DidContextValue {
     loading: boolean;
     refresh: () => Promise<void>;
     syncOwnerDocument: (didId: string, document: OwnerDocument) => Promise<void>;
+    refreshOwnerDocument: (did: DidInfo) => Promise<DidInfo>;
     setActiveDid: (id: string) => Promise<void>;
     addWallet: (password: string, didId: string, request: WalletExtensionRequest) => Promise<void>;
 }
 
 const DidContext = React.createContext<DidContextValue | undefined>(undefined);
+
+function mergeOwnerSnapshot(current: DidInfo, updated: DidInfo): DidInfo {
+    if (current.id !== updated.id ||
+        (current.owner_document && current.owner_document.iat >= (updated.owner_document?.iat ?? 0))) {
+        return current;
+    }
+    return { ...current, owner_document: updated.owner_document };
+}
 
 async function loadSnapshot(): Promise<{ dids: DidInfo[]; activeDid: DidInfo | null; }> {
     const [dids, activeDid] = await Promise.all([listDids(), fetchActiveDid()]);
@@ -69,9 +78,28 @@ export const DidProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
 
     const syncOwnerDocument = React.useCallback(async (didId: string, document: OwnerDocument) => {
         const updated = await updateOwnerDocument(didId, document);
-        setDids((prev) => prev.map((item) => item.id === didId ? updated : item));
-        setActiveDid((current) => current?.id === didId ? updated : current);
+        setDids((prev) => prev.map((item) => mergeOwnerSnapshot(item, updated)));
+        setActiveDid((current) => current ? mergeOwnerSnapshot(current, updated) : current);
     }, []);
+
+    const refreshOwnerDocument = React.useCallback(async (did: DidInfo) => {
+        const updated = await refreshOwnerDocumentFromBackend(did);
+        setDids((prev) => prev.map((item) => mergeOwnerSnapshot(item, updated)));
+        setActiveDid((current) => current ? mergeOwnerSnapshot(current, updated) : current);
+        return updated;
+    }, []);
+
+    React.useEffect(() => {
+        if (!activeDid) return;
+        const refreshOwner = () => {
+            refreshOwnerDocument(activeDid).catch((error) => {
+                console.warn("Failed to refresh OwnerDocument", error);
+            });
+        };
+        refreshOwner();
+        window.addEventListener("focus", refreshOwner);
+        return () => window.removeEventListener("focus", refreshOwner);
+    }, [activeDid?.id, refreshOwnerDocument]);
 
     const value = React.useMemo<DidContextValue>(() => ({
         dids,
@@ -79,9 +107,10 @@ export const DidProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
         loading,
         refresh,
         syncOwnerDocument,
+        refreshOwnerDocument,
         setActiveDid: setActiveDidHandler,
         addWallet,
-    }), [dids, activeDid, loading, refresh, syncOwnerDocument, setActiveDidHandler, addWallet]);
+    }), [dids, activeDid, loading, refresh, syncOwnerDocument, refreshOwnerDocument, setActiveDidHandler, addWallet]);
 
     return <DidContext.Provider value={value}>{children}</DidContext.Provider>;
 };

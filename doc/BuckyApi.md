@@ -66,7 +66,7 @@
   - `username`：DID 的昵称。
   - `public_key`：第一枚 bucky wallet 的公钥 JWK 对象（与 `getPublicKey` 一致）。
   - `sn_username`：若已绑定 SN 用户名则返回字符串，否则为 `null`。
-  - `owner_document`：当前激活 DID 保存的完整 OwnerDocument。成功返回可用用户时该字段必然存在。
+  - `owner_document`：通过宿主 `name-client::resolve_did(did, owner)` 读取的完整 OwnerDocument；缓存有效期内复用解析结果，TTL 到期后重新查询权威源。成功返回可用用户时该字段必然存在。读取成功后同步本地钱包副本，但不推进 `iat`，也不发布文档；较旧的解析结果不会覆盖本地已确认的新版本，同 `iat` 不同内容会报错。
 - **典型错误码**：
   - `3` (NoKey)：当前没有可用 bucky wallet。
   - `4` (NoActiveDid)：没有激活的 DID。

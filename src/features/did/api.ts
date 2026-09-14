@@ -1,9 +1,18 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { DidDocType, namelib } from "buckyos";
+import { namelib, type DidDocType } from "buckyos";
 import type { DidInfo, OwnerDocument, WalletExtensionRequest } from "./types";
 
 export async function updateOwnerDocument(didId: string, ownerDocument: OwnerDocument): Promise<DidInfo> {
     return invoke("update_owner_document", { didId, ownerDocumentJson: JSON.stringify(ownerDocument) });
+}
+
+export async function refreshOwnerDocument(did: DidInfo): Promise<DidInfo> {
+    const ownerDid = did.owner_document?.id;
+    if (!ownerDid) throw new Error("owner_document_not_found");
+    const encoded = await resolveDid(ownerDid, "owner");
+    const document = namelib.encodedDocumentToJsonValue(encoded) as OwnerDocument;
+    if (document?.id !== ownerDid) throw new Error("invalid_owner_document_identity");
+    return updateOwnerDocument(did.id, document);
 }
 
 export async function listDids(): Promise<DidInfo[]> {

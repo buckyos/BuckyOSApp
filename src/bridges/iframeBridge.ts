@@ -87,7 +87,7 @@ function normalizeExternalUrl(raw: unknown) {
 
 export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HTMLIFrameElement | null> }) {
     const { t } = useI18n();
-    const { activeDid } = useDidContext();
+    const { activeDid, refreshOwnerDocument } = useDidContext();
     const iframeRef = options?.iframeRef ?? React.useRef<HTMLIFrameElement | null>(null);
     const [passwordDialog, setPasswordDialog] = React.useState<SignState>({
         open: false,
@@ -121,12 +121,13 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
             if (!wallet) {
                 return { code: BuckyErrorCodes.NoKey, message: t("settings.embedded_webview_no_key") };
             }
-            const ownerDocument = activeDid.owner_document;
+            const currentDid = await refreshOwnerDocument(activeDid);
+            const ownerDocument = currentDid.owner_document;
             if (!ownerDocument) {
                 throw new Error("owner_document_not_found");
             }
-            const did = getIdentityDid(activeDid);
-            const username = getIdentityBnsName(activeDid);
+            const did = getIdentityDid(currentDid);
+            const username = getIdentityBnsName(currentDid);
             const public_key = publicKey;
             let snUsername: string | null = null;
             const cached = await getCachedSnStatus(activeDid.id);
@@ -205,7 +206,7 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
                 };
             });
         },
-    }), [publicKey, t, activeDid, signInProgress, passwordDialog.open]);
+    }), [publicKey, t, activeDid, refreshOwnerDocument, signInProgress, passwordDialog.open]);
 
     const closeDialog = React.useCallback(() => {
         setPasswordDialog((prev) => ({ ...prev, open: false, value: "", error: "", payloadsToSign: [] }));

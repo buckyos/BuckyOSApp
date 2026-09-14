@@ -17,6 +17,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 const OWNER_DOCUMENT_MAX_BYTES: usize = 4 * 1024;
 const OWNER_DERIVATION_PATH_PREFIX: &str = "m/9777'/0'/";
+static OWNER_DOCUMENT_UPDATE_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct RegistrationDerivation {
@@ -37,6 +38,7 @@ pub struct RegistrationMaterial {
 struct ValidatedOwnerDocument {
     name: String,
     id: String,
+    iat: u64,
     raw_json: String,
     public_key_x: String,
     evm_address: String,
@@ -153,6 +155,7 @@ fn validate_owner_document_json(raw_json: String) -> CommandResult<ValidatedOwne
     Ok(ValidatedOwnerDocument {
         name,
         id,
+        iat: owner.iat,
         raw_json,
         public_key_x,
         evm_address: main_wallet.address.clone(),
@@ -404,6 +407,8 @@ pub fn update_owner_document(
     did_id: String,
     owner_document_json: String,
 ) -> CommandResult<DidInfo> {
+    let _guard = OWNER_DOCUMENT_UPDATE_LOCK.lock()
+        .map_err(|_| CommandErrors::internal("owner_document_update_lock_failed"))?;
     let document = validate_owner_document_json(owner_document_json)?;
     let store = open_store(&app_handle)?;
     let mut vault = load_vault(&store)?;
@@ -421,6 +426,19 @@ pub fn update_owner_document(
         return Err(CommandErrors::internal("invalid_owner_document_identity"));
     }
     validate_document_matches_wallets(&document, &record.wallets)?;
+    if document.iat < current.iat {
+        return Ok(record.to_info());
+    }
+    if document.iat == current.iat {
+        let current_value: Value = serde_json::from_str(&current.raw_json)
+            .map_err(|_| CommandErrors::internal("invalid_owner_document"))?;
+        let next_value: Value = serde_json::from_str(&document.raw_json)
+            .map_err(|_| CommandErrors::internal("invalid_owner_document"))?;
+        if current_value != next_value {
+            return Err(CommandErrors::internal("owner_document_revision_conflict"));
+        }
+        return Ok(record.to_info());
+    }
     record.owner_document = Some(document.raw_json);
     let info = record.to_info();
     save_vault(&store, &vault)?;
@@ -985,6 +1003,7 @@ mod tests {
         .unwrap();
         let before = load_vault(&open_store(handle).unwrap()).unwrap();
         let mut confirmed = serde_json::to_value(&owner).unwrap();
+        confirmed["iat"] = serde_json::json!(owner.iat + 1);
         confirmed["binded_zone_list"] = serde_json::json!(["did:web:other.example.com"]);
         confirmed["display_name"] = serde_json::json!("Updated remote profile");
         let updated =
@@ -1004,6 +1023,16 @@ mod tests {
             active_did(handle.clone()).unwrap().unwrap().owner_document,
             Some(confirmed.clone())
         );
+        let stale = update_owner_document(
+            handle.clone(), did.id.clone(), serde_json::to_string(&owner).unwrap(),
+        ).unwrap();
+        assert_eq!(stale.owner_document, Some(confirmed.clone()));
+        let mut conflicting = confirmed.clone();
+        conflicting["display_name"] = serde_json::json!("Conflicting profile");
+        assert!(update_owner_document(handle.clone(), did.id.clone(), conflicting.to_string()).is_err());
+        let unchanged = update_owner_document(handle.clone(), did.id.clone(), confirmed.to_string()).unwrap();
+        assert_eq!(unchanged.owner_document, Some(confirmed.clone()));
+        confirmed["iat"] = serde_json::json!(owner.iat + 2);
         confirmed.as_object_mut().unwrap().remove("binded_zone_list");
         update_owner_document(handle.clone(), did.id.clone(), confirmed.to_string()).unwrap();
         assert_eq!(
