@@ -40,3 +40,6 @@ pnpm-lock.yaml
 /auto_test/
 test-results/
 pnpm-lock.yaml
+/target/
+/.tmp/
+/.pnpm-store/
