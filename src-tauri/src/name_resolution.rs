@@ -2,9 +2,13 @@ use buckyos_kit::BuckyOSMachineConfig;
 use name_lib::{DidDocType, EncodedDocument, DID};
 use serde::Serialize;
 use serde_json::Value;
-use std::collections::HashMap;
+use tauri::AppHandle;
+use tokio::sync::OnceCell;
 
+use crate::config::get_service_endpoints;
 use crate::error::{CommandErrors, CommandResult};
+
+static NAME_CLIENT: OnceCell<name_client::NameClient> = OnceCell::const_new();
 
 /// IPC representation of buckyos-websdk's `namelib.EncodedDocument`.
 ///
@@ -27,11 +31,20 @@ impl From<EncodedDocument> for WebEncodedDocument {
     }
 }
 
-fn name_client_bridge_config(machine_config: BuckyOSMachineConfig) -> HashMap<String, String> {
-    // `web3_bridge.bns` can point at the Web3 service, whose API is not the
-    // DID HTTP resolver. NameClient's `bns` provider calls /1.0/identifiers,
-    // so that entry must come from the dedicated machine-level bns_host.
-    let bns_host = machine_config.bns_host_or_default().to_string();
+fn name_client_config(
+    machine_config: Option<BuckyOSMachineConfig>,
+    app_bns_url: &str,
+) -> BuckyOSMachineConfig {
+    // The DID HTTP resolver is independent of the Web3 hostname bridge.
+    // Prefer an explicit machine resolver; otherwise use the App BNS endpoint.
+    let bns_host = machine_config
+        .as_ref()
+        .and_then(|config| config.bns_host.as_deref())
+        .map(str::trim)
+        .filter(|host| !host.is_empty())
+        .unwrap_or(app_bns_url)
+        .to_string();
+    let mut machine_config = machine_config.unwrap_or_default();
     let bns_resolver = if machine_config.force_https
         || bns_host.starts_with("http://")
         || bns_host.starts_with("https://")
@@ -40,13 +53,13 @@ fn name_client_bridge_config(machine_config: BuckyOSMachineConfig) -> HashMap<St
     } else {
         format!("http://{bns_host}")
     };
-    let mut bridge_config = machine_config.web3_bridge;
-    bridge_config.insert("bns".to_string(), bns_resolver);
-    bridge_config
+    machine_config.bns_host = Some(bns_resolver);
+    machine_config
 }
 
 #[tauri::command]
 pub async fn resolve_did(
+    app_handle: AppHandle,
     did: String,
     doc_type: Option<String>,
 ) -> CommandResult<WebEncodedDocument> {
@@ -65,15 +78,50 @@ pub async fn resolve_did(
         .filter(|value| !value.is_empty())
         .map(DidDocType::from);
 
-    // Name resolution follows the system-wide BuckyOS environment. Both the
-    // bridge map and the DID resolver host come from machine.json.
-    let web3_bridge =
-        name_client_bridge_config(BuckyOSMachineConfig::load_machine_config().unwrap_or_default());
-    name_client::init_name_lib(&web3_bridge)
+    let endpoints = get_service_endpoints(app_handle)?;
+    let config = name_client_config(
+        BuckyOSMachineConfig::load_machine_config(),
+        &endpoints.bns_api_url,
+    );
+    let client = NAME_CLIENT
+        .get_or_try_init(|| async {
+            let _ = name_lib::KNOWN_WEB3_BRIDGE_CONFIG.set(config.web3_bridge.clone());
+            let client = name_client::NameClient::new(name_client::NameClientConfig::default());
+            let provider = name_client::BnsProvider::new_with_config(serde_json::json!({
+                "bns_host": config.bns_host
+            }))?;
+            client.set_method_authority("bns", Box::new(provider)).await;
+            client
+                .set_method_authority("web", Box::new(name_client::WebProvider::new()))
+                .await;
+            client
+                .add_method_supplement("bns", Box::new(name_client::WebProvider::new()))
+                .await;
+            for method in ["bns", "web"] {
+                client
+                    .add_current_zone_bootstrap_supplement(
+                        method,
+                        Box::new(name_client::DnsProvider::new(None)),
+                    )
+                    .await;
+                if let Some(sn_host) = config.web3_bridge.get("sn") {
+                    client
+                        .add_method_supplement(
+                            method,
+                            Box::new(name_client::BaseHttpProvider::new(sn_host)),
+                        )
+                        .await;
+                }
+            }
+            client
+                .add_dns_provider(Box::new(name_client::DnsProvider::new(None)))
+                .await;
+            Ok::<name_client::NameClient, name_lib::NSError>(client)
+        })
         .await
         .map_err(|error| CommandErrors::internal(format!("name_client_init_failed: {error}")))?;
 
-    match name_client::resolve_did(&did, doc_type).await {
+    match client.resolve_did(&did, doc_type).await {
         Ok(document) => Ok(WebEncodedDocument::from(document)),
         Err(name_lib::NSError::NotFound(error)) => Err(CommandErrors::not_found(format!(
             "resolve_did_not_found: {error}"
@@ -125,14 +173,15 @@ mod tests {
         }))
         .unwrap();
 
-        let bridge_config = name_client_bridge_config(machine_config);
+        let config = name_client_config(Some(machine_config), "https://bns.buckyos.ai");
 
+        assert_eq!(config.bns_host.as_deref(), Some("bns.devtests.org"));
         assert_eq!(
-            bridge_config.get("bns").map(String::as_str),
-            Some("bns.devtests.org")
+            config.web3_bridge.get("bns").map(String::as_str),
+            Some("web3.devtests.org")
         );
         assert_eq!(
-            bridge_config.get("eth").map(String::as_str),
+            config.web3_bridge.get("eth").map(String::as_str),
             Some("eth.devtests.org")
         );
     }
@@ -148,11 +197,39 @@ mod tests {
         }))
         .unwrap();
 
-        let bridge_config = name_client_bridge_config(machine_config);
+        let config = name_client_config(Some(machine_config), "https://bns.buckyos.ai");
 
+        assert_eq!(config.bns_host.as_deref(), Some("http://bns.devtests.org"));
+    }
+
+    #[test]
+    fn missing_machine_config_uses_the_app_bns_endpoint() {
+        let config = name_client_config(None, "https://bns.buckyos.ai");
+        assert_eq!(config.bns_host.as_deref(), Some("https://bns.buckyos.ai"));
         assert_eq!(
-            bridge_config.get("bns").map(String::as_str),
-            Some("http://bns.devtests.org")
+            config.web3_bridge.get("bns").map(String::as_str),
+            Some("web3.buckyos.ai")
         );
+    }
+
+    #[test]
+    fn missing_or_blank_machine_bns_host_uses_the_configured_app_endpoint() {
+        for bns_host in [None, Some(""), Some("   ")] {
+            let machine_config = serde_json::from_value::<BuckyOSMachineConfig>(json!({
+                "bns_host": bns_host,
+                "web3_bridge": { "bns": "web3.devtests.org", "eth": "eth.devtests.org" }
+            }))
+            .unwrap();
+            let config = name_client_config(Some(machine_config), "https://bns.devtests.org");
+            assert_eq!(config.bns_host.as_deref(), Some("https://bns.devtests.org"));
+            assert_eq!(
+                config.web3_bridge.get("bns").map(String::as_str),
+                Some("web3.devtests.org")
+            );
+            assert_eq!(
+                config.web3_bridge.get("eth").map(String::as_str),
+                Some("eth.devtests.org")
+            );
+        }
     }
 }
