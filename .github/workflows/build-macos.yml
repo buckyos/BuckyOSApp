@@ -36,7 +36,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
       - name: Build BuckyOSApp
-        run: pnpm tauri build --bundles app --no-sign --target ${{ inputs.arch }}-apple-darwin
+        run: pnpm tauri build --bundles app --no-sign --target ${{ inputs.arch }}-apple-darwin -- --locked
       - name: Prepare staged payload
         env:
           STAGE_ROOT: ${{ runner.temp }}/staged

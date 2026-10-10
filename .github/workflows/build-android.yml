@@ -57,6 +57,8 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
 
       - name: Install Android SDK Packages
         run: |
@@ -77,7 +79,7 @@ jobs:
           EOF
 
       - name: Build Android APK
-        run: pnpm tauri android build -t aarch64 --apk --ci -v
+        run: pnpm tauri android build -t aarch64 --apk --ci -v -- --locked
 
       - name: Prepare unsigned APK
         run: |

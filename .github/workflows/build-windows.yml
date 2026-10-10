@@ -38,7 +38,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
       - name: Build BuckyOSApp
-        run: pnpm tauri build --no-bundle --no-sign --target ${{ inputs.arch }}-pc-windows-msvc
+        run: pnpm tauri build --no-bundle --no-sign --target ${{ inputs.arch }}-pc-windows-msvc -- --locked
       - name: Prepare staged payload
         shell: pwsh
         run: |
