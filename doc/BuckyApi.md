@@ -66,7 +66,7 @@
   - `username`：DID 的昵称。
   - `public_key`：第一枚 bucky wallet 的公钥 JWK 对象（与 `getPublicKey` 一致）。
   - `sn_username`：若已绑定 SN 用户名则返回字符串，否则为 `null`。
-  - `owner_document`：通过宿主 `name-client::resolve_did(did, owner)` 读取的完整 OwnerDocument；缓存有效期内复用解析结果，TTL 到期后重新查询权威源。成功返回可用用户时该字段必然存在。读取成功后同步本地钱包副本，但不推进 `iat`，也不发布文档；较旧的解析结果不会覆盖本地已确认的新版本，同 `iat` 不同内容会报错。
+  - `owner_document`：通过宿主配置的 `name-client::NameClient::resolve_did(did, owner)` 读取的完整 OwnerDocument；缓存有效期内复用解析结果，TTL 到期后重新查询权威源。成功返回可用用户时该字段必然存在。读取成功后同步本地钱包副本，但不推进 `iat`，也不发布文档；较旧的解析结果不会覆盖本地已确认的新版本，同 `iat` 不同内容会报错。
 - **典型错误码**：
   - `3` (NoKey)：当前没有可用 bucky wallet。
   - `4` (NoActiveDid)：没有激活的 DID。
@@ -89,7 +89,8 @@
 
 ### `BuckyApi.resolve_did(did: string, docType?: DidDocType | null): Promise<{ code, message?, data?: EncodedDocument }>`
 
-- **说明**：通过宿主 Rust 扩展调用 `name-client::resolve_did`，因此会使用机器级 DID 文档缓存。
+- **说明**：通过宿主 Rust 扩展调用配置好 BNS 解析器的 `name-client::NameClient::resolve_did`，复用该实例及机器级 DID 文档缓存。
+- **解析器配置**：优先使用 `machine.json` 中明确设置且非空的 `bns_host`；未设置时复用应用 `config.json` 的 `sn_host` 根域构造的 BNS 端点，默认 `https://bns.buckyos.ai`。`web3_bridge.bns` 仅用于 DID 到访问域名的映射，不作为 BNS 文档解析器地址。
 - **参数**：
   - `did`：要解析的 DID 字符串。
   - `docType`：可选的 WebSDK `DidDocType`；省略或传 `null` 时使用 `name-client` 的默认文档类型。
