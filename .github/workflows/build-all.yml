@@ -53,3 +53,33 @@ jobs:
       version_name: ${{ needs.prepare-version.outputs.base_version }}
       artifact_version: ${{ needs.prepare-version.outputs.artifact_version }}
       version_code: ${{ github.event_name == 'workflow_dispatch' && inputs.android_version_code || '1' }}
+
+  upload-payloads:
+    name: Upload component payloads to R2
+    needs: [build-windows, build-macos, build-android]
+    if: github.ref == 'refs/heads/main' && github.repository == 'buckyos/buckyosapp'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      actions: read
+    concurrency:
+      group: payload-r2-${{ github.repository }}
+      cancel-in-progress: false
+    steps:
+      - name: Download component payloads
+        uses: actions/download-artifact@v6
+        with:
+          pattern: buckyosapp-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/payloads
+      - name: Upload component payloads to R2
+        uses: ryand56/r2-upload-action@latest
+        with:
+          r2-account-id: 87e0bdf811b13ee87fd0bcec7a4fd1e7
+          r2-access-key-id: ${{ secrets.R2_ACCESS_KEY_ID }}
+          r2-secret-access-key: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          r2-bucket: buckyos-installer
+          source-dir: ${{ runner.temp }}/payloads
+          destination-dir: buckyosapp/
+          keep-file-fresh: false
+          output-file-url: false
