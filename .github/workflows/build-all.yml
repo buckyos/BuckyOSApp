@@ -53,6 +53,11 @@ jobs:
       version_name: ${{ needs.prepare-version.outputs.base_version }}
       artifact_version: ${{ needs.prepare-version.outputs.artifact_version }}
       version_code: ${{ github.event_name == 'workflow_dispatch' && inputs.android_version_code || '1' }}
+    secrets:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
 
   upload-payloads:
     name: Upload component payloads to R2

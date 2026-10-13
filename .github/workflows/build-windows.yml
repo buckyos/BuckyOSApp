@@ -20,6 +20,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -41,6 +45,9 @@ jobs:
         run: pnpm tauri build --no-bundle --no-sign --target ${{ inputs.arch }}-pc-windows-msvc -- --locked
       - name: Prepare staged payload
         shell: pwsh
+        env:
+          PAYLOAD_VERSION: ${{ inputs.version }}
+          PAYLOAD_PLATFORM: ${{ inputs.arch == 'x86_64' && 'amd64-windows' || 'arm64-windows' }}
         run: |
           $stageRoot = Join-Path $env:RUNNER_TEMP 'staged'
           $payloadRoot = Join-Path $stageRoot 'BuckyOSApp'
@@ -51,6 +58,10 @@ jobs:
           }
           New-Item -ItemType Directory -Force -Path $payloadRoot | Out-Null
           Copy-Item -Force $sourcePath (Join-Path $payloadRoot 'buckyosapp.exe')
+          python .github/scripts/write-install-descriptor.py --component buckyosapp --root $payloadRoot --version $env:PAYLOAD_VERSION --platform $env:PAYLOAD_PLATFORM
+          if ($LASTEXITCODE -ne 0) {
+            throw "Installation descriptor generation failed with exit code $LASTEXITCODE"
+          }
           tar -czf $archivePath -C $stageRoot .
           if ($LASTEXITCODE -ne 0) {
             throw "tar failed with exit code $LASTEXITCODE"

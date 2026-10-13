@@ -17,6 +17,16 @@ on:
         default: "1"
         type: string
 
+    secrets:
+      ANDROID_KEYSTORE_BASE64:
+        required: true
+      ANDROID_KEYSTORE_PASSWORD:
+        required: true
+      ANDROID_KEY_ALIAS:
+        required: true
+      ANDROID_KEY_PASSWORD:
+        required: true
+
 permissions:
   contents: read
 
@@ -78,32 +88,36 @@ jobs:
           tauri.android.versionCode=${{ inputs.version_code }}
           EOF
 
-      - name: Build Android APK
-        run: pnpm tauri android build -t aarch64 --apk --ci -v -- --locked
-
-      - name: Prepare unsigned APK
+      - name: Build and verify signed Android APK
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ARTIFACT_VERSION: ${{ inputs.artifact_version }}
         run: |
           set -euo pipefail
-          BUILD_TOOLS="$ANDROID_HOME/build-tools/36.0.0"
+          : "${ANDROID_KEYSTORE_BASE64:?ANDROID_KEYSTORE_BASE64 is required}"
+          : "${ANDROID_KEYSTORE_PASSWORD:?ANDROID_KEYSTORE_PASSWORD is required}"
+          : "${ANDROID_KEY_ALIAS:?ANDROID_KEY_ALIAS is required}"
+          : "${ANDROID_KEY_PASSWORD:?ANDROID_KEY_PASSWORD is required}"
+          umask 077
+          signing_dir="$(mktemp -d "$RUNNER_TEMP/android-signing.XXXXXX")"
+          trap 'rm -rf "$signing_dir"' EXIT
+          export ANDROID_KEYSTORE_PATH="$signing_dir/keystore.jks"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$ANDROID_KEYSTORE_PATH"
+          unset ANDROID_KEYSTORE_BASE64
+          pnpm tauri android build -t aarch64 --apk --ci -v -- --locked
+          unset ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD ANDROID_KEYSTORE_PATH
+          build_tools="$ANDROID_HOME/build-tools/36.0.0"
           apk="$(find src-tauri/gen/android/app/build/outputs/apk -type f -name '*.apk' ! -name '*debug*' | sort | tail -n 1)"
           test -n "$apk"
-          if "$BUILD_TOOLS/apksigner" verify "$apk" >/dev/null 2>&1; then
-            echo "Android build unexpectedly produced an already signed APK: $apk" >&2
-            exit 1
-          fi
-          output="$RUNNER_TEMP/buckyosapp-android-arm64-${{ inputs.artifact_version }}.apk"
-          if "$BUILD_TOOLS/zipalign" -c -P 16 4 "$apk"; then
-            cp "$apk" "$output"
-          else
-            "$BUILD_TOOLS/zipalign" -P 16 -f 4 "$apk" "$output"
-          fi
-          "$BUILD_TOOLS/aapt2" dump badging "$output" >/dev/null
-          if "$BUILD_TOOLS/apksigner" verify "$output" >/dev/null 2>&1; then
-            echo "Prepared Android Artifact must remain unsigned: $output" >&2
-            exit 1
-          fi
+          "$build_tools/apksigner" verify --verbose --print-certs "$apk"
+          "$build_tools/zipalign" -c -P 16 4 "$apk"
+          "$build_tools/aapt2" dump badging "$apk" >/dev/null
+          cp "$apk" "$RUNNER_TEMP/buckyosapp-android-arm64-$ARTIFACT_VERSION.apk"
 
-      - name: Upload unsigned APK Artifact
+      - name: Upload signed APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: buckyosapp-android-arm64-${{ inputs.artifact_version }}
