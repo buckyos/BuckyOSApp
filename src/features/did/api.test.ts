@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { invoke } from "@tauri-apps/api/core";
-import { refreshOwnerDocument } from "./api";
+import { loadDidSnapshot, refreshOwnerDocument } from "./api";
 import { buildOwnerDocument } from "./ownerDocument";
 import type { DidInfo } from "./types";
 
@@ -26,6 +26,26 @@ function identity(): DidInfo {
 
 describe("OwnerDocument reads", () => {
     beforeEach(() => vi.mocked(invoke).mockReset());
+
+    it("shares concurrent initial snapshot reads without caching later account changes", async () => {
+        const active = identity();
+        vi.mocked(invoke).mockImplementation(async (command) => command === "list_dids" ? [active] : active);
+        const first = loadDidSnapshot();
+        const replay = loadDidSnapshot();
+        expect(first).toBe(replay);
+        await expect(first).resolves.toEqual({ dids: [active], activeDid: active });
+        expect(invoke).toHaveBeenCalledTimes(2);
+        vi.mocked(invoke).mockImplementation(async (command) => command === "list_dids" ? [] : null);
+        await expect(loadDidSnapshot()).resolves.toEqual({ dids: [], activeDid: null });
+        expect(invoke).toHaveBeenCalledTimes(4);
+    });
+
+    it("can reload the local snapshot after a failed initial read", async () => {
+        vi.mocked(invoke).mockRejectedValue(new Error("store unavailable"));
+        await expect(loadDidSnapshot()).rejects.toThrow("store unavailable");
+        vi.mocked(invoke).mockImplementation(async (command) => command === "list_dids" ? [] : null);
+        await expect(loadDidSnapshot()).resolves.toEqual({ dids: [], activeDid: null });
+    });
 
     it("consults the TTL-aware native resolver on every read instead of reusing the wallet snapshot", async () => {
         const stale = identity();

@@ -2,6 +2,17 @@ import { invoke } from "@tauri-apps/api/core";
 import { namelib, type DidDocType } from "buckyos";
 import type { DidInfo, OwnerDocument, WalletExtensionRequest } from "./types";
 
+let pendingSnapshot: Promise<{ dids: DidInfo[]; activeDid: DidInfo | null }> | null = null;
+
+export function loadDidSnapshot(): Promise<{ dids: DidInfo[]; activeDid: DidInfo | null }> {
+    if (!pendingSnapshot) {
+        pendingSnapshot = Promise.all([listDids(), fetchActiveDid()])
+            .then(([dids, activeDid]) => ({ dids, activeDid }))
+            .finally(() => { pendingSnapshot = null; });
+    }
+    return pendingSnapshot;
+}
+
 export async function updateOwnerDocument(didId: string, ownerDocument: OwnerDocument): Promise<DidInfo> {
     return invoke("update_owner_document", { didId, ownerDocumentJson: JSON.stringify(ownerDocument) });
 }

@@ -1,5 +1,6 @@
 export default {
     common: {
+        starting: "起動中…",
         language: {
             en: "English",
             zh: "中文",
@@ -301,6 +302,11 @@ export default {
         content: "SN は XXXX です",
     },
     ood: {
+        home_button: "OOD ホームを開く",
+        home_loading: "開いています…",
+        home_title: "OOD ホーム",
+        home_failed_title: "OOD ホームを開けません",
+        home_failed_message: "OOD ホームを取得または開くことができませんでした。接続を確認して再試行してください。",
         activate_title: "OOD を有効化",
         activate_subtitle: "OOD デバイスを有効化して BuckyOS ネットワークに参加します。",
         about_title: "OOD について",

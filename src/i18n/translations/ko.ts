@@ -1,5 +1,6 @@
 export default {
     common: {
+        starting: "시작하는 중…",
         language: {
             en: "English",
             zh: "中文",
@@ -301,6 +302,11 @@ export default {
         content: "SN은 XXXX입니다",
     },
     ood: {
+        home_button: "OOD 홈 열기",
+        home_loading: "여는 중…",
+        home_title: "OOD 홈",
+        home_failed_title: "OOD 홈을 열 수 없습니다",
+        home_failed_message: "OOD 홈을 찾거나 열 수 없습니다. 네트워크 연결을 확인하고 다시 시도하세요.",
         activate_title: "OOD 활성화",
         activate_subtitle: "OOD 장치를 활성화해 BuckyOS 네트워크에 참여하세요.",
         about_title: "OOD 정보",

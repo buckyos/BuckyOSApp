@@ -1,5 +1,6 @@
 export default {
     common: {
+        starting: "Starting…",
         language: {
             en: "English",
             zh: "中文",
@@ -366,6 +367,11 @@ export default {
         content: "SN是XXXX",
     },
     ood: {
+        home_button: "Open OOD Home",
+        home_loading: "Opening…",
+        home_title: "OOD Home",
+        home_failed_title: "Unable to Open OOD Home",
+        home_failed_message: "Could not resolve or open your OOD home. Check your connection and try again.",
         activate_title: "Activate OOD",
         activate_subtitle: "Activate your OOD device to join the BuckyOS network.",
         about_title: "About OOD",
@@ -373,7 +379,7 @@ export default {
         bound_title: "OOD Bound",
         bound_subtitle: "Your OOD is already bound.",
         bound_desc: "This account has an OOD device bound and is ready to use.",
-        bound_zone_label: "Zone DID to unbind",
+        bound_zone_label: "Current OOD (Zone DID)",
         unbind_button: "Unbind",
         unbind_confirm_title: "Unbind OOD",
         unbind_confirm_message: "Unbinding will remove the relationship between the current DID and the OOD, but it will not reset any OOD data. Do you want to continue?",

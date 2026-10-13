@@ -1,5 +1,7 @@
 import React from "react";
+import { ExternalLink, LayoutGrid, Unlink } from "lucide-react";
 import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { useNavigate } from "react-router-dom";
 import { useI18n } from "../../../i18n";
 import GradientButton from "../../../components/ui/GradientButton";
@@ -9,6 +11,7 @@ import oodIllustration from "../../../assets/ood.png";
 import { useDidContext } from "../../../features/did/DidContext";
 import { signJsonWithActiveDid } from "../../../features/did/api";
 import { getIdentityDid } from "../../../features/did/identityView";
+import { resolveOodHomeUrl } from "../../../features/did/oodHome";
 import {
     buildOwnerRemoveBoundZoneClaims,
     canonicalOwnerDocumentHash,
@@ -114,6 +117,8 @@ const BindOod: React.FC = () => {
     const [hasBoundOod, setHasBoundOod] = React.useState(false);
     const [boundZoneDids, setBoundZoneDids] = React.useState<string[]>([]);
     const [selectedZoneDid, setSelectedZoneDid] = React.useState<string | null>(null);
+    const [homeLoading, setHomeLoading] = React.useState(false);
+    const homeRequestRef = React.useRef(0);
     const [confirmUnbindOpen, setConfirmUnbindOpen] = React.useState(false);
     const [passwordDialogOpen, setPasswordDialogOpen] = React.useState(false);
     const [password, setPassword] = React.useState("");
@@ -134,6 +139,11 @@ const BindOod: React.FC = () => {
 
     React.useEffect(() => {
         let cancelled = false;
+        homeRequestRef.current += 1;
+        setHomeLoading(false);
+        setHasBoundOod(false);
+        setBoundZoneDids([]);
+        setSelectedZoneDid(null);
 
         const loadOodBinding = async () => {
             const currentUserDid = getIdentityDid(activeDid);
@@ -161,12 +171,30 @@ const BindOod: React.FC = () => {
 
         return () => {
             cancelled = true;
+            homeRequestRef.current += 1;
         };
     }, [activeDid]);
 
     const openResultDialog = React.useCallback((title: string, message: string) => {
         setResultDialog({ open: true, title, message });
     }, []);
+
+    const handleOpenHome = async () => {
+        if (!selectedZoneDid || homeLoading) return;
+        const request = ++homeRequestRef.current;
+        setHomeLoading(true);
+        try {
+            const url = await resolveOodHomeUrl(selectedZoneDid);
+            if (request !== homeRequestRef.current) return;
+            await openUrl(url);
+        } catch (error) {
+            if (request !== homeRequestRef.current) return;
+            console.warn("[OOD] failed to open home", error);
+            openResultDialog(t("ood.home_failed_title"), t("ood.home_failed_message"));
+        } finally {
+            if (request === homeRequestRef.current) setHomeLoading(false);
+        }
+    };
 
     React.useEffect(() => {
         if (!remoteDialogOpen) return;
@@ -366,7 +394,7 @@ const BindOod: React.FC = () => {
     }, [password, t, activeDid, openResultDialog, selectedZoneDid, syncOwnerDocument]);
 
     return (
-        <section className="did-section bind-ood-section">
+        <section className={`did-section bind-ood-section${hasBoundOod ? " bind-ood-section-bound" : ""}${boundZoneDids.length > 1 ? " bind-ood-section-multi" : ""}`}>
             <header className="home-header">
                 <div>
                     <h1>{hasBoundOod ? t("ood.bound_title") : t("ood.activate_title")}</h1>
@@ -381,6 +409,7 @@ const BindOod: React.FC = () => {
                         <span>{t("ood.bound_zone_label")}</span>
                         <select
                             value={selectedZoneDid ?? ""}
+                            disabled={homeLoading || unbindLoading}
                             onChange={(event) => setSelectedZoneDid(event.target.value)}
                             aria-label={t("ood.bound_zone_label")}
                         >
@@ -398,23 +427,38 @@ const BindOod: React.FC = () => {
 
             <div className="bind-ood-flex-spacer" />
 
-            <div className="sn-page-actions bind-ood-actions">
+            <div className={`sn-page-actions bind-ood-actions${hasBoundOod ? " bind-ood-actions-bound" : ""}${boundZoneDids.length > 1 ? " bind-ood-actions-multi" : ""}`}>
                 {hasBoundOod ? (
                     <>
                         <GradientButton
                             fullWidth
-                            onClick={() => navigate("/main/apps")}
+                            className="bound-ood-action"
+                            disabled={!selectedZoneDid || homeLoading || unbindLoading}
+                            aria-busy={homeLoading}
+                            onClick={() => void handleOpenHome()}
                         >
-                            {t("tabs.apps")}
+                            <ExternalLink size={22} strokeWidth={1.8} aria-hidden="true" />
+                            {t(homeLoading ? "ood.home_loading" : "ood.home_button")}
                         </GradientButton>
-                        <GradientButton
-                            fullWidth
-                            variant="secondary"
-                            disabled={!selectedZoneDid}
-                            onClick={() => setConfirmUnbindOpen(true)}
-                        >
-                            {t("ood.unbind_button")}
-                        </GradientButton>
+                        <div className="bound-ood-secondary-actions">
+                            <GradientButton
+                                variant="secondary"
+                                className="bound-ood-action"
+                                onClick={() => navigate("/main/apps")}
+                            >
+                                <LayoutGrid size={21} strokeWidth={1.8} aria-hidden="true" />
+                                {t("tabs.apps")}
+                            </GradientButton>
+                            <GradientButton
+                                variant="secondary"
+                                className="bound-ood-action"
+                                disabled={!selectedZoneDid || homeLoading || unbindLoading}
+                                onClick={() => setConfirmUnbindOpen(true)}
+                            >
+                                <Unlink size={21} strokeWidth={1.8} aria-hidden="true" />
+                                {t("ood.unbind_button")}
+                            </GradientButton>
+                        </div>
                     </>
                 ) : (
                     <>

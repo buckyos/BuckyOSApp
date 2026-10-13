@@ -1,5 +1,6 @@
 export default {
     common: {
+        starting: "正在启动…",
         language: {
             en: "English",
             zh: "中文",
@@ -364,15 +365,20 @@ export default {
         content: "SN是XXXX",
     },
     ood: {
-        bound_zone_label: "要解除绑定的 Zone DID",
+        home_button: "打开 OOD 主页",
+        home_loading: "正在打开…",
+        home_title: "OOD 主页",
+        home_failed_title: "无法打开 OOD 主页",
+        home_failed_message: "未能获取或打开 OOD 主页，请检查网络连接后重试。",
+        bound_zone_label: "当前 OOD（Zone DID）",
         activate_title: "激活 OOD",
         activate_subtitle: "激活您的 OOD 设备以加入 BuckyOS 网络。",
         about_title: "关于 OOD",
         about_desc: "OOD 是您的个人在线设备，用于在 BuckyOS 网络中提供持久在线与连接能力。激活后，可与 SN 协同工作，为您的身份提供更稳定的服务。",
         bound_title: "OOD 已绑定",
         bound_subtitle: "您的 OOD 已完成绑定。",
-        bound_desc: "当前账户已绑定 OOD 设备，可继续使用相关服务。",
-        unbind_button: "解除绑定",
+        bound_desc: "当前账户已绑定 OOD 设备，可以直接访问主页。",
+        unbind_button: "解绑",
         unbind_confirm_title: "解除绑定",
         unbind_confirm_message: "解除绑定会解除当前DID与OOD的绑定关系，并不会重置OOD数据，是否确认继续？",
         unbind_continue: "继续",

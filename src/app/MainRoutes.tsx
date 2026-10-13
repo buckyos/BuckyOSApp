@@ -4,17 +4,19 @@ import { avatarDisplayUrl } from "../features/did/ownerDocument";
 import { NavLink, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { Home as HomeIcon, PanelsTopLeft, Settings } from "lucide-react";
 import Home from "../pages/main/Home";
-import ActivateOod from "../pages/main/ActivateOod";
-import Apps from "../pages/main/Apps";
-import Setting from "../pages/main/Setting";
-import LanguageSelect from "../pages/main/LanguageSelect";
-import IdentityList from "../pages/main/IdentityList";
-import BackupIdentity from "../pages/main/BackupIdentity";
-import ScanDevice from "../pages/main/ScanDevice";
-import AboutApp from "../pages/main/AboutApp";
+import StartupScreen from "./StartupScreen";
 import "./MainRoutes.css";
 import { useI18n } from "../i18n";
 import { useDidContext } from "../features/did/DidContext";
+
+const ActivateOod = React.lazy(() => import("../pages/main/ActivateOod"));
+const Apps = React.lazy(() => import("../pages/main/Apps"));
+const Setting = React.lazy(() => import("../pages/main/Setting"));
+const LanguageSelect = React.lazy(() => import("../pages/main/LanguageSelect"));
+const IdentityList = React.lazy(() => import("../pages/main/IdentityList"));
+const BackupIdentity = React.lazy(() => import("../pages/main/BackupIdentity"));
+const ScanDevice = React.lazy(() => import("../pages/main/ScanDevice"));
+const AboutApp = React.lazy(() => import("../pages/main/AboutApp"));
 
 function TabBar() {
     const { t } = useI18n();
@@ -78,6 +80,8 @@ const MainRoutes: React.FC = () => {
         }
     }, [loading, dids.length, activeDid, normalizedPath, navigate]);
 
+    if (loading && dids.length === 0) return <StartupScreen />;
+
     const displayName = getIdentityDisplayName(activeDid) || t("common.account.unnamed");
 
     const accountLabel = t("common.account.current");
@@ -108,17 +112,19 @@ const MainRoutes: React.FC = () => {
                     </div>
                 )}
                 <div className="content-body">
-                    <Routes>
-                        <Route path="/home" element={<Home />} />
-                        <Route path="/home/ood-activate" element={<ActivateOod />} />
-                        <Route path="/apps" element={<Apps />} />
-                        <Route path="/setting" element={<Setting />} />
-                        <Route path="/setting/identities" element={<IdentityList />} />
-                        <Route path="/setting/backup" element={<BackupIdentity />} />
-                        <Route path="/setting/language" element={<LanguageSelect />} />
-                        <Route path="/setting/about" element={<AboutApp />} />
-                        <Route path="/home/ood-scan" element={<ScanDevice />} />
-                    </Routes>
+                    <React.Suspense fallback={<StartupScreen />}>
+                        <Routes>
+                            <Route path="/home" element={<Home />} />
+                            <Route path="/home/ood-activate" element={<ActivateOod />} />
+                            <Route path="/apps" element={<Apps />} />
+                            <Route path="/setting" element={<Setting />} />
+                            <Route path="/setting/identities" element={<IdentityList />} />
+                            <Route path="/setting/backup" element={<BackupIdentity />} />
+                            <Route path="/setting/language" element={<LanguageSelect />} />
+                            <Route path="/setting/about" element={<AboutApp />} />
+                            <Route path="/home/ood-scan" element={<ScanDevice />} />
+                        </Routes>
+                    </React.Suspense>
                 </div>
             </div>
             {showTabBar && <TabBar />}

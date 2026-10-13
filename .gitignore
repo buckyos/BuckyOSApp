@@ -43,3 +43,7 @@ pnpm-lock.yaml
 /target/
 /.tmp/
 /.pnpm-store/
+
+# Local runtime document cache and design verification notes
+/local/did_docs/
+/design-qa.md

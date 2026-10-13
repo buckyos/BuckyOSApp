@@ -12,6 +12,11 @@ export default defineConfig(async () => ({
   //
   // 1. prevent Vite from obscuring rust errors
   clearScreen: false,
+  // Only the application entry belongs to this Vite project. Historical
+  // checkouts and preview HTML under .tmp must not trigger dependency scans.
+  optimizeDeps: {
+    entries: ["index.html"],
+  },
   // 2. tauri expects a fixed port, fail if that port is not available
   server: {
     port: 1420,
@@ -25,8 +30,8 @@ export default defineConfig(async () => ({
         }
       : undefined,
     watch: {
-      // 3. tell Vite to ignore watching `src-tauri`
-      ignored: ["**/src-tauri/**"],
+      // 3. Ignore native build output and historical test/checkouts.
+      ignored: ["**/src-tauri/**", "**/.tmp/**", "**/auto_test/**"],
     },
   },
 }));

@@ -1,5 +1,6 @@
 export default {
     common: {
+        starting: "Запуск…",
         language: {
             en: "English",
             zh: "中文",
@@ -301,6 +302,11 @@ export default {
         content: "SN — это XXXX",
     },
     ood: {
+        home_button: "Открыть OOD",
+        home_loading: "Открытие…",
+        home_title: "Главная OOD",
+        home_failed_title: "Не удалось открыть OOD",
+        home_failed_message: "Не удалось найти или открыть главную OOD. Проверьте соединение и повторите попытку.",
         activate_title: "Активировать OOD",
         activate_subtitle: "Активируйте устройство OOD, чтобы присоединиться к сети BuckyOS.",
         about_title: "Об OOD",

@@ -2,13 +2,19 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/png" href="/src/assets/app-icon.png" />
+    <link rel="stylesheet" href="/src/app/StartupScreen.css" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>Tauri + React + Typescript</title>
+    <title>BuckyOS</title>
   </head>
 
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="startup-screen" role="status" aria-label="Starting BuckyOS">
+        <img src="/src/assets/app-icon.png" width="64" height="64" alt="" />
+        <strong>BuckyOS</strong>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

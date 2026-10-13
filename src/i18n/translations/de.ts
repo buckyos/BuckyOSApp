@@ -1,5 +1,6 @@
 const de = {
     common: {
+        starting: "Wird gestartet…",
         language: {
             en: "English",
             zh: "中文",
@@ -312,6 +313,11 @@ const de = {
         content: "SN ist XXXX",
     },
     ood: {
+        home_button: "OOD öffnen",
+        home_loading: "Wird geöffnet…",
+        home_title: "OOD-Startseite",
+        home_failed_title: "OOD kann nicht geöffnet werden",
+        home_failed_message: "Die OOD-Startseite konnte nicht ermittelt oder geöffnet werden. Prüfen Sie die Verbindung und versuchen Sie es erneut.",
         activate_title: "OOD aktivieren",
         activate_subtitle: "Aktiviere dein OOD-Gerät, um dem BuckyOS-Netzwerk beizutreten.",
         about_title: "Über OOD",

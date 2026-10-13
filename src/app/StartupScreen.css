@@ -1,0 +1,21 @@
+html, body, #root { margin: 0; height: 100%; }
+.startup-screen {
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: var(--app-bg, #fff);
+    color: var(--app-text, #0f172a);
+    font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
+}
+.startup-screen img { border-radius: 16px; }
+.startup-screen strong { font-size: 22px; }
+.startup-screen span { font-size: 14px; color: var(--muted-text, #5b6473); }
+@media (prefers-color-scheme: dark) {
+    .startup-screen {
+        background: var(--app-bg, #0b1220);
+        color: var(--app-text, #e5e7eb);
+    }
+}

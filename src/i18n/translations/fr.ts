@@ -1,5 +1,6 @@
 const fr = {
     common: {
+        starting: "Démarrage…",
         language: {
             en: "English",
             zh: "中文",
@@ -312,6 +313,11 @@ const fr = {
         content: "SN est XXXX",
     },
     ood: {
+        home_button: "Ouvrir OOD",
+        home_loading: "Ouverture…",
+        home_title: "Accueil OOD",
+        home_failed_title: "Impossible d’ouvrir OOD",
+        home_failed_message: "Impossible de trouver ou d’ouvrir l’accueil OOD. Vérifiez la connexion et réessayez.",
         activate_title: "Activer OOD",
         activate_subtitle: "Activez votre appareil OOD pour rejoindre le réseau BuckyOS.",
         about_title: "À propos d'OOD",

@@ -1,5 +1,5 @@
 import React from "react";
-import { listDids, fetchActiveDid, setActiveDid as setActiveDidOnBackend, extendWallets, updateOwnerDocument, refreshOwnerDocument as refreshOwnerDocumentFromBackend } from "./api";
+import { loadDidSnapshot, setActiveDid as setActiveDidOnBackend, extendWallets, updateOwnerDocument, refreshOwnerDocument as refreshOwnerDocumentFromBackend } from "./api";
 import type { DidInfo, OwnerDocument, WalletExtensionRequest } from "./types";
 
 interface DidContextValue {
@@ -23,11 +23,6 @@ function mergeOwnerSnapshot(current: DidInfo, updated: DidInfo): DidInfo {
     return { ...current, owner_document: updated.owner_document };
 }
 
-async function loadSnapshot(): Promise<{ dids: DidInfo[]; activeDid: DidInfo | null; }> {
-    const [dids, activeDid] = await Promise.all([listDids(), fetchActiveDid()]);
-    return { dids, activeDid };
-}
-
 export const DidProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
     const [dids, setDids] = React.useState<DidInfo[]>([]);
     const [activeDid, setActiveDid] = React.useState<DidInfo | null>(null);
@@ -36,7 +31,7 @@ export const DidProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
     const refresh = React.useCallback(async () => {
         setLoading(true);
         try {
-            const snapshot = await loadSnapshot();
+            const snapshot = await loadDidSnapshot();
             setDids(snapshot.dids);
             setActiveDid(snapshot.activeDid);
         } finally {
