@@ -55,7 +55,7 @@ futures = "0.3"
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 tokio = { version = "1", features = ["time"] }
 
-# Used by the vendored node_control module (Unix-only setsid call).
+# Used by the vendored node_control module (Unix setsid, kill and user lookups).
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
 

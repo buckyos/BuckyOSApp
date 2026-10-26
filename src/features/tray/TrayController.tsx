@@ -5,8 +5,10 @@ import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import {
     TRAY_ACTION_EVENT,
     TRAY_STATE_EVENT,
+    finishRuntimeSetup,
     getTrayState,
     refreshLocalServiceStatus,
+    requestRuntimePermissions,
     restartLocalService,
     setTrayEnabled,
     setTrayLabels,
@@ -27,6 +29,8 @@ const ACTION_RUNNERS: Record<TrayActionId, () => Promise<TrayStateSnapshot>> = {
     stop: stopLocalService,
     restart: restartLocalService,
     refresh: refreshLocalServiceStatus,
+    setup: finishRuntimeSetup,
+    permissions: requestRuntimePermissions,
 };
 
 function buildLabels(t: T): TrayLabels {
@@ -36,6 +40,7 @@ function buildLabels(t: T): TrayLabels {
         title_stopped: t("tray.title.stopped"),
         title_error: t("tray.title.error"),
         title_not_activated: t("tray.title.not_activated"),
+        title_needs_setup: t("tray.title.needs_setup"),
         title_starting: t("tray.title.starting"),
         title_stopping: t("tray.title.stopping"),
         title_refreshing: t("tray.title.refreshing"),
@@ -43,6 +48,7 @@ function buildLabels(t: T): TrayLabels {
         status_stopped: t("tray.status.stopped"),
         status_error: t("tray.status.error"),
         status_not_activated: t("tray.status.not_activated"),
+        status_needs_setup: t("tray.status.needs_setup"),
         status_starting: t("tray.status.starting"),
         status_stopping: t("tray.status.stopping"),
         status_refreshing: t("tray.status.refreshing"),
@@ -54,6 +60,9 @@ function buildLabels(t: T): TrayLabels {
         action_stop: t("tray.menu.stop"),
         action_restart: t("tray.menu.restart"),
         action_refresh: t("tray.menu.refresh"),
+        action_setup: t("tray.menu.setup"),
+        action_permissions: t("tray.menu.permissions"),
+        action_autostart: t("tray.menu.autostart"),
         action_open_app: t("tray.menu.open_app"),
         action_quit: t("tray.menu.quit"),
     };
@@ -99,6 +108,22 @@ function buildPrompt(action: TrayActionId, t: T): PendingPrompt {
                 title: t("tray.confirm.refresh_title"),
                 message: t("tray.confirm.refresh_message"),
                 confirmText: t("tray.confirm.refresh_continue"),
+                danger: false,
+            };
+        case "setup":
+            return {
+                action,
+                title: t("tray.confirm.setup_title"),
+                message: t("tray.confirm.setup_message"),
+                confirmText: t("tray.confirm.setup_continue"),
+                danger: false,
+            };
+        case "permissions":
+            return {
+                action,
+                title: t("tray.confirm.permissions_title"),
+                message: t("tray.confirm.permissions_message"),
+                confirmText: t("tray.confirm.permissions_continue"),
                 danger: false,
             };
     }

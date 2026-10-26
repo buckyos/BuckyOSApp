@@ -31,3 +31,15 @@ export function restartLocalService(): Promise<TrayStateSnapshot> {
 export function refreshLocalServiceStatus(): Promise<TrayStateSnapshot> {
     return invoke<TrayStateSnapshot>("tray_refresh_status");
 }
+
+export function finishRuntimeSetup(): Promise<TrayStateSnapshot> {
+    return invoke<TrayStateSnapshot>("tray_finish_setup");
+}
+
+export function requestRuntimePermissions(): Promise<TrayStateSnapshot> {
+    return invoke<TrayStateSnapshot>("tray_request_permissions");
+}
+
+export function setRuntimeAutostart(enabled: boolean): Promise<TrayStateSnapshot> {
+    return invoke<TrayStateSnapshot>("tray_set_autostart", { enabled });
+}

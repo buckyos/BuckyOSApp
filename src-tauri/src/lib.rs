@@ -125,6 +125,9 @@ pub fn run() {
         tray::tray_stop_service,
         tray::tray_restart_service,
         tray::tray_refresh_status,
+        tray::tray_finish_setup,
+        tray::tray_request_permissions,
+        tray::tray_set_autostart,
     ]);
 
     #[cfg(not(desktop))]

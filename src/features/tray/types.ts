@@ -3,6 +3,7 @@ export type ServiceStatus =
     | "stopped"
     | "error"
     | "not_activated"
+    | "needs_setup"
     | "starting"
     | "stopping"
     | "refreshing";
@@ -20,6 +21,7 @@ export interface TrayLabels {
     title_stopped: string;
     title_error: string;
     title_not_activated: string;
+    title_needs_setup: string;
     title_starting: string;
     title_stopping: string;
     title_refreshing: string;
@@ -27,6 +29,7 @@ export interface TrayLabels {
     status_stopped: string;
     status_error: string;
     status_not_activated: string;
+    status_needs_setup: string;
     status_starting: string;
     status_stopping: string;
     status_refreshing: string;
@@ -38,6 +41,9 @@ export interface TrayLabels {
     action_stop: string;
     action_restart: string;
     action_refresh: string;
+    action_setup: string;
+    action_permissions: string;
+    action_autostart: string;
     action_open_app: string;
     action_quit: string;
 }
@@ -46,6 +52,8 @@ export interface TrayStateSnapshot {
     enabled: boolean;
     status: ServiceStatus;
     deployment: DeploymentMode;
+    /** macOS login autostart of BuckyOS Runtime; null when not applicable. */
+    autostart: boolean | null;
 }
 
-export type TrayActionId = "start" | "stop" | "restart" | "refresh";
+export type TrayActionId = "start" | "stop" | "restart" | "refresh" | "setup" | "permissions";

@@ -29,7 +29,10 @@ use std::sync::{
 use serde::{Deserialize, Serialize};
 use tauri::{
     image::Image,
-    menu::{MenuBuilder, MenuItem, MenuItemBuilder, Submenu, SubmenuBuilder},
+    menu::{
+        CheckMenuItem, CheckMenuItemBuilder, MenuBuilder, MenuItem, MenuItemBuilder, Submenu,
+        SubmenuBuilder,
+    },
     tray::{TrayIcon, TrayIconBuilder},
     AppHandle, Emitter, Manager, Wry,
 };
@@ -64,6 +67,10 @@ pub enum ServiceStatus {
     /// activated yet. Service start/stop is meaningless until the user
     /// completes activation in the App.
     NotActivated,
+    /// macOS: BuckyOS Runtime is installed but not bound to an OS user yet
+    /// (installed while nobody was logged in). Opening BuckyOS Runtime
+    /// finishes the setup.
+    NeedsSetup,
     Starting,
     Stopping,
     Refreshing,
@@ -100,6 +107,7 @@ pub struct TrayLabels {
     pub title_stopped: String,
     pub title_error: String,
     pub title_not_activated: String,
+    pub title_needs_setup: String,
     pub title_starting: String,
     pub title_stopping: String,
     pub title_refreshing: String,
@@ -110,6 +118,7 @@ pub struct TrayLabels {
     pub status_stopped: String,
     pub status_error: String,
     pub status_not_activated: String,
+    pub status_needs_setup: String,
     pub status_starting: String,
     pub status_stopping: String,
     pub status_refreshing: String,
@@ -124,6 +133,11 @@ pub struct TrayLabels {
     pub action_stop: String,
     pub action_restart: String,
     pub action_refresh: String,
+    /// macOS only: finish the Runtime setup, request its privacy
+    /// permissions, toggle its login autostart.
+    pub action_setup: String,
+    pub action_permissions: String,
+    pub action_autostart: String,
     pub action_open_app: String,
     pub action_quit: String,
 }
@@ -133,6 +147,8 @@ pub struct TrayStateSnapshot {
     pub enabled: bool,
     pub status: ServiceStatus,
     pub deployment: DeploymentMode,
+    /// macOS login autostart of BuckyOS Runtime; `None` when not applicable.
+    pub autostart: Option<bool>,
 }
 
 pub struct TrayState {
@@ -143,6 +159,7 @@ pub struct TrayState {
 struct TrayInner {
     status: ServiceStatus,
     deployment: DeploymentMode,
+    autostart: Option<bool>,
     labels: TrayLabels,
     tray: Option<TrayIcon<Wry>>,
     items: Option<TrayMenuItems>,
@@ -154,6 +171,9 @@ struct TrayMenuItems {
     stop: MenuItem<Wry>,
     restart: MenuItem<Wry>,
     refresh: MenuItem<Wry>,
+    setup: MenuItem<Wry>,
+    permissions: MenuItem<Wry>,
+    autostart: CheckMenuItem<Wry>,
     open_app: MenuItem<Wry>,
     quit: MenuItem<Wry>,
     actions_submenu: Submenu<Wry>,
@@ -166,6 +186,7 @@ impl TrayState {
             inner: Mutex::new(TrayInner {
                 status: ServiceStatus::Stopped,
                 deployment: DeploymentMode::Unknown,
+                autostart: None,
                 labels: TrayLabels::default(),
                 tray: None,
                 items: None,
@@ -183,6 +204,7 @@ impl TrayState {
             enabled: self.is_enabled(),
             status: guard.status,
             deployment: guard.deployment,
+            autostart: guard.autostart,
         }
     }
 }
@@ -196,6 +218,7 @@ fn install_tray(app: &AppHandle, state: &TrayState) -> CommandResult<()> {
     let labels = guard.labels.clone();
     let status = guard.status;
     let deployment = guard.deployment;
+    let autostart = guard.autostart;
 
     let status_item =
         MenuItemBuilder::with_id("tray_status", &status_text(&labels, status, deployment))
@@ -221,7 +244,28 @@ fn install_tray(app: &AppHandle, state: &TrayState) -> CommandResult<()> {
             .build(app)
             .map_err(|e| CommandErrors::internal(format!("tray refresh item: {e}")))?;
 
-    let actions_submenu = SubmenuBuilder::with_id(
+    let setup_item =
+        MenuItemBuilder::with_id("tray_setup", &or_default(&labels.action_setup, "Finish setup…"))
+            .enabled(can_setup(status))
+            .build(app)
+            .map_err(|e| CommandErrors::internal(format!("tray setup item: {e}")))?;
+    let permissions_item = MenuItemBuilder::with_id(
+        "tray_permissions",
+        &or_default(&labels.action_permissions, "Desktop permissions…"),
+    )
+    .enabled(can_request_permissions(status))
+    .build(app)
+    .map_err(|e| CommandErrors::internal(format!("tray permissions item: {e}")))?;
+    let autostart_item = CheckMenuItemBuilder::with_id(
+        "tray_autostart",
+        &or_default(&labels.action_autostart, "Start at login"),
+    )
+    .checked(autostart.unwrap_or(false))
+    .enabled(autostart.is_some())
+    .build(app)
+    .map_err(|e| CommandErrors::internal(format!("tray autostart item: {e}")))?;
+
+    let mut actions_builder = SubmenuBuilder::with_id(
         app,
         "tray_actions",
         &or_default(&labels.submenu_actions, "Actions"),
@@ -229,9 +273,17 @@ fn install_tray(app: &AppHandle, state: &TrayState) -> CommandResult<()> {
     .item(&start_item)
     .item(&stop_item)
     .item(&restart_item)
-    .item(&refresh_item)
-    .build()
-    .map_err(|e| CommandErrors::internal(format!("tray actions submenu: {e}")))?;
+    .item(&refresh_item);
+    if cfg!(target_os = "macos") {
+        actions_builder = actions_builder
+            .separator()
+            .item(&setup_item)
+            .item(&permissions_item)
+            .item(&autostart_item);
+    }
+    let actions_submenu = actions_builder
+        .build()
+        .map_err(|e| CommandErrors::internal(format!("tray actions submenu: {e}")))?;
 
     let open_app_item = MenuItemBuilder::with_id(
         "tray_open_app",
@@ -279,6 +331,9 @@ fn install_tray(app: &AppHandle, state: &TrayState) -> CommandResult<()> {
         stop: stop_item,
         restart: restart_item,
         refresh: refresh_item,
+        setup: setup_item,
+        permissions: permissions_item,
+        autostart: autostart_item,
         open_app: open_app_item,
         quit: quit_item,
         actions_submenu,
@@ -305,6 +360,7 @@ fn refresh_menu(state: &TrayState) {
     let labels = &guard.labels;
     let status = guard.status;
     let deployment = guard.deployment;
+    let autostart = guard.autostart;
 
     let _ = items.status.set_text(&status_text(labels, status, deployment));
     let _ = items.start.set_text(&or_default(&labels.action_start, "Start"));
@@ -329,6 +385,19 @@ fn refresh_menu(state: &TrayState) {
     let _ = items.stop.set_enabled(can_stop(status));
     let _ = items.restart.set_enabled(can_restart(status));
     let _ = items.refresh.set_enabled(can_refresh(status));
+    let _ = items
+        .setup
+        .set_text(&or_default(&labels.action_setup, "Finish setup…"));
+    let _ = items
+        .permissions
+        .set_text(&or_default(&labels.action_permissions, "Desktop permissions…"));
+    let _ = items
+        .autostart
+        .set_text(&or_default(&labels.action_autostart, "Start at login"));
+    let _ = items.setup.set_enabled(can_setup(status));
+    let _ = items.permissions.set_enabled(can_request_permissions(status));
+    let _ = items.autostart.set_enabled(autostart.is_some());
+    let _ = items.autostart.set_checked(autostart.unwrap_or(false));
 
     if let Some(tray) = guard.tray.as_ref() {
         let _ = tray.set_tooltip(Some(or_default(&labels.tooltip, "BuckyOS")));
@@ -349,6 +418,20 @@ fn handle_menu_event(app: &AppHandle, event: tauri::menu::MenuEvent) {
         "tray_stop" => emit_action(app, "stop"),
         "tray_restart" => emit_action(app, "restart"),
         "tray_refresh" => emit_action(app, "refresh"),
+        "tray_setup" => emit_action(app, "setup"),
+        "tray_permissions" => emit_action(app, "permissions"),
+        "tray_autostart" => {
+            // A checkbox is its own confirmation: apply directly, then show
+            // the state the Runtime really has.
+            let app = app.clone();
+            tauri::async_runtime::spawn(async move {
+                let wanted = !app.state::<TrayState>().snapshot().autostart.unwrap_or(false);
+                if let Err(err) = run_set_autostart(wanted).await {
+                    log::error!("[tray] set autostart failed: {err}");
+                }
+                settle_after_action(&app, ServiceStatus::Refreshing).await;
+            });
+        }
         _ => {}
     }
 }
@@ -385,6 +468,7 @@ fn status_text(labels: &TrayLabels, status: ServiceStatus, deployment: Deploymen
         ServiceStatus::Stopped => &labels.status_stopped,
         ServiceStatus::Error => &labels.status_error,
         ServiceStatus::NotActivated => &labels.status_not_activated,
+        ServiceStatus::NeedsSetup => &labels.status_needs_setup,
         ServiceStatus::Starting => &labels.status_starting,
         ServiceStatus::Stopping => &labels.status_stopping,
         ServiceStatus::Refreshing => &labels.status_refreshing,
@@ -415,6 +499,7 @@ fn title_text(labels: &TrayLabels, status: ServiceStatus) -> String {
         ServiceStatus::Stopped => &labels.title_stopped,
         ServiceStatus::Error => &labels.title_error,
         ServiceStatus::NotActivated => &labels.title_not_activated,
+        ServiceStatus::NeedsSetup => &labels.title_needs_setup,
         ServiceStatus::Starting => &labels.title_starting,
         ServiceStatus::Stopping => &labels.title_stopping,
         ServiceStatus::Refreshing => &labels.title_refreshing,
@@ -434,10 +519,16 @@ fn can_restart(status: ServiceStatus) -> bool {
 fn can_refresh(status: ServiceStatus) -> bool {
     !matches!(status, ServiceStatus::Starting | ServiceStatus::Stopping | ServiceStatus::Refreshing)
 }
+fn can_setup(status: ServiceStatus) -> bool {
+    status == ServiceStatus::NeedsSetup
+}
+fn can_request_permissions(status: ServiceStatus) -> bool {
+    matches!(status, ServiceStatus::Running | ServiceStatus::Error | ServiceStatus::NotActivated)
+}
 
 // ---------- node_control glue ----------
 
-fn map_report(report: &NodeCheckReport) -> (ServiceStatus, DeploymentMode) {
+fn map_report(report: &NodeCheckReport) -> (ServiceStatus, DeploymentMode, Option<bool>) {
     let deployment = match report.host_control.model {
         NodeHostControlModel::DirectProcess => DeploymentMode::Dev,
         NodeHostControlModel::ServiceManager
@@ -446,7 +537,14 @@ fn map_report(report: &NodeCheckReport) -> (ServiceStatus, DeploymentMode) {
         NodeHostControlModel::Unknown => DeploymentMode::Unknown,
     };
 
-    let status = if !report.activated {
+    let autostart = report
+        .host_control
+        .launch_agent
+        .as_ref()
+        .map(|agent| agent.autostart);
+    let status = if report.host_control.pending_user_binding {
+        ServiceStatus::NeedsSetup
+    } else if !report.activated {
         ServiceStatus::NotActivated
     } else if matches!(report.host_control.service_enabled, Some(false)) {
         // Host service manager says the unit is disabled — user/admin
@@ -465,7 +563,7 @@ fn map_report(report: &NodeCheckReport) -> (ServiceStatus, DeploymentMode) {
         }
     };
 
-    (status, deployment)
+    (status, deployment, autostart)
 }
 
 async fn run_node_check() -> Result<NodeCheckReport, String> {
@@ -488,12 +586,44 @@ async fn run_node_stop() -> Result<(), String> {
         .map(|_| ())
 }
 
+async fn run_set_autostart(enabled: bool) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        node_control::macos_set_autostart(&node_control::resolve_buckyos_root(), enabled)
+    })
+    .await
+    .map_err(|e| format!("set autostart task failed: {e}"))?
+    .map(|_| ())
+}
+
+/// Launch BuckyOS Runtime through LaunchServices, so macOS attributes the
+/// setup prompt and the privacy requests to the Runtime itself, not to this
+/// App. Without arguments the Runtime finishes setup, asks for permissions
+/// and starts; `--request_permissions` only asks.
+fn open_runtime_app(args: &[&str]) -> Result<(), String> {
+    let bundle = node_control::macos_runtime_bundle_path(&node_control::resolve_buckyos_root());
+    if !bundle.is_dir() {
+        return Err(format!("BuckyOS Runtime not found at {}", bundle.display()));
+    }
+    let mut command = std::process::Command::new("open");
+    command.arg("-n").arg(&bundle);
+    if !args.is_empty() {
+        command.arg("--args").args(args);
+    }
+    let status = command
+        .status()
+        .map_err(|e| format!("open {} failed: {e}", bundle.display()))?;
+    if !status.success() {
+        return Err(format!("open {} exited with {status}", bundle.display()));
+    }
+    Ok(())
+}
+
 async fn settle_after_action(app: &AppHandle, fallback: ServiceStatus) {
     tokio::time::sleep(std::time::Duration::from_millis(POST_ACTION_SETTLE_MS)).await;
     match run_node_check().await {
         Ok(report) => {
-            let (status, deployment) = map_report(&report);
-            apply_state(app, status, Some(deployment));
+            let (status, deployment, autostart) = map_report(&report);
+            apply_state(app, status, Some((deployment, autostart)));
         }
         Err(err) => {
             log::warn!("[tray] post-action node_check failed: {err}");
@@ -502,13 +632,18 @@ async fn settle_after_action(app: &AppHandle, fallback: ServiceStatus) {
     }
 }
 
-fn apply_state(app: &AppHandle, status: ServiceStatus, deployment: Option<DeploymentMode>) {
+fn apply_state(
+    app: &AppHandle,
+    status: ServiceStatus,
+    probed: Option<(DeploymentMode, Option<bool>)>,
+) {
     let state = app.state::<TrayState>();
     {
         let mut guard = state.inner.lock().expect("tray state poisoned");
         guard.status = status;
-        if let Some(form) = deployment {
+        if let Some((form, autostart)) = probed {
             guard.deployment = form;
+            guard.autostart = autostart;
         }
     }
     refresh_menu(&state);
@@ -539,8 +674,8 @@ pub async fn tray_set_enabled(
             apply_state(&app_for_probe, ServiceStatus::Refreshing, None);
             match run_node_check().await {
                 Ok(report) => {
-                    let (status, deployment) = map_report(&report);
-                    apply_state(&app_for_probe, status, Some(deployment));
+                    let (status, deployment, autostart) = map_report(&report);
+                    apply_state(&app_for_probe, status, Some((deployment, autostart)));
                 }
                 Err(err) => {
                     log::warn!("[tray] initial node_check failed: {err}");
@@ -616,12 +751,35 @@ pub async fn tray_restart_service(app: AppHandle) -> CommandResult<TrayStateSnap
 }
 
 #[tauri::command]
+pub async fn tray_finish_setup(app: AppHandle) -> CommandResult<TrayStateSnapshot> {
+    open_runtime_app(&[]).map_err(CommandErrors::internal)?;
+    settle_after_action(&app, ServiceStatus::NeedsSetup).await;
+    Ok(app.state::<TrayState>().snapshot())
+}
+
+#[tauri::command]
+pub async fn tray_request_permissions(app: AppHandle) -> CommandResult<TrayStateSnapshot> {
+    open_runtime_app(&["--request_permissions"]).map_err(CommandErrors::internal)?;
+    settle_after_action(&app, ServiceStatus::Refreshing).await;
+    Ok(app.state::<TrayState>().snapshot())
+}
+
+#[tauri::command]
+pub async fn tray_set_autostart(app: AppHandle, enabled: bool) -> CommandResult<TrayStateSnapshot> {
+    run_set_autostart(enabled)
+        .await
+        .map_err(CommandErrors::internal)?;
+    settle_after_action(&app, ServiceStatus::Refreshing).await;
+    Ok(app.state::<TrayState>().snapshot())
+}
+
+#[tauri::command]
 pub async fn tray_refresh_status(app: AppHandle) -> CommandResult<TrayStateSnapshot> {
     apply_state(&app, ServiceStatus::Refreshing, None);
     match run_node_check().await {
         Ok(report) => {
-            let (status, deployment) = map_report(&report);
-            apply_state(&app, status, Some(deployment));
+            let (status, deployment, autostart) = map_report(&report);
+            apply_state(&app, status, Some((deployment, autostart)));
         }
         Err(err) => {
             log::warn!("[tray] node_check failed: {err}");
