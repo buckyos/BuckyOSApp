@@ -1,4 +1,5 @@
 [package]
+license = "Apache-2.0"
 name = "buckyosapp"
 version = "0.1.0"
 description = "A Tauri App"

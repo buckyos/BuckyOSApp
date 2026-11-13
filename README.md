@@ -30,3 +30,9 @@ magick src-tauri/icons/android/mipmap-xxxhdpi/ic_launcher_round.png -resize 72x7
 ```
 
 ImageMagick 命令移除 iOS 图标的 alpha 通道，并确保 Android hdpi 启动图为 72×72。生成后，将 `src-tauri/icons/icon.png` 同步到 `src/assets/app-icon.png`；将 `src-tauri/icons/ios/` 中的 PNG 同步到 `src-tauri/gen/apple/Assets.xcassets/AppIcon.appiconset/`；将 `src-tauri/icons/android/` 同步到 `src-tauri/gen/android/app/src/main/res/`，并将其中 `mipmap-xxxhdpi/ic_launcher.png` 同步到 `src-tauri/icons/ic_launcher.png`。iOS 和 Android 自适应图标使用蓝色背景填充透明区域。
+
+## License
+
+Project-authored code is licensed under [Apache-2.0](LICENSE). See [NOTICE](NOTICE) for retained notices. Third-party dependencies and bundled assets keep their own licenses. The separately installed BuckyOS runtime is [AGPL-3.0-only](https://github.com/buckyos/buckyos/blob/main/LICENSE); this repository's Apache license does not replace its terms or those of other bundled programs.
+
+`src-tauri/src/node_control.rs` is the documented historical copy from BuckyOS and is licensed under Apache-2.0 as part of this repository. Future updates copied from AGPL-only BuckyOS code require a separate compatible grant; the current copy is not permission to import later AGPL-only changes.

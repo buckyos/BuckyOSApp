@@ -24,6 +24,12 @@
         }
     },
     "bundle": {
+        "license": "Apache-2.0",
+        "licenseFile": "../LICENSE",
+        "resources": {
+            "../LICENSE": "licenses/LICENSE",
+            "../NOTICE": "licenses/NOTICE"
+        },
         "active": true,
         "targets": "all",
         "icon": [
