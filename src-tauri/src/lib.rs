@@ -36,6 +36,8 @@ mod applist;
 mod config;
 mod did;
 mod error;
+#[cfg(target_os = "ios")]
+mod ios_webview;
 mod name_resolution;
 mod network;
 #[cfg(desktop)]
@@ -129,6 +131,15 @@ pub fn run() {
         tray::tray_request_permissions,
         tray::tray_set_autostart,
     ]);
+
+    #[cfg(target_os = "ios")]
+    let builder = builder.setup(|app| {
+        use tauri::Manager;
+        if let Some(window) = app.get_webview_window("main") {
+            ios_webview::use_full_screen_viewport(&window);
+        }
+        Ok(())
+    });
 
     #[cfg(not(desktop))]
     let builder = builder.invoke_handler(tauri::generate_handler![
