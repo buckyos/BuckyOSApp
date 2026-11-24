@@ -4,7 +4,7 @@
 use futures::future::BoxFuture;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
@@ -12,6 +12,7 @@ use std::time::Duration;
 use super::core::{self, Changed, ConnectionState, Host, Labels, Pace};
 use super::model::{Alert, Seen, Summary};
 use super::shown_alerts;
+use crate::json_file::{read_json, write_json};
 use crate::zone::api::{HttpRequest, HttpResponse, ReqwestTransport, ZoneError, ZoneTransport};
 use crate::zone::registry::ZoneRecord;
 use crate::zone::secret::{SecretBackend, SecretStore};
@@ -157,18 +158,6 @@ pub struct Service {
     stream: reqwest::Client,
     device: Arc<dyn Device>,
     inner: Mutex<Inner>,
-}
-
-pub fn read_json<T: serde::de::DeserializeOwned>(path: &Path) -> Option<T> {
-    serde_json::from_slice(&std::fs::read(path).ok()?).ok()
-}
-
-/// Replaces a file at once: the other process may read it at any time.
-pub fn write_json<T: Serialize>(path: &Path, value: &T) -> std::io::Result<()> {
-    let bytes = serde_json::to_vec(value)?;
-    let temporary = path.with_extension("tmp");
-    std::fs::write(&temporary, bytes)?;
-    std::fs::rename(temporary, path)
 }
 
 fn seen_key(key: &ZoneKey) -> String {

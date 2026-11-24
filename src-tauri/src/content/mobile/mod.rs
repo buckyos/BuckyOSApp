@@ -2,12 +2,20 @@
 
 #[cfg(target_os = "android")]
 mod android;
+#[cfg(target_os = "ios")]
+mod ios;
+#[cfg(target_os = "android")]
+mod views;
+
+#[cfg(target_os = "android")]
+use android as platform;
+
 #[cfg(target_os = "android")]
 pub use android::*;
 #[cfg(target_os = "ios")]
-mod ios;
-#[cfg(target_os = "ios")]
 pub use ios::*;
+#[cfg(target_os = "android")]
+pub use views::*;
 
 use serde::{Deserialize, Serialize};
 
@@ -77,7 +85,7 @@ pub struct MobileViewChanged {
     pub view: MobileView,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NativeStatus {
     pub battery_unrestricted: bool,

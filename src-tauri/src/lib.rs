@@ -38,6 +38,8 @@ mod error;
 mod http_client;
 #[cfg(target_os = "ios")]
 mod ios_webview;
+#[cfg(any(target_os = "android", test))]
+mod json_file;
 #[cfg(desktop)]
 mod lifecycle;
 mod name_resolution;
