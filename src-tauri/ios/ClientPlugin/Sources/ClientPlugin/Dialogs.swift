@@ -24,12 +24,13 @@ enum Dialogs {
   /// `alert`, `confirm` and `prompt` of a page, with the name of who asks.
   @MainActor
   final class Page {
-    let controller: UIAlertController
+    /// Its buttons hold this.
+    private weak var controller: UIAlertController?
     var ended: (() -> Void)?
     private var answer: ((Bool, String?) -> Void)?
 
-    fileprivate init(title: String, message: String, answer: @escaping (Bool, String?) -> Void) {
-      controller = UIAlertController(title: title, message: message, preferredStyle: .alert)
+    fileprivate init(_ controller: UIAlertController, answer: @escaping (Bool, String?) -> Void) {
+      self.controller = controller
       self.answer = answer
     }
 
@@ -37,30 +38,34 @@ enum Dialogs {
       guard let answer else { return }
       self.answer = nil
       ended?()
+      ended = nil
       answer(accepted, text)
     }
 
     /// The page is gone, and its question with it.
     func close() {
-      controller.presentingViewController?.dismiss(animated: false)
+      controller?.presentingViewController?.dismiss(animated: false)
       finish(false, nil)
     }
   }
 
   static func page(
     title: String, message: String, field: String?, cancel: Bool, answer: @escaping (Bool, String?) -> Void
-  ) -> Page {
+  ) -> (page: Page, controller: UIAlertController) {
     let labels = Labels.load()
-    let page = Page(title: title, message: message, answer: answer)
+    let controller = UIAlertController(title: title, message: message, preferredStyle: .alert)
+    let page = Page(controller, answer: answer)
     if let field {
-      page.controller.addTextField { $0.text = field }
+      controller.addTextField { $0.text = field }
     }
     if cancel {
-      page.controller.addAction(UIAlertAction(title: labels.cancel, style: .cancel) { _ in page.finish(false, nil) })
+      controller.addAction(UIAlertAction(title: labels.cancel, style: .cancel) { _ in page.finish(false, nil) })
     }
-    page.controller.addAction(
-      UIAlertAction(title: labels.confirm, style: .default) { _ in page.finish(true, page.controller.textFields?.first?.text) })
-    return page
+    controller.addAction(
+      UIAlertAction(title: labels.confirm, style: .default) { [weak controller] _ in
+        page.finish(true, controller?.textFields?.first?.text)
+      })
+    return (page, controller)
   }
 }
 

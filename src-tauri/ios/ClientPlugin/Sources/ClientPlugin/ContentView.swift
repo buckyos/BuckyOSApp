@@ -40,6 +40,8 @@ final class ContentView: NSObject {
     // The handler is there for every page and frame of the view; who may call is decided in Rust.
     // The scripts are for the pages of the rules only.
     configuration.userContentController.addUserScript(
+      WKUserScript(source: Self.nowhere, injectionTime: .atDocumentStart, forMainFrameOnly: false, in: .page))
+    configuration.userContentController.addUserScript(
       WKUserScript(source: Self.guarded(script, rules: rules), injectionTime: .atDocumentStart, forMainFrameOnly: true, in: .page))
     web = WKWebView(frame: .zero, configuration: configuration)
     super.init()
@@ -72,6 +74,20 @@ final class ContentView: NSObject {
   }
 
   private static let handler = "buckyPort"
+
+  /// Where the user is, no page gets to know. The system would leave a request without an answer.
+  private static let nowhere = """
+    (() => {
+      if (typeof Geolocation !== "function") return;
+      const refuse = (_, failed) => {
+        const error = { code: 1, message: "not available", PERMISSION_DENIED: 1, POSITION_UNAVAILABLE: 2, TIMEOUT: 3 };
+        if (typeof failed === "function") setTimeout(() => failed(error), 0);
+        return 0;
+      };
+      Geolocation.prototype.getCurrentPosition = refuse;
+      Geolocation.prototype.watchPosition = refuse;
+    })();
+    """
 
   /// The scripts run where the rules allow, and the native bridge looks like Android's.
   private static func guarded(_ script: String, rules: [String]) -> String {
@@ -169,6 +185,8 @@ final class ContentView: NSObject {
     web.configuration.userContentController.removeAllUserScripts()
     web.configuration.userContentController.removeAllScriptMessageHandlers()
     web.removeFromSuperview()
+    // Whatever keeps the WebView (a request of the page the system has not answered): the page ends now.
+    web.loadHTMLString("", baseURL: nil)
   }
 
   private func addressChanged() {
@@ -209,13 +227,12 @@ final class ContentView: NSObject {
       return
     }
     let host = frame.securityOrigin.host
-    let alert = Dialogs.page(title: host.isEmpty ? label : "\(label)\n\(host)", message: message, field: field, cancel: cancel) { accepted, text in
-      done(accepted, text)
-    }
-    let key = ObjectIdentifier(alert.controller)
-    dialogs[key] = { alert.close() }
-    alert.ended = { [weak self] in self?.dialogs.removeValue(forKey: key) }
-    presenter.present(alert.controller, animated: true)
+    let (page, controller) = Dialogs.page(
+      title: host.isEmpty ? label : "\(label)\n\(host)", message: message, field: field, cancel: cancel, answer: done)
+    let key = ObjectIdentifier(page)
+    dialogs[key] = { page.close() }
+    page.ended = { [weak self] in self?.dialogs.removeValue(forKey: key) }
+    presenter.present(controller, animated: true)
   }
 }
 
