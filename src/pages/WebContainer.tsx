@@ -2,15 +2,22 @@ import React from "react";
 import { useSearchParams } from "react-router-dom";
 import { useIframeBridge, useBuckyIframeActions } from "../bridges/iframeBridge";
 import MobileHeader from "../components/ui/MobileHeader";
-import { isMobileShell } from "../utils/platform";
+import { Button } from "../components/ui/Button";
+import { useActivation } from "../features/devices/ActivationContext";
+import { useI18n } from "../i18n";
+import { isIosShell, isMobileShell } from "../utils/platform";
+import { mayEmbed } from "../utils/webview";
 
 const DEFAULT_URL = "/test_api.html";
 
+/** The local test page in a frame, with the wallet's bridge; on iOS also a device's activation page. */
 const WebContainer: React.FC = () => {
+    const { t } = useI18n();
+    const activation = useActivation();
     const [searchParams] = useSearchParams();
-    const target = decodeURIComponent(searchParams.get("src") || DEFAULT_URL);
-    const windowLabel = searchParams.get("label") || "webview_external";
-    const title = searchParams.get("title") || windowLabel;
+    const asked = decodeURIComponent(searchParams.get("src") || DEFAULT_URL);
+    const target = mayEmbed(asked, isIosShell()) ? asked : DEFAULT_URL;
+    const title = searchParams.get("title") || "BuckyOS";
     const embedded = searchParams.get("embedded") === "1";
     const isMobileEmbedded = embedded && isMobileShell();
     const scrollContainerRef = React.useRef<HTMLDivElement | null>(null);
@@ -217,7 +224,18 @@ const WebContainer: React.FC = () => {
                         flexShrink: 0,
                     }}
                 >
-                    <MobileHeader title={title} showBack safeAreaTop={false} />
+                    <MobileHeader
+                        title={title}
+                        showBack
+                        safeAreaTop={false}
+                        rightSlot={
+                            activation?.finished ? (
+                                <Button size="sm" variant="primary" onClick={activation.leave}>
+                                    {t("start.go_home")}
+                                </Button>
+                            ) : null
+                        }
+                    />
                 </div>
             ) : embedded ? <MobileHeader title={title} showBack /> : null}
             <div

@@ -5,20 +5,43 @@ import android.content.res.Configuration
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
+import android.view.View
 import android.webkit.JavascriptInterface
+import android.webkit.WebChromeClient
 import android.webkit.WebView
+import androidx.activity.OnBackPressedCallback
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.view.updatePadding
+import com.buckyos.buckyosapp.audio.RecorderService
+import com.buckyos.buckyosapp.content.ContainerLayout
+import com.buckyos.buckyosapp.content.FileChooser
+import com.buckyos.buckyosapp.content.PermissionAsker
 
 class MainActivity : TauriActivity() {
+  // Results of other activities must be registered before this one starts.
+  val fileChooser = FileChooser(this)
+  val microphone = PermissionAsker.microphone(this)
+  val notifications = PermissionAsker.notifications(this)
+  lateinit var container: ContainerLayout
+    private set
+  private var fullscreenCallback: WebChromeClient.CustomViewCallback? = null
   private var latestInsetsScript: String? = null
   private var pendingInsetsApply: Runnable? = null
   private var pendingInsetsReplayApply: Runnable? = null
 
   override fun onCreate(savedInstanceState: Bundle?) {
+    NativeBridge.attach(this)
     applySystemBarsTheme(isSystemLightTheme())
+    // The last in line: reached when no local page handles the back button (it has not loaded yet).
+    onBackPressedDispatcher.addCallback(object : OnBackPressedCallback(true) {
+      override fun handleOnBackPressed() {
+        moveTaskToBack(true)
+      }
+    })
 
     super.onCreate(savedInstanceState)
     lockPortraitOrientation()
@@ -26,7 +49,57 @@ class MainActivity : TauriActivity() {
 
   override fun onResume() {
     super.onResume()
+    if (fullscreenCallback == null) lockPortraitOrientation()
+  }
+
+  /** The local pages' WebView comes from Tauri; the content views go below it. */
+  override fun setContentView(view: View?) {
+    container = ContainerLayout(this, view!!)
+    container.setBackgroundColor(getColor(R.color.background))
+    super.setContentView(container)
+  }
+
+  override fun onWindowFocusChanged(hasFocus: Boolean) {
+    super.onWindowFocusChanged(hasFocus)
+    NativeBridge.onEvent("{\"kind\":\"focus\"}")
+  }
+
+  override fun onDestroy() {
+    // Tauri ends the process with the activity.
+    RecorderService.finishNow()
+    super.onDestroy()
+  }
+
+  // ---- a page's fullscreen video ----
+
+  fun enterFullscreen(view: View, callback: WebChromeClient.CustomViewCallback) {
+    leaveFullscreen()
+    fullscreenCallback = callback
+    container.fullscreenHost.addView(view)
+    container.fullscreenHost.setBackgroundColor(Color.BLACK)
+    container.fullscreenHost.visibility = View.VISIBLE
+    onBackPressedDispatcher.addCallback(this, fullscreenBack)
+    fullscreenBack.isEnabled = true
+    requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+    WindowCompat.getInsetsController(window, window.decorView).apply {
+      systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+      hide(WindowInsetsCompat.Type.systemBars())
+    }
+  }
+
+  fun leaveFullscreen() {
+    val callback = fullscreenCallback ?: return
+    fullscreenCallback = null
+    fullscreenBack.remove()
+    container.fullscreenHost.removeAllViews()
+    container.fullscreenHost.visibility = View.GONE
+    WindowCompat.getInsetsController(window, window.decorView).show(WindowInsetsCompat.Type.systemBars())
     lockPortraitOrientation()
+    callback.onCustomViewHidden()
+  }
+
+  private val fullscreenBack = object : OnBackPressedCallback(false) {
+    override fun handleOnBackPressed() = leaveFullscreen()
   }
 
   private fun lockPortraitOrientation() {
@@ -37,6 +110,8 @@ class MainActivity : TauriActivity() {
     super.onWebViewCreate(webView)
 
     webView.addJavascriptInterface(SystemBarsBridge(), "BuckySystemBars")
+    // Content views show through where the local page leaves room.
+    webView.setBackgroundColor(Color.TRANSPARENT)
 
     ViewCompat.setOnApplyWindowInsetsListener(webView) { view, insets ->
       val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -107,7 +182,10 @@ class MainActivity : TauriActivity() {
     @JavascriptInterface
     fun setTheme(theme: String) {
       runOnUiThread {
+        // Dialogs and the pages' own color scheme follow the client's theme, not the system's.
+        delegate.localNightMode = if (theme == "light") AppCompatDelegate.MODE_NIGHT_NO else AppCompatDelegate.MODE_NIGHT_YES
         applySystemBarsTheme(theme == "light")
+        if (this@MainActivity::container.isInitialized) container.setBackgroundColor(getColor(R.color.background))
       }
     }
   }

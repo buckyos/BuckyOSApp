@@ -1,227 +1,37 @@
-.bind-ood-scan-page {
+.scan-head {
     display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: 0;
-    flex: 1;
-    min-height: 0;
+    align-items: center;
+    gap: 14px;
 }
 
-.scan-device-mobile-hint {
-    position: fixed;
-    top: max(12px, calc(var(--mobile-system-top) + 12px));
-    right: calc(16px + var(--safe-area-inset-right));
-    z-index: 30;
-    padding: 6px 10px;
-    border-radius: 999px;
-    background: rgba(17, 24, 39, 0.84);
-    color: #fff;
-    font-size: 12px;
-    line-height: 1.2;
-    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.16);
-    pointer-events: none;
-}
-
-.scan-device-body {
-    width: calc(100% - 32px);
-    max-width: 520px;
-    margin-left: auto;
-    margin-right: auto;
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    overflow: hidden;
-}
-
-.scan-device-hero {
-    display: flex;
-    justify-content: center;
-    padding-top: 12px;
-}
-
-.scan-device-hero-image {
-    width: 128px;
-    max-width: 60%;
-    height: auto;
+.scan-head img {
+    flex: none;
+    width: 64px;
+    height: 64px;
     object-fit: contain;
 }
 
-.bind-ood-progress-card {
+.scan-head-text {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    padding: 0 4px;
-    background: transparent;
+    gap: 2px;
+    min-width: 0;
 }
 
-.bind-ood-progress-track {
-    width: 100%;
-    height: 8px;
-    border-radius: 999px;
-    background: rgba(122, 132, 255, 0.2);
-    overflow: hidden;
-}
-
-.bind-ood-progress-fill {
-    height: 100%;
-    border-radius: inherit;
-    background: linear-gradient(90deg, #6f9dff 0%, #6c5ce7 100%);
-    transition: width 0.25s ease;
-}
-
-.bind-ood-progress-meta {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-}
-
-.bind-ood-progress-title {
-    font-size: 1rem;
+.scan-head-text strong {
+    font-size: 15px;
     font-weight: 600;
-    margin-bottom: 4px;
-    color: var(--app-text);
+    line-height: 21px;
 }
 
-.bind-ood-progress-desc {
-    font-size: 0.9rem;
-    color: var(--muted-text);
-    margin: 0;
+.scan-head-text span {
+    font-size: 13px;
+    line-height: 19px;
+    color: var(--cp-muted);
 }
 
-.bind-ood-progress-percent {
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: var(--app-text);
+.scan-actions {
     display: flex;
-    align-items: center;
+    flex-wrap: wrap;
     gap: 8px;
-}
-
-.scan-progress-circle {
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.scan-progress-circle > span {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    border: 2px solid rgba(54, 200, 150, 0.3);
-    border-top-color: #36c896;
-    animation: scanSpin 0.9s linear infinite;
-}
-
-.bind-ood-scan-page .ood-device-list {
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.device-scroll-wrapper {
-    position: relative;
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-}
-
-.bind-ood-scan-page .ood-device-scroll {
-    flex: 1;
-    max-height: none;
-    gap: 12px;
-    overflow: auto;
-    padding-bottom: 12px;
-}
-
-.bind-ood-scan-page .ood-device-item {
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 12px 14px;
-    box-shadow: none;
-}
-
-.bind-ood-scan-page .ood-device-item:hover {
-    border-color: rgba(99, 102, 241, 0.38);
-    box-shadow: none;
-}
-
-.bind-ood-scan-page .ood-device-title-row span:first-child {
-    font-size: 1rem;
-    color: var(--app-text);
-}
-
-.device-os-info {
-    font-size: 0.85rem;
-    color: var(--muted-text);
-    margin-bottom: 4px;
-}
-
-.bind-ood-scan-page .ood-device-item small {
-    font-size: 0.8rem;
-    color: var(--muted-text);
-}
-
-.device-chip {
-    font-size: 0.75rem;
-    padding: 4px 11px;
-    border-radius: 999px;
-    background: rgba(99, 102, 241, 0.1);
-    color: #4c50f5;
-    border: 1px solid rgba(99, 102, 241, 0.22);
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-}
-
-[data-theme='dark'] .bind-ood-scan-page .ood-device-item {
-    background: var(--card-bg);
-    border-color: var(--border);
-    box-shadow: none;
-}
-
-[data-theme='dark'] .bind-ood-scan-page .ood-device-item:hover {
-    border-color: rgba(139, 156, 255, 0.48);
-    box-shadow: none;
-}
-
-[data-theme='dark'] .device-os-info,
-[data-theme='dark'] .bind-ood-scan-page .ood-device-item small {
-    color: rgba(174, 182, 194, 0.92);
-}
-
-[data-theme='dark'] .device-chip {
-    background: rgba(111, 157, 255, 0.14);
-    color: #a9bdff;
-    border-color: rgba(111, 157, 255, 0.32);
-}
-
-.scan-device-actions {
-    width: calc(100% - 32px);
-    max-width: 520px;
-    margin-left: auto;
-    margin-right: auto;
-    margin-top: auto;
-    padding-top: 8px;
-    padding-bottom: var(--subpage-bottom-action-gap);
-    margin-bottom: 0;
-}
-
-.scan-device-actions > * {
-    width: 100%;
-}
-
-@keyframes scanSpin {
-    to {
-        transform: rotate(360deg);
-    }
 }

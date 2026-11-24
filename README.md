@@ -16,6 +16,12 @@ pnpm run tauri android init
 
 pnpm run tauri android dev
 
+## Shared sources
+
+The client uses some sources of the [buckyos](https://github.com/buckyos/buckyos) Desktop as they are (Zone API wrappers, Activity, appearance, design tokens): `@buckyos-desktop/*` is `src/frame/desktop/src/shared/*` of a buckyos checkout next to this repository (branch `main`), or of `.buckyos/` inside it, which is what CI checks out. They are referenced, never copied; change them in buckyos. The WebSDK (npm package `buckyos`) both sides import is this project's copy. Building fails with a message when no checkout is found.
+
+Order of releases: the WebSDK is published first, then buckyos, then this repository.
+
 ## 应用图标
 
 矢量源文件为 `src/assets/app-icon.svg`。启动页、欢迎页和关于页使用 `src/assets/app-icon.png`，桌面安装包与托盘使用 `src-tauri/icons/` 下的对应尺寸资源。

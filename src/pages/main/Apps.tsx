@@ -1,125 +1,142 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
-import { CircleAlert, LoaderCircle, PanelsTopLeft } from "lucide-react";
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import { LayoutGrid, RotateCw } from "lucide-react";
+import { PageHeader } from "../../app/PageHeader";
+import { Button, IconButton } from "../../components/ui/Button";
+import { SearchInput } from "../../components/ui/Field";
+import { Menu } from "../../components/ui/Menu";
+import { Empty, Notice } from "../../components/ui/States";
+import { AppGridSkeleton, AppTile } from "../../features/apps/AppTile";
+import { findApp, type AppEntry } from "../../features/apps/catalog";
+import { launcherEntries, useCatalog } from "../../features/apps/useCatalog";
+import { clientRuntime } from "../../features/content/clientRuntime";
+import { useRuntime } from "../../features/content/useRuntime";
+import { addShortcut, removeShortcut, shortcutEntries } from "../../features/home/shortcuts";
+import { useShortcuts } from "../../features/home/useShortcuts";
+import { SessionNotice } from "../../features/zone/SessionNotice";
+import { useZones } from "../../features/zone/ZoneContext";
+import { zoneTitle, type ZoneView } from "../../features/zone/types";
 import { useI18n } from "../../i18n";
-import { parseCommandError } from "../../utils/commandError";
-import "./Apps.css";
-
-type AppMeta = {
-    pkg_name: string;
-    [key: string]: unknown;
-};
-
-type AppDoc = {
-    meta?: AppMeta;
-    pkg_name?: string;
-    show_name?: string;
-    app_icon_url?: string | null;
-    selector_type?: string;
-    install_config_tips?: string;
-    pkg_list?: string;
-    [key: string]: unknown;
-};
-
-const accentPalette = [
-    "linear-gradient(135deg, #6366f1 0%, #4338ca 100%)",
-    "linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)",
-    "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
-    "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)",
-    "linear-gradient(135deg, #ec4899 0%, #db2777 100%)",
-];
 
 const Apps: React.FC = () => {
     const { t } = useI18n();
-    const [apps, setApps] = useState<AppDoc[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-
-    useEffect(() => {
-        let mounted = true;
-
-        const load = async () => {
-            try {
-                setLoading(true);
-                setError(null);
-                const result = await invoke<AppDoc[]>("get_applist");
-                if (mounted) {
-                    setApps(result);
-                }
-            } catch (err) {
-                if (mounted) {
-                    const { message } = parseCommandError(err);
-                    setApps([]);
-                    setError(message);
-                }
-            } finally {
-                if (mounted) {
-                    setLoading(false);
-                }
-            }
-        };
-
-        void load();
-        return () => {
-            mounted = false;
-        };
-    }, []);
-
-    const displayCards = useMemo(
-        () =>
-            apps.map((app, index) => {
-                const pkgName = app.meta?.pkg_name || app.pkg_name || `app-${index}`;
-                return {
-                    key: pkgName,
-                    title: app.show_name || pkgName,
-                    description: app.install_config_tips || app.selector_type || "",
-                    icon: app.app_icon_url || undefined,
-                    accent: accentPalette[index % accentPalette.length],
-                };
-            }),
-        [apps]
-    );
-
-    return (
-        <div className="apps-page">
-            {error && (
-                <div className="apps-alert" role="alert">
-                    <CircleAlert size={20} strokeWidth={1.8} aria-hidden="true" />
-                    <div>
-                        <div className="apps-alert-title">{t("appsPage.error_title")}</div>
-                        <div className="apps-alert-message">{error}</div>
+    const navigate = useNavigate();
+    const { current } = useZones();
+    if (!current) {
+        return (
+            <div className="shell-page">
+                <PageHeader title={t("tabs.apps")} />
+                <div className="shell-page-body">
+                    <div className="shell-fill">
+                        <Empty icon={<LayoutGrid size={26} strokeWidth={1.6} />} title={t("apps.no_zone")} text={t("apps.no_zone_text")}>
+                            <Button onClick={() => navigate("/main/home")}>{t("zones.to_home")}</Button>
+                        </Empty>
                     </div>
                 </div>
-            )}
+            </div>
+        );
+    }
+    return <ZoneApps key={current.did} zone={current} />;
+};
 
-            {loading ? (
-                <div className="apps-state">
-                    <LoaderCircle
-                        className="apps-state-icon apps-state-spinner"
-                        size={22}
-                        strokeWidth={1.8}
-                        aria-hidden="true"
-                    />
-                    <span>{t("appsPage.loading")}</span>
-                </div>
-            ) : displayCards.length === 0 ? (
-                <div className="apps-state">
-                    <PanelsTopLeft className="apps-state-icon" size={22} strokeWidth={1.8} aria-hidden="true" />
-                    <span>{t(error ? "appsPage.empty_after_error" : "appsPage.empty")}</span>
-                </div>
-            ) : (
-                displayCards.map(({ key, title, description, accent, icon }) => (
-                    <article className="apps-card" key={key}>
-                        <div className="apps-card-icon" style={{ background: accent }} aria-hidden="true">
-                            {icon ? <img src={icon} alt="" /> : title.slice(0, 1).toUpperCase()}
+/** Every app of the Zone for its user. */
+const ZoneApps: React.FC<{ zone: ZoneView }> = ({ zone }) => {
+    const { t, contentLocale } = useI18n();
+    const [search, setSearch] = React.useState("");
+    const { catalog, loading, failed, reload } = useCatalog(zone);
+    const { shortcuts, editable, change } = useShortcuts(zone);
+    const { views } = useRuntime();
+    const [menu, setMenu] = React.useState<{ x: number; y: number; entry: AppEntry } | null>(null);
+    const entries = catalog ? launcherEntries(catalog, contentLocale, search) : [];
+    const running = new Set(views.filter((view) => view.zone === zone.did).map((view) => view.appInstance));
+    const userId = zone.session.identity?.user_id;
+    const onHome = new Set(
+        catalog && shortcuts ? shortcutEntries(catalog, shortcuts, (list, id) => findApp(list, id, userId)).map((entry) => entry.instance) : []
+    );
+
+    const open = (entry: AppEntry) => void clientRuntime.openApp(zone.did, entry.instance);
+
+    return (
+        <div className="shell-page">
+            <PageHeader
+                title={t("tabs.apps")}
+                zone
+                actions={
+                    <IconButton label={t("apps.reload")} onClick={reload} disabled={zone.session.state !== "signed_in"}>
+                        <RotateCw size={15} />
+                    </IconButton>
+                }
+            />
+            <div style={{ padding: "0 16px 8px" }}>
+                <SearchInput value={search} onChange={setSearch} label={t("apps.search")} />
+            </div>
+            <div className="shell-page-body ui-scroll">
+                <SessionNotice zone={zone} />
+                {catalog?.systemApps === "unavailable" ? (
+                    <Notice tone="warn" testId="apps-upgrade">
+                        {t("apps.upgrade", { zone: zoneTitle(zone) })}
+                    </Notice>
+                ) : null}
+                {catalog ? (
+                    entries.length > 0 ? (
+                        <div className="app-grid" data-testid="app-grid">
+                            {entries.map((entry) => (
+                                <AppTile
+                                    key={entry.instance}
+                                    zone={zone}
+                                    entry={entry}
+                                    running={running.has(entry.instance)}
+                                    onOpen={() => open(entry)}
+                                    onContextMenu={(event) => {
+                                        event.preventDefault();
+                                        setMenu({ x: event.clientX, y: event.clientY, entry });
+                                    }}
+                                />
+                            ))}
                         </div>
-                        <div className="apps-card-copy">
-                            <h2>{title}</h2>
-                            <p>{description || t("appsPage.no_description")}</p>
-                        </div>
-                    </article>
-                ))
-            )}
+                    ) : (
+                        <Empty text={t(search.trim() ? "apps.no_match" : "apps.empty")} />
+                    )
+                ) : loading ? (
+                    <AppGridSkeleton count={12} />
+                ) : failed ? (
+                    <Empty text={t("apps.failed")}>
+                        <Button size="sm" onClick={reload}>
+                            {t("ui.retry")}
+                        </Button>
+                    </Empty>
+                ) : null}
+            </div>
+            <Menu
+                at={menu}
+                label={t("tabs.apps")}
+                onClose={() => setMenu(null)}
+                items={
+                    menu
+                        ? [
+                            { id: "open", label: t("apps.open"), onSelect: () => open(menu.entry) },
+                            onHome.has(menu.entry.instance)
+                                ? {
+                                    id: "remove",
+                                    label: t("apps.remove_home"),
+                                    disabled: !editable,
+                                    onSelect: () => {
+                                        const id = shortcuts?.find((candidate) => candidate === menu.entry.instance || candidate === menu.entry.id);
+                                        if (shortcuts && id) change(removeShortcut(shortcuts, id));
+                                    },
+                                }
+                                : {
+                                    id: "add",
+                                    label: t("apps.add_home"),
+                                    disabled: !editable,
+                                    onSelect: () => {
+                                        if (shortcuts) change(addShortcut(shortcuts, menu.entry.id));
+                                    },
+                                },
+                        ]
+                        : []
+                }
+            />
         </div>
     );
 };

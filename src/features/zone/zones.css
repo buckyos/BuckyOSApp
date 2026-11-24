@@ -1,0 +1,208 @@
+/* ── The account area and its list of Zones ── */
+
+.account-area {
+    position: relative;
+    z-index: 20;
+    flex: none;
+}
+
+.account-button {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: calc(100% + 16px);
+    margin: 0 -8px;
+    padding: 8px;
+    border-radius: 12px;
+    text-align: left;
+    transition: background-color 120ms;
+}
+
+.account-button:hover,
+.account-button[aria-expanded='true'] {
+    background: var(--ui-hover);
+}
+
+.account-button > svg {
+    flex: none;
+    color: var(--cp-muted);
+}
+
+.account-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+}
+
+.account-name {
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 20px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.account-zone {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    font-size: 13px;
+    line-height: 18px;
+    color: var(--cp-muted);
+}
+
+.account-zone .ui-dot {
+    width: 8px;
+    height: 8px;
+}
+
+.account-zone-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--cp-text);
+}
+
+.account-zone-state {
+    flex: none;
+}
+
+.zone-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    border: 1px solid var(--cp-border);
+    border-radius: 12px;
+    background: var(--cp-surface-opaque);
+    box-shadow: var(--cp-panel-shadow);
+    overflow: hidden;
+}
+
+.zone-menu-list {
+    max-height: min(320px, 50vh);
+    padding: 4px;
+}
+
+.zone-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 8px;
+    border-radius: 8px;
+    text-align: left;
+    font-size: 14px;
+    line-height: 19px;
+}
+
+.zone-menu-item:hover,
+.zone-menu-item:focus-visible {
+    background: var(--ui-hover);
+    box-shadow: none;
+}
+
+.zone-menu-item > svg {
+    flex: none;
+    color: var(--cp-text);
+}
+
+.zone-menu-actions {
+    padding: 4px;
+}
+
+.zone-menu-list + .zone-menu-actions {
+    border-top: 1px solid var(--cp-border);
+}
+
+/* ── A Zone's page ── */
+
+.zone-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 0 4px;
+}
+
+.zone-head-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+}
+
+.zone-head-text strong {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 22px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.accent-picker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px;
+}
+
+.accent-swatch {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 999px;
+    background: var(--swatch);
+    color: #ffffff;
+}
+
+.accent-swatch[aria-checked='true'] {
+    box-shadow:
+        0 0 0 2px var(--cp-surface-opaque),
+        0 0 0 4px var(--swatch);
+}
+
+.accent-swatch:focus-visible {
+    box-shadow:
+        0 0 0 2px var(--cp-surface-opaque),
+        0 0 0 4px var(--cp-focus-ring);
+}
+
+.accent-swatch[data-custom='true'] {
+    border: 1px solid var(--ui-field-border);
+    color: var(--cp-text);
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.accent-swatch[data-custom='true'] input {
+    position: absolute;
+    inset: -6px;
+    width: calc(100% + 12px);
+    height: calc(100% + 12px);
+    padding: 0;
+    border: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.accent-swatch[data-none='true'] {
+    --swatch: transparent;
+    border: 1px solid var(--ui-field-border);
+    color: var(--cp-muted);
+}
+
+.accent-swatch[data-none='true'][aria-checked='true'] {
+    color: var(--cp-text);
+    box-shadow:
+        0 0 0 2px var(--cp-surface-opaque),
+        0 0 0 4px var(--cp-muted);
+}

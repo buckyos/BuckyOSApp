@@ -42,6 +42,24 @@ pub struct StoredDid {
 }
 
 impl StoredDid {
+    /// The DID other parties know (`did:bns:…`), else the local id.
+    pub fn account(&self) -> String {
+        self.owner_document
+            .as_ref()
+            .and_then(|json| serde_json::from_str::<serde_json::Value>(json).ok())
+            .and_then(|document| document.get("id")?.as_str().map(str::to_string))
+            .unwrap_or_else(|| self.id.clone())
+    }
+
+    /// The name this identity is registered with; the user name of its own Zones.
+    pub fn sn_username(&self) -> Option<String> {
+        self.sn_status
+            .as_ref()
+            .and_then(|status| status.username.clone())
+            .filter(|name| !name.trim().is_empty())
+            .or_else(|| self.recover_sn_username())
+    }
+
     fn recover_sn_username(&self) -> Option<String> {
         let owner_document = self.owner_document.as_ref()?;
         let value: serde_json::Value = serde_json::from_str(owner_document).ok()?;

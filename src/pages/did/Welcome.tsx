@@ -1,7 +1,8 @@
 import React from "react";
-import { Sun, Moon, Globe, ChevronDown } from "lucide-react";
+import { Sun, Moon } from "lucide-react";
 import { useI18n } from "../../i18n";
 import GradientButton from "../../components/ui/GradientButton";
+import { Select } from "../../components/ui/Field";
 import { getTheme, toggleTheme, initTheme } from "../../theme";
 import appIcon from "../../assets/app-icon.png";
 import { getLocaleOptions, type Locale } from "../../i18n/config";
@@ -21,100 +22,38 @@ const Welcome: React.FC<WelcomeProps> = ({ onStart, onImport }) => {
     const [theme, setTheme] = React.useState<string>(getTheme());
     return (
         <div className="did-container" style={{ position: "relative", paddingTop: 12 }}>
-            {/* Decorations */}
-            <div
-                style={{
-                    position: "absolute",
-                    top: "calc(var(--mobile-system-top) + 14px)",
-                    left: 14,
-                    zIndex: 2,
-                }}
-            >
-                <div
-                    className="soft-btn"
-                    style={{
-                        position: "relative",
-                        display: "flex",
-                        alignItems: "center",
-                        width: 160,
-                        height: 36,
-                        padding: 0,
-                        lineHeight: 1,
-                        borderRadius: 18,
-                        background: undefined,
-                        border: "none",
-                        color: "var(--header-icon)",
-                        margin: 0,
-                    }}
+            <div style={{ position: "absolute", top: "calc(var(--mobile-system-top) + 12px)", left: 0, zIndex: 2 }}>
+                <Select
+                    aria-label={t("common.language.switch_label")}
+                    value={locale}
+                    onChange={(e) => setLocale(e.target.value as Locale)}
                 >
-                    <Globe
-                        size={18}
-                        strokeWidth={2}
-                        absoluteStrokeWidth
-                        style={{ position: "absolute", left: 14, pointerEvents: "none" }}
-                    />
-                    <select
-                        aria-label={t("common.language.switch_label")}
-                        value={locale}
-                        onChange={(e) => setLocale(e.target.value as Locale)}
-                        style={{
-                            width: "100%",
-                            height: "100%",
-                            padding: "0 34px 0 40px",
-                            border: "none",
-                            background: "transparent",
-                            color: "var(--header-icon)",
-                            fontSize: 14,
-                            appearance: "none",
-                            WebkitAppearance: "none",
-                            outline: "none",
-                            cursor: "pointer",
-                        }}
-                    >
-                        {localeOptions.map((option) => (
-                            <option key={option.code} value={option.code}>
-                                {option.label}
-                            </option>
-                        ))}
-                    </select>
-                    <ChevronDown
-                        size={16}
-                        strokeWidth={2}
-                        style={{ position: "absolute", right: 12, pointerEvents: "none" }}
-                    />
-                </div>
+                    {localeOptions.map((option) => (
+                        <option key={option.code} value={option.code}>
+                            {option.label}
+                        </option>
+                    ))}
+                </Select>
             </div>
             <button
                 onClick={() => setTheme(toggleTheme())}
-                aria-label="Toggle theme"
-                className="theme-toggle-btn soft-btn"
+                aria-label={t("settings.theme")}
+                className="ui-icon-button"
                 style={{
                     position: "absolute",
-                    top: "calc(var(--mobile-system-top) + 14px)",
-                    right: 14,
-                    width: 40,
-                    height: 40,
-                    borderRadius: 999,
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    padding: 0,
-                    lineHeight: 0,
-                    background: undefined,
-                    border: "none",
-                    color: "var(--header-icon)",
+                    top: "calc(var(--mobile-system-top) + 10px)",
+                    right: 0,
+                    width: 36,
+                    height: 36,
                     zIndex: 3,
-                    margin: 0,
                 }}
             >
                 {theme === 'dark' ? (
-                    <Moon size={24} strokeWidth={2.25} color="currentColor" style={{ display: "block" }} stroke="currentColor" fill="none" />
+                    <Moon size={18} aria-hidden="true" />
                 ) : (
-                    <Sun size={24} strokeWidth={2.25} color="currentColor" style={{ display: "block" }} stroke="currentColor" fill="none" />
+                    <Sun size={18} aria-hidden="true" />
                 )}
             </button>
-
-            {/* background circle textures removed for a cleaner look */}
 
             <div className="page-content" style={{
                 flex: 1,
@@ -127,10 +66,9 @@ const Welcome: React.FC<WelcomeProps> = ({ onStart, onImport }) => {
                 padding: 24,
             }}>
                 <div style={{
-                    width: 128,
-                    height: 128,
-                    borderRadius: 36,
-                    boxShadow: "0 24px 48px rgba(104,108,243,0.25), 0 14px 28px rgba(0,0,0,0.08)",
+                    width: 96,
+                    height: 96,
+                    borderRadius: 24,
                     overflow: "hidden",
                 }}>
                     <img

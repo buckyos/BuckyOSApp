@@ -1,0 +1,72 @@
+.app-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 4px;
+}
+
+.app-tile {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    padding: 10px 4px 8px;
+    border-radius: 10px;
+    transition: background-color 120ms;
+}
+
+.app-tile:hover {
+    background: var(--ui-hover);
+}
+
+.app-tile:active {
+    background: var(--ui-pressed);
+}
+
+.app-tile-icon {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    flex: none;
+}
+
+.app-tile-running {
+    position: absolute;
+    right: -3px;
+    bottom: -3px;
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    border: 2px solid var(--app-tile-ground, var(--cp-bg));
+    background: var(--zone-mark);
+}
+
+.app-tile-name {
+    width: 100%;
+    font-size: 12px;
+    line-height: 16px;
+    text-align: center;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+.app-tile-loading .app-tile-icon {
+    border-radius: 24%;
+    background: color-mix(in srgb, var(--cp-text) 7%, transparent);
+}
+
+.app-tile-loading .app-tile-name {
+    width: 52px;
+    height: 10px;
+    margin-bottom: 6px;
+    border-radius: 4px;
+    background: color-mix(in srgb, var(--cp-text) 7%, transparent);
+}
+
+.app-tile-loading:hover {
+    background: none;
+}

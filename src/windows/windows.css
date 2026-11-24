@@ -1,0 +1,161 @@
+@import '../features/activity/activity.css';
+
+/* ── A content window without its page ── */
+
+.content-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    background: var(--cp-bg);
+    color: var(--cp-muted);
+    font-size: 14px;
+    line-height: 20px;
+}
+
+.content-actions {
+    margin-top: 6px;
+}
+
+.content-detail {
+    max-width: 420px;
+    font-size: 12px;
+}
+
+.content-detail summary {
+    cursor: pointer;
+}
+
+.content-detail code {
+    display: block;
+    margin-top: 8px;
+    padding: 8px 10px;
+    border: 1px solid var(--cp-border);
+    border-radius: 8px;
+    background: var(--cp-surface-opaque);
+    text-align: left;
+    overflow-wrap: anywhere;
+}
+
+/* ── The signing prompt ── */
+
+.sign-window {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    width: 100%;
+    height: 100%;
+    padding: 16px;
+    background: var(--cp-bg);
+    font-size: 14px;
+    line-height: 20px;
+}
+
+.sign-head {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: none;
+}
+
+.sign-head h1 {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 22px;
+    overflow-wrap: anywhere;
+}
+
+.sign-identity {
+    color: var(--cp-muted);
+}
+
+.sign-payload {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+    min-height: 0;
+}
+
+.sign-payload pre {
+    flex: 1;
+    min-height: 60px;
+    margin: 0;
+    padding: 10px 12px;
+    border: 1px solid var(--cp-border);
+    border-radius: 8px;
+    background: var(--cp-surface-opaque);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px;
+    line-height: 18px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.sign-window .ui-dialog-actions {
+    flex: none;
+}
+
+.sign-gone {
+    flex: 1;
+    margin: 0;
+    color: var(--cp-muted);
+}
+
+/* ── The tray popover: 64px a row, 8px above and below (src-tauri/src/tray.rs) ── */
+
+.tray-popover {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    padding: 7px 6px;
+    border: 1px solid var(--cp-border-opaque);
+    background: var(--cp-surface-opaque);
+    font-size: 13px;
+    line-height: 18px;
+    overflow: hidden;
+}
+
+.tray-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: none;
+    width: 100%;
+    height: 64px;
+    padding: 0 8px;
+    text-align: left;
+}
+
+.tray-row:hover {
+    background: var(--ui-hover);
+}
+
+.tray-all {
+    justify-content: center;
+    height: 44px;
+    color: var(--cp-muted);
+}
+
+.tray-text {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+}
+
+.tray-title {
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tray-body {
+    color: var(--cp-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

@@ -87,3 +87,8 @@ export function detectLocale(): Locale {
 
     return "en";
 }
+
+/** The language tag Zones and their apps use (theirs are plain BCP 47: `zh-CN` where this client says `zh`). */
+export function contentLocale(locale: Locale): string {
+    return locale === "zh" ? "zh-CN" : locale;
+}

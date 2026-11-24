@@ -46,6 +46,10 @@ export interface TrayLabels {
     action_autostart: string;
     action_open_app: string;
     action_quit: string;
+    /** Heading of the recent notifications in the menu. */
+    notifications: string;
+    /** With `{count}`. */
+    unread: string;
 }
 
 export interface TrayStateSnapshot {

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { detectLocale, normalizeLocale, type Locale } from "./config";
+import { contentLocale, detectLocale, normalizeLocale, type Locale } from "./config";
 import en from "./translations/en";
 import zh from "./translations/zh";
 import zhTW from "./translations/zhTW";
@@ -43,6 +43,8 @@ function interpolate(input: string, params?: Params): string {
 
 interface I18nContextValue {
     locale: Locale;
+    /** The same language as Zones and their apps name it. */
+    contentLocale: string;
     setLocale: (l: Locale) => void;
     t: (key: string, params?: Params) => string;
 }
@@ -98,7 +100,7 @@ export const I18nProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
         };
     }, [dict]);
 
-    const value: I18nContextValue = { locale, setLocale, t };
+    const value: I18nContextValue = { locale, contentLocale: contentLocale(locale), setLocale, t };
 
     return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 };

@@ -18,6 +18,13 @@ pub enum CommandErrorCode {
     CryptoFailure = 1200,
     KeyDerivationFailure = 1201,
     JwtFailure = 1300,
+    ZoneNotFound = 1400,
+    ZoneNeedPassword = 1401,
+    ZoneUnreachable = 1402,
+    ZoneLoginFailed = 1403,
+    ZoneRequestFailed = 1404,
+    Canceled = 1500,
+    Unsupported = 1501,
     Internal = 1999,
 }
 
@@ -49,6 +56,20 @@ pub enum CommandErrors {
     KeyDerivationFailure(String),
     #[error("JWT failure: {0}")]
     JwtFailure(String),
+    #[error("Zone not found")]
+    ZoneNotFound,
+    #[error("Zone password required")]
+    ZoneNeedPassword,
+    #[error("Zone unreachable: {0}")]
+    ZoneUnreachable(String),
+    #[error("Zone sign-in failed: {0}")]
+    ZoneLoginFailed(String),
+    #[error("Zone request failed: {0}")]
+    ZoneRequestFailed(String),
+    #[error("Canceled")]
+    Canceled,
+    #[error("Not supported here: {0}")]
+    Unsupported(String),
     #[error("Internal error: {0}")]
     Internal(String),
 }
@@ -112,6 +133,13 @@ impl CommandErrors {
             CommandErrors::CryptoFailure(_) => CommandErrorCode::CryptoFailure,
             CommandErrors::KeyDerivationFailure(_) => CommandErrorCode::KeyDerivationFailure,
             CommandErrors::JwtFailure(_) => CommandErrorCode::JwtFailure,
+            CommandErrors::ZoneNotFound => CommandErrorCode::ZoneNotFound,
+            CommandErrors::ZoneNeedPassword => CommandErrorCode::ZoneNeedPassword,
+            CommandErrors::ZoneUnreachable(_) => CommandErrorCode::ZoneUnreachable,
+            CommandErrors::ZoneLoginFailed(_) => CommandErrorCode::ZoneLoginFailed,
+            CommandErrors::ZoneRequestFailed(_) => CommandErrorCode::ZoneRequestFailed,
+            CommandErrors::Canceled => CommandErrorCode::Canceled,
+            CommandErrors::Unsupported(_) => CommandErrorCode::Unsupported,
             CommandErrors::Internal(_) => CommandErrorCode::Internal,
         }
     }
@@ -124,7 +152,14 @@ impl CommandErrors {
             | CommandErrors::CryptoFailure(msg)
             | CommandErrors::KeyDerivationFailure(msg)
             | CommandErrors::JwtFailure(msg)
+            | CommandErrors::ZoneUnreachable(msg)
+            | CommandErrors::ZoneLoginFailed(msg)
+            | CommandErrors::ZoneRequestFailed(msg)
+            | CommandErrors::Unsupported(msg)
             | CommandErrors::Internal(msg) => msg.clone(),
+            CommandErrors::ZoneNotFound => "zone_not_found".to_string(),
+            CommandErrors::ZoneNeedPassword => "zone_need_password".to_string(),
+            CommandErrors::Canceled => "canceled".to_string(),
             CommandErrors::InvalidPassword => "invalid_password".to_string(),
             CommandErrors::NicknameExists => "nickname_already_exists".to_string(),
             CommandErrors::MnemonicRequired => "mnemonic_required".to_string(),

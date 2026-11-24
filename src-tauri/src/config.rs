@@ -55,7 +55,7 @@ fn endpoints_for_root(root: &str) -> ServiceEndpoints {
 }
 
 #[tauri::command]
-pub fn get_service_endpoints(app_handle: AppHandle) -> CommandResult<ServiceEndpoints> {
+pub fn get_service_endpoints(app_handle: AppHandle<impl tauri::Runtime>) -> CommandResult<ServiceEndpoints> {
     let config_dir = app_handle
         .path()
         .app_config_dir()

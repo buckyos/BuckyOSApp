@@ -1,6 +1,27 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
     <style name="Theme.buckyosapp" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <!-- Customize your theme here. -->
+        <item name="colorPrimary">@color/accent</item>
+        <item name="colorSecondary">@color/accent</item>
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorOnSurface">@color/text</item>
+        <item name="colorError">@color/danger</item>
+        <item name="android:colorBackground">@color/background</item>
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.buckyosapp.Dialog</item>
+    </style>
+
+    <style name="ThemeOverlay.buckyosapp.Dialog" parent="ThemeOverlay.MaterialComponents.MaterialAlertDialog">
+        <item name="shapeAppearanceMediumComponent">@style/ShapeAppearance.buckyosapp.Dialog</item>
+        <item name="buttonBarPositiveButtonStyle">@style/Widget.buckyosapp.DialogButton</item>
+        <item name="buttonBarNegativeButtonStyle">@style/Widget.buckyosapp.DialogButton</item>
+    </style>
+
+    <style name="ShapeAppearance.buckyosapp.Dialog" parent="ShapeAppearance.MaterialComponents.MediumComponent">
+        <item name="cornerSize">16dp</item>
+    </style>
+
+    <style name="Widget.buckyosapp.DialogButton" parent="Widget.MaterialComponents.Button.TextButton.Dialog">
+        <item name="android:textAllCaps">false</item>
+        <item name="android:letterSpacing">0</item>
     </style>
 </resources>

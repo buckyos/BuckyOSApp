@@ -1,0 +1,270 @@
+.music-tool {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    color: var(--cp-muted);
+}
+
+.music-tool:hover {
+    background: var(--ui-hover);
+    color: var(--cp-text);
+}
+
+.music-tool[aria-pressed='true'] {
+    color: var(--cp-accent);
+}
+
+[data-mobile-shell] .music-tool {
+    width: 36px;
+    height: 36px;
+}
+
+/* Nothing to play. */
+.music-message {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+}
+
+.music-message > svg {
+    flex: none;
+    color: var(--cp-muted);
+}
+
+.music-message p {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    font-size: 13px;
+    line-height: 19px;
+    color: var(--cp-muted);
+}
+
+.music-message strong {
+    overflow: hidden;
+    font-weight: 500;
+    color: var(--cp-text);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* A track. */
+.music-now {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 12px 8px 4px 12px;
+}
+
+.music-play {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 38px;
+    height: 38px;
+    margin-right: 8px;
+    border-radius: 999px;
+    background: var(--cp-text);
+    color: var(--cp-bg);
+    transition: opacity 120ms;
+}
+
+.music-play[data-playing='false'] > svg {
+    margin-left: 2px;
+}
+
+.music-play:hover:not(:disabled) {
+    opacity: 0.86;
+}
+
+.music-play:disabled {
+    opacity: 0.35;
+}
+
+.music-text {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+}
+
+.music-title {
+    overflow: hidden;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.music-text .ui-state,
+.music-album {
+    font-size: 12px;
+    line-height: 17px;
+}
+
+.music-album {
+    display: flex;
+    gap: 8px;
+    min-width: 0;
+    color: var(--cp-muted);
+}
+
+.music-album > span:first-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.music-album > span:last-child {
+    flex: none;
+    font-variant-numeric: tabular-nums;
+}
+
+.music-progress {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 2px 12px 10px;
+    font-size: 11px;
+    line-height: 16px;
+    color: var(--cp-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.music-progress > span {
+    flex: none;
+    min-width: 30px;
+}
+
+.music-progress > span:last-child {
+    text-align: right;
+}
+
+.music-progress input {
+    flex: 1;
+    min-width: 0;
+    height: 16px;
+    margin: 0;
+    background: transparent;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+}
+
+[data-mobile-shell] .music-progress input {
+    height: 28px;
+}
+
+.music-progress input:disabled {
+    cursor: default;
+}
+
+.music-progress input::-webkit-slider-runnable-track {
+    height: 3px;
+    border-radius: 999px;
+    background: linear-gradient(
+        to right,
+        var(--cp-text) var(--music-played),
+        color-mix(in srgb, var(--cp-text) 16%, transparent) var(--music-played)
+    );
+}
+
+.music-progress input::-webkit-slider-thumb {
+    width: 11px;
+    height: 11px;
+    margin-top: -4px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--cp-text);
+    appearance: none;
+    -webkit-appearance: none;
+}
+
+.music-progress input:disabled::-webkit-slider-thumb {
+    visibility: hidden;
+}
+
+.music-progress input:focus-visible {
+    outline: none;
+}
+
+.music-progress input:focus-visible::-webkit-slider-thumb {
+    box-shadow: 0 0 0 3px var(--cp-focus-ring);
+}
+
+/* ── Choosing the folder ── */
+
+.folder-path {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    margin: 0 -6px;
+    font-size: 13px;
+    line-height: 19px;
+    color: var(--cp-muted);
+}
+
+.folder-path > span {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    direction: rtl;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    user-select: text;
+    -webkit-user-select: text;
+}
+
+.folder-list {
+    height: min(300px, 42vh);
+    margin: 0 -6px;
+    border-top: 1px solid var(--cp-border);
+    border-bottom: 1px solid var(--cp-border);
+    outline: none;
+}
+
+.folder-list .ui-row {
+    min-height: 40px;
+    padding: 6px 8px;
+    border-radius: 8px;
+}
+
+.folder-note {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    padding: 28px 12px;
+    font-size: 13px;
+    line-height: 19px;
+    text-align: center;
+    color: var(--cp-muted);
+}
+
+.folder-note p {
+    margin: 0;
+}
+
+/* The phone's way to the first folder, beside the search. */
+.phone-search {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.phone-search > .ui-search {
+    flex: 1;
+    min-width: 0;
+}

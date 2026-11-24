@@ -23,7 +23,8 @@ import {
     SnServiceError,
 } from "../../services/sn_client";
 import { findBnsIdentitiesForMaterial } from "../../services/bns_client";
-import { openWebView } from "../../utils/webview";
+import { openUrl } from "@tauri-apps/plugin-opener";
+import { useDidContext } from "./DidContext";
 import { isLocallyValidSnUsername, normalizeSnUsername } from "../sn/snUsername";
 import {
     buildOwnerDocument,
@@ -82,6 +83,7 @@ function registrationFingerprint(
 export function useDidFlow() {
     const navigate = useNavigate();
     const { t } = useI18n();
+    const { refresh } = useDidContext();
 
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
@@ -279,6 +281,7 @@ export function useDidFlow() {
                 ownerDocumentJson: attempt.ownerDocumentJson,
             });
             await primeCachedSnStatus(createdDid.id, normalizedName);
+            await refresh();
             setDidInfo(createdDid);
             setRegistrationPhase("succeeded");
             clearCreateFlowSensitiveState();
@@ -314,6 +317,7 @@ export function useDidFlow() {
             credentials.mnemonicWords,
             candidate.ownerDocumentJson
         );
+        await refresh();
         setDidInfo(importedDid);
         setImportCandidates([]);
         pendingImportRef.current = null;
@@ -403,9 +407,9 @@ export function useDidFlow() {
     const goToSnInfo = async () => {
         setError("");
         try {
-            await openWebView("https://sn.buckyos.ai/", "SN", "sn-intro");
+            await openUrl("https://sn.buckyos.ai/");
         } catch (err) {
-            console.error("[WebView] failed to open SN intro", err);
+            console.error("[SN] failed to open the introduction", err);
         }
     };
 
@@ -455,7 +459,7 @@ export function useDidFlow() {
         clearCreateFlowSensitiveState();
         setDidInfo(null);
         setError("");
-        navigate("/main/home/ood-activate");
+        navigate("/main/home");
     };
 
     return {

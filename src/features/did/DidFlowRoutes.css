@@ -38,7 +38,7 @@
 }
 
 .page-content {
-    width: calc(100% - 32px);
+    width: 100%;
     max-width: 520px;
     /* unify visual width across pages */
     margin: 0 auto;
@@ -53,7 +53,7 @@
 }
 
 .page-title {
-    font-size: 24px;
+    font-size: 22px;
     font-weight: 600;
     color: var(--app-text);
     margin: 8px 0 4px;
@@ -83,20 +83,13 @@
     min-height: 30px;
     padding: 2px 10px;
     border-radius: 10px;
-    background: rgba(79, 70, 229, 0.1);
-    border: 1px solid rgba(79, 70, 229, 0.18);
-    color: #4f46e5;
+    background: color-mix(in srgb, var(--cp-accent) 10%, transparent);
+    color: var(--cp-accent);
     font-size: 0.98em;
     font-weight: 600;
     line-height: 1.2;
     word-break: break-word;
     max-width: min(100%, 220px);
-}
-
-[data-theme='dark'] .success-account-inline {
-    background: rgba(124, 166, 255, 0.12);
-    border-color: rgba(124, 166, 255, 0.28);
-    color: #cdd4ff;
 }
 
 .did-container h1 {
@@ -108,46 +101,6 @@
 .did-container p {
     color: var(--muted-text);
     margin: 0;
-}
-
-input[type="text"],
-input[type="email"],
-input[type="password"] {
-    width: 100%;
-    padding: 12px 14px;
-    border: 1px solid var(--input-border);
-    border-radius: 14px;
-    background: var(--card-bg);
-    color: var(--app-text);
-    caret-color: var(--app-text);
-    box-shadow: none;
-    font-weight: normal;
-}
-
-/* Hide native password reveal/clear icons (Edge/IE) to avoid double eyes */
-input[type="password"]::-ms-reveal,
-input[type="password"]::-ms-clear {
-    display: none;
-}
-
-input[type="text"]::placeholder,
-input[type="email"]::placeholder,
-input[type="password"]::placeholder {
-    color: var(--muted-text);
-}
-
-input[type="text"]:focus,
-input[type="email"]:focus,
-input[type="password"]:focus {
-    border-color: #8f96ff;
-    box-shadow: none;
-}
-
-/* Slightly stronger borders in dark theme for readability */
-[data-theme='dark'] input[type="text"],
-[data-theme='dark'] input[type="email"],
-[data-theme='dark'] input[type="password"] {
-    border-width: 1.5px;
 }
 
 .identity-form {
@@ -165,19 +118,17 @@ input[type="password"]:focus {
 }
 
 .field-success {
-    color: #16a34a !important;
+    color: var(--ui-success-text) !important;
 }
 
 .icon-help-button {
-    width: 32px;
-    height: 32px;
-    margin: 0;
-    padding: 0;
-    border-radius: 50%;
-    background: transparent;
-    border: 1px solid var(--input-border);
-    color: var(--app-text);
-    box-shadow: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    color: var(--cp-muted);
 }
 
 .avatar-picker {
@@ -191,21 +142,20 @@ input[type="password"]:focus {
     margin: 0;
     padding: 5px;
     overflow: hidden;
-    border-radius: 18px;
+    border-radius: 14px;
     border: 2px solid transparent;
-    background: color-mix(in srgb, var(--card-bg) 88%, #756bff 12%);
+    background: color-mix(in srgb, var(--cp-text) 5%, var(--cp-surface-opaque));
 }
 
 .avatar-choice img {
     display: block;
     width: 100%;
     height: 100%;
-    border-radius: 13px;
+    border-radius: 9px;
 }
 
 .avatar-choice.selected {
-    border-color: #6558e8;
-    box-shadow: 0 0 0 3px rgba(101, 88, 232, 0.14);
+    border-color: var(--cp-accent);
 }
 
 .evm-owner-card {
@@ -214,7 +164,7 @@ input[type="password"]:focus {
     gap: 7px;
     padding: 12px 14px;
     border: 1px solid var(--input-border);
-    border-radius: 14px;
+    border-radius: 10px;
     background: var(--card-bg);
 }
 
@@ -232,16 +182,11 @@ input[type="password"]:focus {
 
 .registration-progress {
     padding: 12px 14px;
-    border-radius: 14px;
-    color: #5146b8;
-    background: rgba(101, 88, 232, 0.1);
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--card-bg);
     font-size: 13px;
     line-height: 1.5;
-}
-
-[data-theme='dark'] .registration-progress {
-    color: #cdd4ff;
-    background: rgba(124, 166, 255, 0.12);
 }
 
 .import-candidate-list {
@@ -258,7 +203,7 @@ input[type="password"]:focus {
     margin: 0;
     padding: 12px;
     border: 1px solid var(--input-border);
-    border-radius: 16px;
+    border-radius: 12px;
     background: var(--card-bg);
     color: var(--app-text);
     text-align: left;
@@ -269,41 +214,25 @@ input[type="password"]:focus {
     width: 44px;
     height: 44px;
     flex: 0 0 44px;
-    border-radius: 13px;
-    background: rgba(101, 88, 232, 0.12);
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--cp-text) 8%, var(--cp-surface-opaque));
 }
 
 .import-avatar-fallback {
     display: grid;
     place-items: center;
-    color: #6558e8;
-    font-weight: 700;
+    color: var(--cp-text);
+    font-weight: 600;
 }
 
 textarea.mnemonic-textarea {
     width: 100%;
     min-height: 140px;
     border: 1px solid var(--border);
-    border-radius: 16px;
+    border-radius: 10px;
     padding: 12px 14px;
     background: var(--card-bg);
     resize: vertical;
-}
-
-button {
-    background: linear-gradient(90deg, #01c27a 0%, #7440ff 100%);
-    color: #fff;
-    border: none;
-    padding: 12px 18px;
-    border-radius: 999px;
-    font-size: 16px;
-    cursor: pointer;
-    margin-top: 8px;
-}
-
-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
 }
 
 .mnemonic-grid {
@@ -312,16 +241,16 @@ button:disabled {
     gap: 10px;
     background: var(--card-bg);
     padding: 12px;
-    border-radius: 16px;
+    border-radius: 10px;
     /* keep visible height even when empty (one row height + paddings) */
     min-height: 68px;
     /* 44px item + 12px top + 12px bottom */
 }
 
 .mnemonic-item {
-    background: #ffffff;
-    border: 1px solid var(--input-border);
-    border-radius: 12px;
+    background: var(--cp-surface-2-opaque);
+    border: 1px solid var(--border);
+    border-radius: 8px;
     height: 44px;
     display: flex;
     align-items: center;
@@ -343,27 +272,20 @@ button:disabled {
 }
 
 .mnemonic-index {
-    width: 24px;
-    min-width: 24px;
-    height: 24px;
-    border-radius: 999px;
-    background: #eef0fb;
-    color: #6b6ff3;
-    font-size: 11px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
+    min-width: 18px;
+    color: var(--cp-muted);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
 }
 
 .mnemonic-word {
-    background: #ffffff;
-    border: 1px solid var(--input-border);
+    background: var(--cp-surface-2-opaque);
+    border: 1px solid var(--border);
     color: var(--app-text);
-    height: 44px;
+    height: 40px;
     width: 100%;
     padding: 0 10px;
-    border-radius: 999px;
+    border-radius: 8px;
     font-size: 14px;
     white-space: nowrap;
     display: flex;
@@ -371,35 +293,12 @@ button:disabled {
     justify-content: center;
 }
 
-.selected-box .mnemonic-word {
-    background: #ffffff;
-    border: 1px solid var(--input-border);
-}
-
-/* Dark theme refinements for mnemonic UI */
-[data-theme='dark'] .mnemonic-item {
-    background: #141a2b; /* slightly lighter than app bg */
-    border-color: #3a4252;
-}
-
-[data-theme='dark'] .mnemonic-index {
-    background: rgba(124, 166, 255, 0.18);
-    color: #a9b7ff;
-}
-
-[data-theme='dark'] .mnemonic-word,
-[data-theme='dark'] .selected-box .mnemonic-word,
-[data-theme='dark'] .selected-grid .mnemonic-word {
-    background: #141a2b;
-    border-color: #3a4252;
-    color: var(--app-text);
-}
-
 .mnemonic-info {
-    background: #f5f6ff;
-    color: #5960a9;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    color: var(--cp-muted);
     padding: 10px 12px;
-    border-radius: 14px;
+    border-radius: 10px;
     margin-top: 12px;
     text-align: center;
     font-size: 13px;
@@ -411,12 +310,6 @@ button:disabled {
     padding: 8px 12px;
 }
 
-[data-theme='dark'] .mnemonic-info {
-    background: rgba(124, 166, 255, 0.12);
-    color: #cdd4ff;
-    border: 1px solid rgba(124, 166, 255, 0.25);
-}
-
 .selected-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -424,7 +317,7 @@ button:disabled {
 }
 
 .error {
-    color: #d64545;
+    color: var(--ui-danger-text);
     font-size: 14px;
 }
 
@@ -439,7 +332,7 @@ button:disabled {
 
 /* bottom actions */
 .actions {
-    width: calc(100% - 32px);
+    width: 100%;
     padding: 0 0 var(--flow-bottom-action-gap);
     margin: auto auto 0;
     max-width: 520px;

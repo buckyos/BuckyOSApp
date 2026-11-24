@@ -15,12 +15,17 @@
                 "title": "BuckyOS",
                 "width": 400,
                 "height": 800,
-                "resizable": false,
-                "maximizable": false
+                "resizable": true,
+                "maximizable": false,
+                "label": "main",
+                "minHeight": 560,
+                "minWidth": 400,
+                "maxWidth": 400,
+                "backgroundThrottling": "disabled"
             }
         ],
         "security": {
-            "csp": "default-src 'self'; frame-src *; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; font-src 'self'; script-src 'self' 'unsafe-eval'; connect-src 'self' http: https: wss:;"
+            "csp": "default-src 'self'; frame-src *; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; font-src 'self'; script-src 'self' 'unsafe-eval'; connect-src 'self' http: https: wss:; media-src 'self' blob: zonemedia: http://zonemedia.localhost;"
         }
     },
     "bundle": {
@@ -39,5 +44,22 @@
             "icons/icon.icns",
             "icons/icon.ico"
         ]
+    },
+    "plugins": {
+        "deep-link": {
+            "mobile": [
+                {
+                    "scheme": [
+                        "buckyos"
+                    ],
+                    "appLink": false
+                }
+            ],
+            "desktop": {
+                "schemes": [
+                    "buckyos"
+                ]
+            }
+        }
     }
 }

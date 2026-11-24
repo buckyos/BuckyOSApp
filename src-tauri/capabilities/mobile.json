@@ -1,0 +1,21 @@
+{
+  "$schema": "../gen/schemas/mobile-schema.json",
+  "identifier": "mobile",
+  "description": "What the local pages of a phone need besides.",
+  "platforms": [
+    "android",
+    "iOS"
+  ],
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    "allow-content-retry",
+    "allow-app-to-background",
+    "allow-native-set-labels",
+    "allow-native-status",
+    "allow-native-open-settings",
+    "allow-audio-status",
+    "allow-audio-hold"
+  ]
+}

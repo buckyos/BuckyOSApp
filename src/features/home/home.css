@@ -1,0 +1,201 @@
+.home-heading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 24px;
+}
+
+.home-heading .ui-section-title {
+    flex: 1;
+    min-width: 0;
+}
+
+.home-heading .ui-link {
+    padding: 0 4px;
+}
+
+.home-heading-note {
+    padding: 0 4px;
+    font-size: 12px;
+    color: var(--cp-muted);
+}
+
+/* ── Status ── */
+
+.status-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.status-stat {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    padding: 12px;
+}
+
+.status-stat + .status-stat {
+    border-left: 1px solid var(--cp-border);
+}
+
+.status-label {
+    font-size: 12px;
+    line-height: 16px;
+    color: var(--cp-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.status-value {
+    margin: 1px 0 7px;
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 24px;
+    font-variant-numeric: tabular-nums;
+}
+
+.status-detail {
+    min-height: 16px;
+    margin-top: 6px;
+    font-size: 11px;
+    line-height: 16px;
+    color: var(--cp-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.status-network {
+    display: flex;
+    gap: 18px;
+    padding: 8px 12px;
+    border-top: 1px solid var(--cp-border);
+    font-size: 12px;
+    line-height: 16px;
+    color: var(--cp-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.status-network span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.status-message {
+    margin: 0;
+    padding: 14px 12px;
+    font-size: 13px;
+    line-height: 19px;
+    color: var(--cp-muted);
+}
+
+/* ── Shortcuts ── */
+
+.shortcut-grid {
+    margin: 0 -4px;
+}
+
+.shortcut-tile[data-editing='true'] {
+    cursor: grab;
+    touch-action: none;
+}
+
+.shortcut-tile[data-dragging='true'] {
+    z-index: 5;
+    cursor: grabbing;
+    background: var(--cp-surface-opaque);
+    box-shadow: var(--cp-panel-shadow);
+}
+
+.shortcut-cell {
+    position: relative;
+    min-width: 0;
+    display: grid;
+}
+
+.shortcut-remove {
+    position: absolute;
+    top: 4px;
+    left: calc(50% + 14px);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 999px;
+    border: 2px solid var(--cp-bg);
+    background: color-mix(in srgb, var(--cp-text) 72%, var(--cp-bg));
+    color: var(--cp-bg);
+}
+
+.shortcut-remove:hover {
+    background: var(--cp-text);
+}
+
+.shortcut-add .app-tile-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px dashed color-mix(in srgb, var(--cp-text) 28%, transparent);
+    border-radius: 24%;
+    color: var(--cp-muted);
+}
+
+.shortcut-add .app-tile-name {
+    color: var(--cp-muted);
+}
+
+.add-app-list {
+    max-height: 46vh;
+    margin: 0 -6px;
+}
+
+.add-app-list .ui-row {
+    min-height: 44px;
+    padding: 6px;
+    border-radius: 8px;
+}
+
+/* ── No Zone yet ── */
+
+.start-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+}
+
+.start-card h2 {
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 21px;
+}
+
+.start-card p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 19px;
+    color: var(--cp-muted);
+}
+
+.start-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.device-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--cp-border);
+    border-radius: 10px;
+}
+
+.device-row > svg {
+    flex: none;
+    color: var(--cp-muted);
+}

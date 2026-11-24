@@ -96,7 +96,8 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
         loading: false,
         payloadsToSign: [],
     });
-    const [signInProgress, setSignInProgress] = React.useState(false);
+    // Not state: the handlers below would see the value of an earlier render.
+    const signing = React.useRef(false);
     const resolverRef = React.useRef<((result: any) => void) | null>(null);
     const portalContainerRef = React.useRef<HTMLDivElement | null>(null);
     const portalRootRef = React.useRef<Root | null>(null);
@@ -188,11 +189,11 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
             if (!activeDid) {
                 return { code: BuckyErrorCodes.NoActiveDid, message: t("settings.embedded_webview_no_did") };
             }
-            if (signInProgress || passwordDialog.open) {
+            if (signing.current) {
                 return { code: BuckyErrorCodes.Busy, message: t("settings.embedded_webview_busy") };
             }
+            signing.current = true;
             return new Promise((resolve) => {
-                setSignInProgress(true);
                 setPasswordDialog({
                     open: true,
                     value: "",
@@ -206,11 +207,11 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
                 };
             });
         },
-    }), [publicKey, t, activeDid, refreshOwnerDocument, signInProgress, passwordDialog.open]);
+    }), [publicKey, t, activeDid, refreshOwnerDocument]);
 
     const closeDialog = React.useCallback(() => {
         setPasswordDialog((prev) => ({ ...prev, open: false, value: "", error: "", payloadsToSign: [] }));
-        setSignInProgress(false);
+        signing.current = false;
     }, []);
 
     const handleConfirmPassword = React.useCallback(async () => {
@@ -228,9 +229,11 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
             const pwd_hash = pwdHashUsername
                 ? buckyos.hashPassword(pwdHashUsername, passwordDialog.value)
                 : null;
-            resolverRef.current?.({ code: BuckyErrorCodes.Success, data: { signatures, pwd_hash } });
+            // The page may ask for the next signature as soon as it has this one.
+            const answer = resolverRef.current;
             resolverRef.current = null;
             closeDialog();
+            answer?.({ code: BuckyErrorCodes.Success, data: { signatures, pwd_hash } });
         } catch (err) {
             const { code, message } = parseCommandError(err);
             if (code === CommandErrorCodes.InvalidPassword || message?.includes("invalid_password")) {
@@ -274,9 +277,10 @@ export function useBuckyIframeActions(options?: { iframeRef?: React.RefObject<HT
             onConfirm: handleConfirmPassword,
             onCancel: () => {
                 if (passwordDialog.loading) return;
-                resolverRef.current?.({ code: BuckyErrorCodes.Cancelled, message: t("common.actions.cancel") });
+                const answer = resolverRef.current;
                 resolverRef.current = null;
                 closeDialog();
+                answer?.({ code: BuckyErrorCodes.Cancelled, message: t("common.actions.cancel") });
             },
             loading: passwordDialog.loading,
             error: passwordDialog.error,
