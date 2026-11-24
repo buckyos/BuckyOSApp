@@ -1,73 +1,38 @@
 import React from "react";
-import { getIdentityAvatar, getIdentityDisplayName } from "../features/did/identityView";
-import { avatarDisplayUrl } from "../features/did/ownerDocument";
-import { NavLink, Route, Routes, useLocation, useNavigate } from "react-router-dom";
-import { Home as HomeIcon, PanelsTopLeft, Settings } from "lucide-react";
-import Home from "../pages/main/Home";
-import StartupScreen from "./StartupScreen";
-import "./MainRoutes.css";
-import { useI18n } from "../i18n";
+import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { useDidContext } from "../features/did/DidContext";
+import { useZones } from "../features/zone/ZoneContext";
+import Home from "../pages/main/Home";
+import { isMobileShell } from "../utils/platform";
+import StartupScreen from "./StartupScreen";
+import { TabBar } from "./TabBar";
+import "./shell.css";
 
-const ActivateOod = React.lazy(() => import("../pages/main/ActivateOod"));
+const PhoneHome = React.lazy(() => import("./phone/PhoneHome"));
+const PhoneTabPage = React.lazy(() => import("./phone/PhoneTabPage").then(({ PhoneTabPage: page }) => ({ default: page })));
+const FeedPage = React.lazy(() => import("./phone/FeedPage"));
+const PhoneNav = React.lazy(() => import("./phone/PhoneNav").then(({ PhoneNav: nav }) => ({ default: nav })));
 const Apps = React.lazy(() => import("../pages/main/Apps"));
+const Activity = React.lazy(() => import("../pages/main/Activity"));
 const Setting = React.lazy(() => import("../pages/main/Setting"));
-const LanguageSelect = React.lazy(() => import("../pages/main/LanguageSelect"));
+const ZoneList = React.lazy(() => import("../pages/main/ZoneList"));
+const ZoneDetail = React.lazy(() => import("../pages/main/ZoneDetail"));
+const AddZone = React.lazy(() => import("../pages/main/AddZone"));
 const IdentityList = React.lazy(() => import("../pages/main/IdentityList"));
 const BackupIdentity = React.lazy(() => import("../pages/main/BackupIdentity"));
 const ScanDevice = React.lazy(() => import("../pages/main/ScanDevice"));
 const AboutApp = React.lazy(() => import("../pages/main/AboutApp"));
 
-function TabBar() {
-    const { t } = useI18n();
-
-    const tabs = React.useMemo(
-        () => [
-            { to: "/main/home", label: t("tabs.home"), Icon: HomeIcon },
-            { to: "/main/apps", label: t("tabs.apps"), Icon: PanelsTopLeft },
-            { to: "/main/setting", label: t("tabs.setting"), Icon: Settings },
-        ],
-        [t]
-    );
-
-    return (
-        <nav className="tabbar" aria-label="Main navigation">
-            {tabs.map(({ to, label, Icon }) => (
-                <NavLink
-                    key={to}
-                    to={to}
-                    className={({ isActive }) => `tab ${isActive ? "active" : ""}`}
-                >
-                    <Icon className="tab-icon" strokeWidth={1.8} aria-hidden="true" />
-                    <span className="tab-label">{label}</span>
-                </NavLink>
-            ))}
-        </nav>
-    );
-}
+const DESKTOP_TABS = new Set(["/main", "/main/home", "/main/apps", "/main/activity", "/main/setting"]);
+const PHONE_TABS = new Set(["/main", "/main/home", "/main/messagehub", "/main/feed", "/main/setting"]);
 
 const MainRoutes: React.FC = () => {
     const navigate = useNavigate();
-    const { t } = useI18n();
     const { activeDid, dids, loading } = useDidContext();
-    const routerLocation = useLocation();
-    const normalizedPath = React.useMemo(() => {
-        const path = routerLocation.pathname;
-        if (path.endsWith("/") && path.length > 1) {
-            return path.replace(/\/+$/, "");
-        }
-        return path;
-    }, [routerLocation.pathname]);
-    const tabRoutes = React.useMemo(
-        () => new Set(["/main/home", "/main/home/ood-activate", "/main/apps", "/main/setting", "/main"]),
-        []
-    );
-    const showTabBar = tabRoutes.has(normalizedPath);
-    React.useEffect(() => {
-        if (window.location.hash === "#/main" || window.location.hash === "#/main/") {
-            navigate("/main/home", { replace: true });
-        }
-    }, [navigate]);
+    const { current } = useZones();
+    const phone = isMobileShell();
+    const location = useLocation();
+    const path = location.pathname.replace(/\/+$/, "") || "/";
 
     React.useEffect(() => {
         if (loading) return;
@@ -75,59 +40,52 @@ const MainRoutes: React.FC = () => {
             navigate("/", { replace: true });
             return;
         }
-        if (!activeDid && normalizedPath !== "/main/setting/identities") {
+        if (!activeDid && path !== "/main/setting/identities") {
             navigate("/main/setting/identities", { replace: true });
         }
-    }, [loading, dids.length, activeDid, normalizedPath, navigate]);
+    }, [loading, dids.length, activeDid, path, navigate]);
 
     if (loading && dids.length === 0) return <StartupScreen />;
 
-    const displayName = getIdentityDisplayName(activeDid) || t("common.account.unnamed");
-
-    const accountLabel = t("common.account.current");
-    const avatarInitial = displayName.trim().charAt(0).toUpperCase() || "?";
-    const avatarUrl = avatarDisplayUrl(getIdentityAvatar(activeDid));
-    const hideAccountHeader =
-        normalizedPath.startsWith("/main/setting/backup") ||
-        normalizedPath.startsWith("/main/setting/identities") ||
-        normalizedPath.startsWith("/main/setting/language") ||
-        normalizedPath.startsWith("/main/setting/about") ||
-        normalizedPath.startsWith("/main/home/ood-scan");
-
     return (
-        <div className={showTabBar ? "App app-tabbed" : "App"}>
-            <div className="content">
-                {!hideAccountHeader && (
-                    <div className="account-header">
-                        {avatarUrl ? (
-                            <img className="account-avatar" src={avatarUrl} alt="" />
+        <div className="shell" style={current?.accent ? ({ "--zone-accent": current.accent } as React.CSSProperties) : undefined}>
+            <div className="shell-content">
+                <React.Suspense fallback={null}>
+                    <Routes>
+                        <Route path="/" element={<Navigate to="/main/home" replace />} />
+                        <Route path="/home" element={phone ? <PhoneHome /> : <Home />} />
+                        <Route path="/home/ood-scan" element={<ScanDevice />} />
+                        {phone ? (
+                            <>
+                                <Route path="/messagehub" element={<PhoneTabPage tab="messagehub" />} />
+                                <Route path="/feed" element={<FeedPage />} />
+                            </>
                         ) : (
-                            <div className="account-avatar" aria-hidden="true">{avatarInitial}</div>
+                            <>
+                                <Route path="/apps" element={<Apps />} />
+                                <Route path="/activity" element={<Activity />} />
+                            </>
                         )}
-                        <div className="account-info">
-                            <span className="account-label">{accountLabel}</span>
-                            <span className="account-name">{displayName}</span>
-                        </div>
-                        {/* Identity switching dropdown removed. Use IdentityList page instead. */}
-                    </div>
-                )}
-                <div className="content-body">
-                    <React.Suspense fallback={<StartupScreen />}>
-                        <Routes>
-                            <Route path="/home" element={<Home />} />
-                            <Route path="/home/ood-activate" element={<ActivateOod />} />
-                            <Route path="/apps" element={<Apps />} />
-                            <Route path="/setting" element={<Setting />} />
-                            <Route path="/setting/identities" element={<IdentityList />} />
-                            <Route path="/setting/backup" element={<BackupIdentity />} />
-                            <Route path="/setting/language" element={<LanguageSelect />} />
-                            <Route path="/setting/about" element={<AboutApp />} />
-                            <Route path="/home/ood-scan" element={<ScanDevice />} />
-                        </Routes>
-                    </React.Suspense>
-                </div>
+                        <Route path="/setting" element={<Setting />} />
+                        <Route path="/setting/zones" element={<ZoneList />} />
+                        <Route path="/setting/zones/add" element={<AddZone />} />
+                        <Route path="/setting/zones/:zone" element={<ZoneDetail />} />
+                        <Route path="/setting/identities" element={<IdentityList />} />
+                        <Route path="/setting/backup" element={<BackupIdentity />} />
+                        <Route path="/setting/about" element={<AboutApp />} />
+                        <Route path="*" element={<Navigate to="/main/home" replace />} />
+                    </Routes>
+                </React.Suspense>
             </div>
-            {showTabBar && <TabBar />}
+            {phone ? (
+                PHONE_TABS.has(path) ? (
+                    <React.Suspense fallback={null}>
+                        <PhoneNav />
+                    </React.Suspense>
+                ) : null
+            ) : DESKTOP_TABS.has(path) ? (
+                <TabBar />
+            ) : null}
         </div>
     );
 };

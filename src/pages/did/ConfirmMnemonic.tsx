@@ -74,7 +74,7 @@ const ConfirmMnemonic: React.FC<ConfirmMnemonicProps> = ({
                 <div className="page-content" style={{
                 background: "var(--card-bg)",
                 border: "1px solid var(--border)",
-                borderRadius: 18,
+                borderRadius: 12,
                 padding: 12,
                 marginTop: 8,
             }}>
@@ -88,9 +88,9 @@ const ConfirmMnemonic: React.FC<ConfirmMnemonicProps> = ({
                             onClick={() => handleRemove(i)}
                             className="mnemonic-word"
                             style={{
-                                background: wrongIndex !== -1 ? "#ffe9e9" : undefined,
-                                color: wrongIndex !== -1 ? "#b42318" : undefined,
-                                border: wrongIndex !== -1 ? "1px solid #f5c2c2" : undefined,
+                                background: wrongIndex !== -1 ? "color-mix(in srgb, var(--cp-danger) 12%, var(--cp-surface-opaque))" : undefined,
+                                color: wrongIndex !== -1 ? "var(--ui-danger-text)" : undefined,
+                                border: wrongIndex !== -1 ? "1px solid color-mix(in srgb, var(--cp-danger) 40%, transparent)" : undefined,
                                 cursor: "pointer",
                             }}
                         >
@@ -109,7 +109,7 @@ const ConfirmMnemonic: React.FC<ConfirmMnemonicProps> = ({
             <div className="page-content" style={{
                 background: "var(--card-bg)",
                 border: "1px solid var(--border)",
-                borderRadius: 18,
+                borderRadius: 12,
                 padding: 12,
             }}>
                 <div className="mnemonic-grid">

@@ -42,6 +42,19 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      # The client shares sources with the Desktop (README, "Shared sources").
+      - name: Checkout shared sources
+        uses: actions/checkout@v4
+        with:
+          repository: buckyos/buckyos
+          ref: main
+          path: .buckyos
+          sparse-checkout: src/frame/desktop/src/shared
+      - name: Record the shared sources' commit
+        shell: bash
+        run: |
+          commit="$(git -C .buckyos rev-parse HEAD)"
+          echo "Shared sources: buckyos@$commit" | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4

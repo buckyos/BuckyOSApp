@@ -1,4 +1,6 @@
 import React from "react";
+import { Button } from "./Button";
+import { Dialog } from "./Dialog";
 
 interface InputDialogProps {
     open: boolean;
@@ -32,143 +34,41 @@ const InputDialog: React.FC<InputDialogProps> = ({
     loading = false,
     error,
     children,
-}) => {
-    const inputRef = React.useRef<HTMLInputElement | null>(null);
-    const [pressedAction, setPressedAction] = React.useState<"cancel" | "confirm" | null>(null);
-
-    React.useEffect(() => {
-        if (open) {
-            // slight delay to ensure element is mounted
-            const timer = setTimeout(() => inputRef.current?.focus(), 50);
-            return () => clearTimeout(timer);
+}) => (
+    <Dialog
+        open={open}
+        title={title}
+        message={message}
+        locked={loading}
+        onClose={onCancel}
+        onSubmit={onConfirm}
+        actions={
+            <>
+                <Button onClick={onCancel} disabled={loading}>
+                    {cancelText}
+                </Button>
+                <Button type="submit" variant="primary" busy={loading}>
+                    {confirmText}
+                </Button>
+            </>
         }
-        return undefined;
-    }, [open]);
-
-    if (!open) return null;
-
-    const handleSubmit = (event: React.FormEvent) => {
-        event.preventDefault();
-        if (!loading) {
-            onConfirm();
-        }
-    };
-
-    const pressHandlers = (action: "cancel" | "confirm") => ({
-        onPointerDown: () => {
-            if (!loading) {
-                setPressedAction(action);
-            }
-        },
-        onPointerUp: () => setPressedAction(null),
-        onPointerCancel: () => setPressedAction(null),
-        onPointerLeave: () => setPressedAction(null),
-    });
-
-    return (
-        <div
-            role="dialog"
-            aria-modal
-            style={{
-                position: "fixed",
-                inset: 0,
-                background: "rgba(0,0,0,0.35)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: "calc(16px + var(--mobile-system-top)) calc(16px + var(--safe-area-inset-right)) calc(16px + var(--mobile-system-bottom)) calc(16px + var(--safe-area-inset-left))",
-                zIndex: 1000,
-            }}
-            onClick={onCancel}
-        >
-            <form
-                onSubmit={handleSubmit}
-                onClick={(e) => e.stopPropagation()}
-                style={{
-                    width: "100%",
-                    maxWidth: 420,
-                    background: "var(--app-bg)",
-                    color: "var(--app-text)",
-                    border: "1px solid var(--border)",
-                    borderRadius: 16,
-                    padding: 18,
-                    boxShadow: "none",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 14,
-                }}
-            >
-                <div style={{ fontSize: 18, fontWeight: 600 }}>{title}</div>
-                {message && (
-                    <div style={{ fontSize: 14, color: "var(--muted-text)" }}>{message}</div>
-                )}
-                <input
-                    ref={inputRef}
-                    type={inputType}
-                    value={value}
-                    onChange={(event) => onChange(event.target.value)}
-                    placeholder={placeholder}
-                    style={{
-                        width: "100%",
-                        padding: "12px 14px",
-                        borderRadius: 12,
-                        border: "1px solid var(--input-border)",
-                        background: "var(--card-bg)",
-                        color: "var(--app-text)",
-                        boxShadow: "none",
-                    }}
-                    disabled={loading}
-                />
-                {children}
-                {error && (
-                    <div style={{ color: "#ef4444", fontSize: 13 }}>{error}</div>
-                )}
-                <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
-                    <button
-                        type="button"
-                        className="soft-btn"
-                        style={{
-                            borderRadius: 12,
-                            width: 128,
-                            height: 48,
-                            padding: "0 16px",
-                            background: "#a9b1bbff",
-                            color: "#fff",
-                            whiteSpace: "nowrap",
-                            opacity: !loading && pressedAction === "cancel" ? 0.82 : 1,
-                        }}
-                        onClick={onCancel}
-                        disabled={loading}
-                        {...pressHandlers("cancel")}
-                    >
-                        {cancelText}
-                    </button>
-                    <button
-                        type="submit"
-                        style={{
-                            borderRadius: 12,
-                            width: 128,
-                            height: 48,
-                            padding: "0 16px",
-                            background: loading
-                                ? "linear-gradient(90deg, #9ca3af 0%, #d1d5db 100%)"
-                                : "linear-gradient(90deg, #6366f1 0%, #6c5ce7 100%)",
-                            color: "#fff",
-                            border: "none",
-                            boxShadow: "none",
-                            opacity: loading ? 0.85 : pressedAction === "confirm" ? 0.82 : 1,
-                            cursor: loading ? "progress" : "pointer",
-                            whiteSpace: "nowrap",
-                        }}
-                        disabled={loading}
-                        {...pressHandlers("confirm")}
-                    >
-                        {confirmText}
-                    </button>
-                </div>
-            </form>
-        </div>
-    );
-};
+    >
+        <input
+            className="ui-input"
+            type={inputType}
+            value={value}
+            onChange={(event) => onChange(event.target.value)}
+            placeholder={placeholder}
+            aria-label={placeholder || title}
+            disabled={loading}
+        />
+        {children}
+        {error ? (
+            <p className="ui-error" role="alert">
+                {error}
+            </p>
+        ) : null}
+    </Dialog>
+);
 
 export default InputDialog;

@@ -150,7 +150,7 @@ const ImportDid: React.FC<ImportDidProps> = ({
                         style={{
                             width: "100%",
                             minHeight: 140,
-                            borderRadius: 16,
+                            borderRadius: 10,
                             border: "1px solid var(--input-border)",
                             background: "var(--card-bg)",
                             color: "var(--app-text)",
@@ -195,7 +195,7 @@ const ImportDid: React.FC<ImportDidProps> = ({
                 </div>
 
                 {displayedError && (
-                    <p className="error" style={{ margin: 0, color: "#d64545" }}>
+                    <p className="error" style={{ margin: 0, color: "var(--ui-danger-text)" }}>
                         {displayedError}
                     </p>
                 )}

@@ -1,0 +1,21 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "sign-prompt",
+  "description": "The window that asks for the wallet password: a local page without frames.",
+  "platforms": [
+    "windows",
+    "macOS",
+    "linux"
+  ],
+  "windows": [
+    "aux_sign_*"
+  ],
+  "permissions": [
+    "core:event:default",
+    "core:webview:default",
+    "log:default",
+    "allow-prompt-cancel",
+    "allow-prompt-get",
+    "allow-prompt-submit"
+  ]
+}

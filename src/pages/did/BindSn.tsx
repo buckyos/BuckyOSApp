@@ -32,7 +32,7 @@ interface BindSnProps {
 
 const errorHintStyle: React.CSSProperties = {
     margin: 0,
-    color: "#ef4444",
+    color: "var(--ui-danger-text)",
     fontSize: 13,
     display: "flex",
     alignItems: "center",

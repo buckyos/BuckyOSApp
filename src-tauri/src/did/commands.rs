@@ -330,6 +330,8 @@ pub fn create_did(
     vault.dids.push(record.clone());
 
     save_vault(&store, &vault)?;
+    remember_password(&app_handle, &record, &password);
+    crate::zone::account_changed(&app_handle);
 
     Ok(record.to_info())
 }
@@ -397,6 +399,8 @@ pub fn import_did(
     vault.dids.push(record.clone());
 
     save_vault(&store, &vault)?;
+    remember_password(&app_handle, &record, &password);
+    crate::zone::account_changed(&app_handle);
 
     Ok(record.to_info())
 }
@@ -544,6 +548,7 @@ pub fn set_active_did(
 
     vault.active_did = Some(record.id.clone());
     save_vault(&store, &vault)?;
+    crate::zone::account_changed(&app_handle);
 
     Ok(record.to_info())
 }
@@ -637,13 +642,14 @@ pub fn delete_wallet(
     let record = vault.dids.get(position).expect("did exists");
     decrypt_mnemonic(&password, &record.seed)?;
 
-    vault.dids.remove(position);
+    let record = vault.dids.remove(position);
 
     if matches!(vault.active_did.as_deref(), Some(active) if active == target_id) {
         vault.active_did = None;
     }
 
     save_vault(&store, &vault)?;
+    crate::zone::forget_account(&app_handle, &record.account());
     Ok(())
 }
 
@@ -667,6 +673,7 @@ pub fn reveal_mnemonic(
         .ok_or_else(|| CommandErrors::not_found("wallet_not_found"))?;
 
     let decrypted = decrypt_mnemonic(&password, &record.seed)?;
+    remember_password(&app_handle, record, &password);
     let secret_phrase = SecretString::new(decrypted);
     let mnemonic = Mnemonic::parse_in(Language::English, secret_phrase.expose_secret())?;
     drop(secret_phrase);
@@ -693,6 +700,28 @@ pub fn current_wallet_nickname(
             .map(|did| did.nickname.clone())),
         None => Ok(None),
     }
+}
+
+/// The password was just proven correct: its digest signs in to the Zones this client activated.
+fn remember_password(app_handle: &AppHandle<impl Runtime>, record: &StoredDid, password: &str) {
+    crate::zone::remember_wallet_password(
+        app_handle,
+        &record.account(),
+        record.sn_username().as_deref(),
+        password,
+    );
+}
+
+/// The active identity as the key of everything the client keeps per account.
+pub fn active_account(app_handle: &AppHandle<impl Runtime>) -> Option<String> {
+    let store = open_store(app_handle).ok()?;
+    let vault = load_vault(&store).ok()?;
+    let active = vault.active_did?;
+    vault
+        .dids
+        .iter()
+        .find(|did| did.id == active)
+        .map(StoredDid::account)
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]
@@ -722,6 +751,7 @@ fn load_active_signing_key(
         .ok_or_else(|| CommandErrors::not_found("wallet_not_found"))?;
 
     let decrypted = decrypt_mnemonic(password, &record.seed)?;
+    remember_password(app_handle, record, password);
     let secret_phrase = SecretString::new(decrypted);
     let mnemonic = Mnemonic::parse_in(Language::English, secret_phrase.expose_secret())?;
     drop(secret_phrase);

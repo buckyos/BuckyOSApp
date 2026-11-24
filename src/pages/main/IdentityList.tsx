@@ -1,16 +1,19 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import MobileHeader from "../../components/ui/MobileHeader";
-import "./Setting.css";
+import { Check } from "lucide-react";
+import { PageHeader } from "../../app/PageHeader";
+import { Avatar } from "../../components/ui/Avatar";
+import { Card } from "../../components/ui/Rows";
 import InputDialog from "../../components/ui/InputDialog";
 import BottomSheetActions from "../../components/ui/BottomSheetActions";
 import GradientButton from "../../components/ui/GradientButton";
 import { useI18n } from "../../i18n";
+import { clientRuntime } from "../../features/content/clientRuntime";
 import { useDidContext } from "../../features/did/DidContext";
 import { revealMnemonic } from "../../features/did/api";
 import { parseCommandError } from "../../utils/commandError";
 import { CommandErrorCodes } from "../../constants/commandErrorCodes";
-import { getIdentityAvatar, getIdentityBnsName, getIdentityDisplayName } from "../../features/did/identityView";
+import { getIdentityAvatar, getIdentityBnsName, getIdentityDid, getIdentityDisplayName } from "../../features/did/identityView";
 import { avatarDisplayUrl } from "../../features/did/ownerDocument";
 
 const IdentityList: React.FC = () => {
@@ -54,6 +57,11 @@ const IdentityList: React.FC = () => {
         try {
             // Use revealMnemonic as a password check for the target identity
             await revealMnemonic(password, targetId);
+            // The windows are this identity's; its apps may have something to save.
+            if (!(await clientRuntime.closeAll(undefined, "logout"))) {
+                closePasswordDialog();
+                return;
+            }
             await setActiveDid(targetId);
             navigate("/main/setting", { replace: true });
             closePasswordDialog();
@@ -81,58 +89,26 @@ const IdentityList: React.FC = () => {
     const goImport = () => { setAddOpen(false); navigate("/import"); };
 
     return (
-        <div
-            className="mobile-page identity-list-page"
-        >
-            <MobileHeader title={t("identities.title")} showBack={!forceSelection} safeAreaTop />
-            <div className="identity-list-content page-scroll-hide">
-                <div className="settings-list">
+        <div className="shell-page">
+            <PageHeader title={t("identities.title")} back={forceSelection ? false : "/main/setting"} />
+            <div className="shell-page-body ui-scroll">
+                <Card>
                     {dids.map((did) => {
                         const name = getIdentityDisplayName(did) || t("common.account.unnamed");
                         const bnsName = getIdentityBnsName(did);
-                        const avatarUrl = avatarDisplayUrl(getIdentityAvatar(did));
-                        const isActive = activeDid?.id === did.id;
                         return (
-                            <button
-                                key={did.id}
-                                onClick={() => openPasswordDialog(did.id)}
-                                className="settings-item"
-                                style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}
-                            >
-                                <span style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                                    {avatarUrl ? (
-                                        <img src={avatarUrl} alt="" style={{ width: 34, height: 34, borderRadius: 12 }} />
-                                    ) : (
-                                        <span
-                                            className="account-avatar"
-                                            aria-hidden
-                                            style={{ width: 30, height: 30, borderRadius: 15, fontSize: 14 }}
-                                        >
-                                            {name.trim().charAt(0).toUpperCase() || "?"}
-                                        </span>
-                                    )}
-                                    <span style={{ display: "flex", flexDirection: "column", textAlign: "left" }}>
-                                        <strong>{name}</strong>
-                                        {bnsName ? <small style={{ color: "var(--muted-text)" }}>{bnsName}</small> : null}
-                                    </span>
+                            <button key={did.id} type="button" onClick={() => openPasswordDialog(did.id)} className="ui-row">
+                                <Avatar src={avatarDisplayUrl(getIdentityAvatar(did))} name={name} id={getIdentityDid(did)} size={34} />
+                                <span className="ui-row-text">
+                                    <span className="ui-row-title">{name}</span>
+                                    {bnsName ? <span className="ui-row-sub">{bnsName}</span> : null}
                                 </span>
-                                {isActive ? (
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                                        <polyline points="20 6 9 17 4 12" />
-                                    </svg>
-                                ) : (
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                        <polyline points="9 18 15 12 9 6" />
-                                    </svg>
-                                )}
+                                {activeDid?.id === did.id ? <Check size={16} aria-label={t("identities.current_badge")} /> : null}
                             </button>
                         );
                     })}
-                </div>
-            </div>
-
-            <div className="identity-list-actions">
-                <GradientButton onClick={addIdentity}>
+                </Card>
+                <GradientButton variant="secondary" onClick={addIdentity}>
                     {t("identities.add_identity")}
                 </GradientButton>
             </div>

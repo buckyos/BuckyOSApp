@@ -126,7 +126,7 @@ interface InvokeUrlParams {
 
 - `v` 必须等于 `"1"`。
 - URL host 解析出的 `action` 必须存在并通过命名规则校验。
-- 第一版必须提供 `request_url` 和 `request_hash`。
+- 除导航类 action（§2.5）以外，第一版必须提供 `request_url` 和 `request_hash`。
 - 第一版不支持在 `buckyos://` URL 中直接携带完整 payload。
 
 ### 2.4 推荐参数
@@ -145,6 +145,34 @@ interface RecommendedInvokeUrlParams {
 - `nonce`：防重放随机值。
 - `expires_at`：Unix 秒级时间戳。App 收到过期请求必须拒绝。
 - callback 不放在 URL query 中。第一版 `result_post` callback 必须写在 request object 内，避免 deep link 泄露或被篡改。
+
+### 2.5 导航类 action
+
+只做导航、不签名也不写入任何内容的 action，可以不带 request object：没有 `request_url`、`request_hash`，参数直接写在 query 里，没有 callback。是不是导航类由 action 的定义决定，不由调用方声明。导航类 action 仍要校验协议版本、action 名称和自己的每一个参数。
+
+目前只有一个导航类 action：`app.open`，打开一个 Zone 的应用或应用里的页面。
+
+```text
+buckyos://app.open?v=1&zone=<zone 主机>&app=<app_id>&path=<应用内的页面地址>&window=<窗口路径>
+```
+
+| 参数 | 必填 | 含义 |
+| --- | --- | --- |
+| `zone` | 是 | Zone 的主机名，例如 `alice.web3.buckyos.ai`。没有“当前 Zone”这种缺省 |
+| `app` | 是 | AppId；系统应用用它在 Zone 的系统应用清单（`/system-apps.json`）里的 id，例如 `messagehub` |
+| `path` | 否 | 应用内的页面地址，以 `/` 开头，可以带查询参数和片段 |
+| `window` | 否 | 窗口路径，由应用自己定义；同一路径指同一个窗口 |
+
+处理规则：
+
+- 目标 Zone 不在客户端的 Zone 名单里、应用不存在、参数不合法时拒绝，不弹出添加 Zone 或安装应用的流程。
+- `path` 只能落在这个应用自己的页面里，不能指向别的主机。
+- 通过以后变成客户端的打开请求，新建窗口还是置前由统一的打开规则决定；不执行应用里的任何操作。
+- 打开的是登录后的页面，页面自己的确认和权限不因此省略。
+
+应用页面的规范地址仍是它的 https 地址（buckyos 仓库 `doc/key url.md`）：在浏览器里是普通链接，在客户端里指向名单内 Zone 的应用地址会变成同样的打开请求。`buckyos://app.open` 用于需要明确拉起客户端的场合。读写它的代码在 websdk 的 `buckyos/open-app`（`formatAppOpenUrl`、`parseAppOpenUrl`）。
+
+客户端当前只注册并接受 `app.open`，其它 action（包括 `sign.payload`）都还没有实现，收到时直接拒绝。
 
 ## 3. Request Object
 
@@ -286,6 +314,7 @@ intent
 
 ```text
 sign.payload
+app.open
 intent
 ```
 
@@ -295,7 +324,7 @@ intent
 - `zone.*`：Current Zone / OOD 相关 action。
 - `sign.*`：签名类 action。
 - `auth.*`：登录、授权、session 类 action。
-- `app.*`：打开或路由到 BuckyOS app。
+- `app.*`：打开或路由到 BuckyOS app。`app.open` 的定义见 §2.5。
 - `device.*`：设备发现、绑定、激活。
 - `intent`：通用 fallback action，详见 2.3。
 
@@ -311,7 +340,7 @@ com-example-notes.import
 BuckyOS App 收到外部调用后按以下顺序处理：
 
 1. 解析 URL。
-2. 校验协议版本和 action 名称。
+2. 校验协议版本和 action 名称。导航类 action（§2.5）在这里校验参数并直接导航，不进入下面的步骤。
 3. 如果存在 `request_url`，拉取 request object。
 4. 校验 `request_hash`、过期时间、nonce、action 一致性。
 5. 查找 action handler。

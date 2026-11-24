@@ -24,7 +24,7 @@ const ShowMnemonic: React.FC<ShowMnemonicProps> = ({ mnemonic, onNext, onBack })
             <div className="page-content" style={{
                 background: "var(--card-bg)",
                 border: "1px solid var(--border)",
-                borderRadius: 18,
+                borderRadius: 12,
                 padding: 10,
                 marginTop: 10,
             }}>

@@ -1,6 +1,10 @@
 BuckyOSApp
+Copyright BuckyOS contributors
 
-Project-authored code in this repository is licensed under Apache-2.0.
-Third-party components retain their own copyright notices and licenses.
-The separately distributed BuckyOS runtime is licensed under AGPL-3.0-only.
+The first-party code in this repository is licensed under AGPL-3.0-only.
+The LICENSE file contains the license text. Third-party components retain
+their own copyright notices and licenses.
+
 This notice does not relicense bundled dependencies or external programs.
+In particular, the BuckyOS WebSDK (npm package `buckyos`) and the crates from
+buckyos-base retain the Apache-2.0 license of the versions actually used.

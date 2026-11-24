@@ -13,7 +13,7 @@ interface CreateDidProps {
 const cardStyle: React.CSSProperties = {
     background: "var(--card-bg)",
     border: "1px solid var(--border)",
-    borderRadius: 18,
+    borderRadius: 12,
     padding: 16,
     display: "flex",
     flexDirection: "column",
@@ -24,7 +24,7 @@ const linkButtonStyle: React.CSSProperties = {
     alignSelf: "flex-start",
     background: "transparent",
     border: "none",
-    color: "#2563eb",
+    color: "var(--cp-accent)",
     padding: 0,
     marginTop: 4,
     fontSize: 14,

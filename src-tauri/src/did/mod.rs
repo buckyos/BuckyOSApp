@@ -7,3 +7,5 @@ mod commands;
 mod identity;
 
 pub use commands::*;
+mod bridge;
+pub use bridge::*;

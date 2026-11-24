@@ -1,5 +1,7 @@
 import React from "react";
 import { useI18n } from "../../i18n";
+import { useOverlay } from "../../features/content/useOverlay";
+import { Spinner } from "./States";
 
 interface LoadingOverlayProps {
     visible: boolean;
@@ -8,40 +10,14 @@ interface LoadingOverlayProps {
 
 const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ visible, textKey = "common.creating" }) => {
     const { t } = useI18n();
+    useOverlay(visible, () => undefined);
     if (!visible) return null;
     return (
-        <div style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.45)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1000,
-        }}>
-            <div style={{
-                background: "var(--app-bg)",
-                color: "var(--app-text)",
-                border: "1px solid var(--border)",
-                borderRadius: 16,
-                padding: "16px 20px",
-                minWidth: 220,
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                boxShadow: "none",
-            }}>
-                <div className="spinner" style={{
-                    width: 20,
-                    height: 20,
-                    border: "3px solid var(--border)",
-                    borderTopColor: "#6366f1",
-                    borderRadius: "50%",
-                    animation: "spin 1s linear infinite",
-                }} />
-                <span style={{ fontSize: 16 }}>{t(textKey)}</span>
+        <div className="ui-scrim" role="status">
+            <div className="ui-dialog" style={{ width: "auto", minWidth: 220, flexDirection: "row", alignItems: "center", gap: 12, fontSize: 14 }}>
+                <Spinner />
+                <span>{t(textKey)}</span>
             </div>
-            <style>{`@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}`}</style>
         </div>
     );
 };

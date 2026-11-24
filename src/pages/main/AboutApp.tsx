@@ -1,6 +1,6 @@
 import React from "react";
 import { getVersion } from "@tauri-apps/api/app";
-import MobileHeader from "../../components/ui/MobileHeader";
+import { PageHeader } from "../../app/PageHeader";
 import { useI18n } from "../../i18n";
 import appIcon from "../../assets/app-icon.png";
 import "./AboutApp.css";
@@ -31,8 +31,8 @@ const AboutApp: React.FC = () => {
     }, []);
 
     return (
-        <div className="mobile-page about-app-page">
-            <MobileHeader title={t("settings.about_title")} showBack safeAreaTop />
+        <div className="shell-page">
+            <PageHeader title={t("settings.about_title")} back="/main/setting" />
 
             <div className="about-app-content">
                 <div className="about-app-logo-wrap">

@@ -12,6 +12,13 @@ export enum CommandErrorCodes {
     CryptoFailure = 1200,
     KeyDerivationFailure = 1201,
     JwtFailure = 1300,
+    ZoneNotFound = 1400,
+    ZoneNeedPassword = 1401,
+    ZoneUnreachable = 1402,
+    ZoneLoginFailed = 1403,
+    ZoneRequestFailed = 1404,
+    Canceled = 1500,
+    Unsupported = 1501,
     Internal = 1999,
 }
 

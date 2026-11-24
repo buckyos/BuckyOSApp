@@ -1,5 +1,5 @@
 [package]
-license = "Apache-2.0"
+license = "AGPL-3.0-only"
 name = "buckyosapp"
 version = "0.1.0"
 description = "A Tauri App"
@@ -53,12 +53,22 @@ jsonwebtoken = { version = "9", default-features = false, features = ["use_pem"]
 if-addrs = "*"
 tauri-plugin-http = "=2.5.4"
 futures = "0.3"
-reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
-tokio = { version = "1", features = ["time"] }
+# A Zone may use a certificate of a private CA the system trusts: WebViews accept it, so the
+# client's own requests have to as well.
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "rustls-tls-native-roots"] }
+tokio = { version = "1", features = ["macros", "rt", "sync", "time"] }
+base64 = "0.22"
+url = "2"
+tauri-plugin-deep-link = "=2.4.5"
 
 # Used by the vendored node_control module (Unix setsid, kill and user lookups).
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
+
+# NativeBridge.kt, and the runtime of the notification process (notify/service.rs).
+[target.'cfg(target_os = "android")'.dependencies]
+jni = "0.21"
+tokio = { version = "1", features = ["net", "rt-multi-thread"] }
 
 # Used to reach the WKWebView scroll view on iOS (see ios_webview.rs).
 [target.'cfg(target_os = "ios")'.dependencies]
@@ -68,6 +78,25 @@ objc2 = "0.6"
 # existing main window instead of creating another window and tray icon.
 [target.'cfg(any(target_os = "windows", target_os = "macos", target_os = "linux"))'.dependencies]
 tauri-plugin-single-instance = "=2.4.3"
+tauri-plugin-autostart = "=2.5.1"
+
+# The system keychain (zone/secret.rs).
+[target.'cfg(target_os = "windows")'.dependencies]
+keyring = { version = "3", default-features = false, features = ["windows-native"] }
+# Toasts whose click comes back (notify/alerts/windows.rs); the version tauri already uses.
+windows = { version = "0.61", features = ["Data_Xml_Dom", "Foundation", "UI_Notifications"] }
+windows-registry = "0.5"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+keyring = { version = "3", default-features = false, features = ["apple-native"] }
+objc2 = "0.6"
+objc2-foundation = { version = "0.3", features = ["NSBundle", "NSError", "NSString"] }
+objc2-user-notifications = "0.3"
+block2 = "0.6"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+keyring = { version = "3", default-features = false, features = ["sync-secret-service", "crypto-rust"] }
+notify-rust = "4"
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem

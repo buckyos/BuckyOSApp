@@ -59,7 +59,7 @@ fn name_client_config(
 
 #[tauri::command]
 pub async fn resolve_did(
-    app_handle: AppHandle,
+    app_handle: AppHandle<impl tauri::Runtime>,
     did: String,
     doc_type: Option<String>,
 ) -> CommandResult<WebEncodedDocument> {
@@ -130,6 +130,27 @@ pub async fn resolve_did(
             "resolve_did_failed: {error}"
         ))),
     }
+}
+
+/// The document as JSON, whatever form it is published in.
+pub async fn resolve_document(
+    app_handle: &AppHandle<impl tauri::Runtime>,
+    did: &str,
+    doc_type: Option<&str>,
+) -> CommandResult<Value> {
+    let encoded = resolve_did(
+        app_handle.clone(),
+        did.to_string(),
+        doc_type.map(str::to_string),
+    )
+    .await?;
+    let document = match encoded {
+        WebEncodedDocument::Json { value } => EncodedDocument::JsonLd(value),
+        WebEncodedDocument::Jwt { jwt } => EncodedDocument::Jwt(jwt),
+    };
+    document
+        .to_json_value()
+        .map_err(|error| CommandErrors::internal(format!("resolve_did_failed: {error}")))
 }
 
 #[cfg(test)]

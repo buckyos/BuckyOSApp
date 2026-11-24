@@ -65,6 +65,8 @@ function buildLabels(t: T): TrayLabels {
         action_autostart: t("tray.menu.autostart"),
         action_open_app: t("tray.menu.open_app"),
         action_quit: t("tray.menu.quit"),
+        notifications: t("tray.menu.notifications"),
+        unread: t("tray.unread"),
     };
 }
 
@@ -220,6 +222,7 @@ const TrayController: React.FC = () => {
             confirmText={busy ? t("tray.confirm.loading") : prompt?.confirmText ?? t("common.actions.next")}
             cancelText={t("common.actions.cancel")}
             confirmVariant={prompt?.danger ? "danger" : "primary"}
+            busy={busy}
             onCancel={() => {
                 if (busy) return;
                 setPrompt(null);

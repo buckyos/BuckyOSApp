@@ -37,30 +37,34 @@ const BackupIdentity: React.FC = () => {
 
     if (stage === "show") {
         return (
-            <ShowMnemonic
-                mnemonic={mnemonic}
-                onNext={() => setStage("confirm")}
-                onBack={() => navigate("/main/setting", { replace: true })}
-            />
+            <div className="App">
+                <ShowMnemonic
+                    mnemonic={mnemonic}
+                    onNext={() => setStage("confirm")}
+                    onBack={() => navigate("/main/setting", { replace: true })}
+                />
+            </div>
         );
     }
 
     return (
-        <ConfirmMnemonic
-            mnemonic={mnemonic}
-            confirmedMnemonic={confirmedMnemonic}
-            setConfirmedMnemonic={setConfirmedMnemonic}
-            onConfirm={() => {
-                setConfirmedMnemonic([]);
-                navigate("/main/home", { replace: true });
-            }}
-            error=""
-            confirmLabel={t("settings.backup_confirm")}
-            onBack={() => {
-                setConfirmedMnemonic([]);
-                setStage("show");
-            }}
-        />
+        <div className="App">
+            <ConfirmMnemonic
+                mnemonic={mnemonic}
+                confirmedMnemonic={confirmedMnemonic}
+                setConfirmedMnemonic={setConfirmedMnemonic}
+                onConfirm={() => {
+                    setConfirmedMnemonic([]);
+                    navigate("/main/home", { replace: true });
+                }}
+                error=""
+                confirmLabel={t("settings.backup_confirm")}
+                onBack={() => {
+                    setConfirmedMnemonic([]);
+                    setStage("show");
+                }}
+            />
+        </div>
     );
 };
 

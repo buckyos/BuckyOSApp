@@ -1,0 +1,21 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "tray-popover",
+  "description": "The recent notifications next to the tray icon: a local page without frames.",
+  "platforms": [
+    "windows",
+    "macOS",
+    "linux"
+  ],
+  "windows": [
+    "aux_tray"
+  ],
+  "permissions": [
+    "core:event:default",
+    "core:webview:default",
+    "log:default",
+    "allow-tray-popover-hover",
+    "allow-tray-popover-open",
+    "allow-notify-recent"
+  ]
+}

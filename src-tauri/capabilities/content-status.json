@@ -1,0 +1,12 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "content-status",
+  "description": "The local page a content window shows while its Zone page is loading or cannot be loaded.",
+  "windows": [
+    "app_*"
+  ],
+  "permissions": [
+    "allow-content-retry",
+    "allow-content-sign-in"
+  ]
+}

@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
+    "target": "ES2022",
     "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "skipLibCheck": true,
 
@@ -13,6 +13,17 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
+
+    /* Sources of the buckyos repository that the client shares (README, "Shared sources"): a sibling checkout, or
+       .buckyos in CI. They import the WebSDK; it is this project's copy for them too. */
+    "paths": {
+      "@buckyos-desktop/*": [
+        "../buckyos/src/frame/desktop/src/shared/*",
+        "./.buckyos/src/frame/desktop/src/shared/*"
+      ],
+      "buckyos": ["./node_modules/buckyos"],
+      "buckyos/*": ["./node_modules/buckyos/dist/*"]
+    },
 
     /* Linting */
     "strict": true,

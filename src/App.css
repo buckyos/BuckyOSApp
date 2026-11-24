@@ -1,35 +1,39 @@
-.logo.vite:hover {
-    filter: drop-shadow(0 0 2em #747bff);
-}
-
-.logo.react:hover {
-    filter: drop-shadow(0 0 2em #61dafb);
-}
-
+/* Base styles on the Desktop's design tokens (`--cp-*`, @buckyos-desktop/tokens.css). */
 :root {
-    font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
+    font-family: var(--cp-font-sans);
     font-size: 16px;
-    line-height: 24px;
+    line-height: 1.5;
     font-weight: 400;
-    color: #0f0f0f;
-    background: linear-gradient(160deg, #e8f7f3 0%, #f6f3ff 100%);
     font-synthesis: none;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     -webkit-text-size-adjust: 100%;
 
-    /* Theme variables */
-    --app-bg: #ffffff;
-    --app-text: #0f172a;
-    --muted-text: #5b6473;
-    --card-bg: #f7f8fb;
-    --border: #e6e8f0;
-    --input-border: #e6e8f0;
-    --chip-bg: #202733;
-    --header-btn-bg: #ffffff;
-    --header-btn-border: #e6e8f0;
-    --header-icon: #202733;
+    --ui-primary: #406ad5;
+    --ui-primary-hover: #3a60c4;
+    --ui-primary-active: #3557b3;
+    --ui-primary-text: #ffffff;
+    --ui-hover: color-mix(in srgb, var(--cp-text) 5%, transparent);
+    --ui-pressed: color-mix(in srgb, var(--cp-text) 9%, transparent);
+    --ui-field: var(--cp-surface-opaque);
+    --ui-field-border: color-mix(in srgb, var(--cp-text) 18%, transparent);
+    --ui-danger-text: color-mix(in oklab, var(--cp-danger) 78%, var(--cp-text));
+    --ui-success-text: color-mix(in oklab, var(--cp-success) 60%, var(--cp-text));
+    --ui-scrim: rgba(0, 0, 0, 0.36);
+
+    /* The Zone on screen; only small marks use it. */
+    --zone-accent: var(--cp-accent);
+
+    /* What the account and device pages call the tokens. */
+    --app-bg: var(--cp-bg);
+    --app-text: var(--cp-text);
+    --muted-text: var(--cp-muted);
+    --card-bg: var(--cp-surface-opaque);
+    --border: var(--cp-border);
+    --input-border: var(--ui-field-border);
+    --header-icon: var(--cp-text);
+
     --safe-area-inset-top: env(safe-area-inset-top, 0px);
     --safe-area-inset-right: env(safe-area-inset-right, 0px);
     --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
@@ -45,19 +49,18 @@
     --android-gesture-comfort-bottom: min(var(--android-system-gesture-inset-bottom), 12px);
     --mobile-system-top: var(--safe-area-inset-top);
     --mobile-system-bottom: var(--safe-area-inset-bottom);
-    --bottom-action-gap: clamp(20px, 3.5vh, 36px);
-    --subpage-bottom-action-gap: clamp(24px, 4vh, 44px);
-    --flow-bottom-action-gap: clamp(32px, 5vh, 56px);
-    --bottom-tab-action-gap: clamp(28px, 4.5vh, 48px);
+    --bottom-action-gap: 16px;
+    --subpage-bottom-action-gap: 8px;
+    --flow-bottom-action-gap: 12px;
 }
 
-@supports (height: 100dvh) {
-    :root {
-        --bottom-action-gap: clamp(20px, 3.5dvh, 36px);
-        --subpage-bottom-action-gap: clamp(24px, 4dvh, 44px);
-        --flow-bottom-action-gap: clamp(32px, 5dvh, 56px);
-        --bottom-tab-action-gap: clamp(28px, 4.5dvh, 48px);
-    }
+:root[data-theme='dark'] {
+    --ui-primary: #ededed;
+    --ui-primary-hover: #ffffff;
+    --ui-primary-active: #d6d6d6;
+    --ui-primary-text: #141415;
+    --ui-field-border: color-mix(in srgb, var(--cp-text) 20%, transparent);
+    --ui-scrim: rgba(0, 0, 0, 0.56);
 }
 
 [data-mobile-shell] {
@@ -69,6 +72,15 @@
         var(--android-tappable-inset-bottom),
         var(--android-gesture-comfort-bottom)
     );
+    --bottom-action-gap: clamp(20px, 3.5dvh, 36px);
+    --subpage-bottom-action-gap: clamp(24px, 4dvh, 44px);
+    --flow-bottom-action-gap: clamp(24px, 4dvh, 44px);
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
 }
 
 html,
@@ -82,28 +94,71 @@ body,
     user-select: none;
 }
 
-/* Ensure a single, consistent font across UI elements */
-pre,
-code,
-textarea,
-input,
+body {
+    color: var(--cp-text);
+    background: var(--cp-bg);
+}
+
+h1,
+h2,
+h3 {
+    margin: 0;
+}
+
 button,
+input,
+textarea,
 select {
-    font-family: inherit;
+    font: inherit;
+    color: inherit;
+}
+
+button {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    background: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+button:disabled {
+    cursor: default;
+}
+
+:where(button, a, [role='button'], input, select, textarea):focus {
+    outline: none;
+}
+
+:where(button, a, [role='button'], select):focus-visible {
+    box-shadow: 0 0 0 2px var(--cp-focus-ring);
 }
 
 input,
 textarea,
-[contenteditable='true'] {
+[contenteditable='true'],
+.selectable {
     -webkit-touch-callout: default;
     -webkit-user-select: text;
     user-select: text;
 }
 
-*,
-*::before,
-*::after {
-    box-sizing: border-box;
+a {
+    color: var(--cp-accent);
+    text-decoration: none;
+}
+
+::selection {
+    background: color-mix(in srgb, var(--cp-accent) 18%, transparent);
+    color: var(--cp-text);
+}
+
+/* Hide native password reveal/clear icons (Edge/IE) to avoid double eyes */
+input[type='password']::-ms-reveal,
+input[type='password']::-ms-clear {
+    display: none;
 }
 
 .container {
@@ -112,176 +167,17 @@ textarea,
     flex-direction: column;
 }
 
-.logo {
-    height: 6em;
-    padding: 1.5em;
-    will-change: filter;
-    transition: 0.75s;
-}
-
-.logo.tauri:hover {
-    filter: drop-shadow(0 0 2em #24c8db);
-}
-
-.row {
-    display: flex;
-    justify-content: center;
-}
-
-a {
-    font-weight: 500;
-    color: #646cff;
-    text-decoration: inherit;
-}
-
-a:hover {
-    color: #535bf2;
-}
-
-h1 {
-    margin: 0;
-}
-
-input,
-button {
-    border-radius: 8px;
-    border: 1px solid transparent;
-    padding: 0.6em 1.2em;
-    font-size: 1em;
-    font-weight: 500;
-    font-family: inherit;
-    color: #0f0f0f;
-    background-color: #ffffff;
-    transition: border-color 0.25s, opacity 0.12s ease;
-    box-shadow: none;
-}
-
-button {
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-}
-
-button:hover {
-    border-color: #396cd8;
-}
-
-button:active {
-    border-color: #396cd8;
-    opacity: 0.82;
-}
-
-input,
-button {
-    outline: none;
-}
-
-#greet-input {
-    margin-right: 5px;
-}
-
-@media (prefers-color-scheme: dark) {
-    :root {
-        color: #f6f6f6;
-        background: #121826;
-        --app-bg: #0b1220;
-        /* base surface */
-        --app-text: #e5e7eb;
-        /* primary text */
-        --muted-text: #aeb6c2;
-        /* secondary text */
-        --card-bg: #111a2d;
-        /* cards/inputs slightly lighter for contrast */
-        --border: #3a4252;
-        /* stronger outline for dark */
-        --input-border: #5b6a86;
-        /* even lighter just for inputs */
-        --chip-bg: #334155;
-        /* pills */
-        --header-btn-bg: #111a2d;
-        --header-btn-border: #3a4252;
-        --header-icon: #ffffff;
-    }
-
-    a:hover {
-        color: #24c8db;
-    }
-
-    input,
-    button {
-        color: #ffffff;
-        background-color: #0f0f0f98;
-    }
-
-}
-
-/* Manual theme override via data attribute */
-[data-theme='light'] {
-    color: #0f0f0f;
-    background: linear-gradient(160deg, #e8f7f3 0%, #f6f3ff 100%);
-    --app-bg: #ffffff;
-    --app-text: #0f172a;
-    --muted-text: #5b6473;
-    --card-bg: #f7f8fb;
-    --border: #e6e8f0;
-    --input-border: #e6e8f0;
-    --chip-bg: #202733;
-    --header-btn-bg: #ffffff;
-    --header-btn-border: #e6e8f0;
-    --header-icon: #202733;
-}
-
-[data-theme='dark'] {
-    color: #f6f6f6;
-    background: #121826;
-    --app-bg: #0b1220;
-    --app-text: #e5e7eb;
-    --muted-text: #aeb6c2;
-    --card-bg: #111a2d;
-    --border: #3a4252;
-    --input-border: #5b6a86;
-    --chip-bg: #334155;
-    --header-btn-bg: #111a2d;
-    --header-btn-border: #3a4252;
-    --header-icon: #ffffff;
-}
-
-/* Ensure controls are legible when a manual theme is active */
-[data-theme='light'] input,
-[data-theme='light'] button {
-    color: #0f0f0f;
-    background-color: #ffffff;
-}
-
-[data-theme='light'] button:active {
-    opacity: 0.82;
-}
-
-[data-theme='dark'] input,
-[data-theme='dark'] button {
-    color: var(--app-text);
-}
-
-[data-theme='dark'] button:active {
-    opacity: 0.82;
-}
-
-/* Phone-like content card */
+/* The account pages and the pages opened from the tabs. */
 .App {
     width: 100%;
     height: 100%;
     background: var(--app-bg);
-    border-radius: 0;
-    box-shadow: none;
-    padding: 16px;
+    padding: 12px 16px;
     display: flex;
     flex-direction: column;
     overflow: hidden;
     color: var(--app-text);
-}
-
-.app-tabbed {
-    padding-bottom: 0;
+    font-size: 14px;
 }
 
 .App:not(.app-tabbed) {
@@ -297,35 +193,11 @@ button {
     color: var(--app-text);
 }
 
-/* Top controls (language) */
-.container>div:first-child {
-    margin-bottom: 0;
-}
-
-/* Ensure lucide icons in the theme toggle render crisply */
-.theme-toggle-btn svg {
-    width: 24px;
-    height: 24px;
-    display: block;
-}
-
-/* Soft header controls (language/theme) */
-.soft-btn {
-    background: #f6f7fb;
-    border: none;
-    box-shadow: none;
-    transition: background 0.15s ease;
-}
-
-.soft-btn:hover {
-    background: #eef0f6;
-}
-
-[data-theme='dark'] .soft-btn {
-    background: rgba(255, 255, 255, 0.06);
-    border: none;
-}
-
-[data-theme='dark'] .soft-btn:hover {
-    background: rgba(255, 255, 255, 0.12);
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+    }
 }

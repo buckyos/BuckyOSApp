@@ -33,7 +33,7 @@ const Success: React.FC<SuccessProps> = ({ didInfo, onDone }) => {
                         width: 88,
                         height: 88,
                         borderRadius: 999,
-                        background: "rgba(79,70,229,0.1)",
+                        background: "color-mix(in srgb, var(--cp-accent) 10%, transparent)",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
@@ -44,7 +44,7 @@ const Success: React.FC<SuccessProps> = ({ didInfo, onDone }) => {
                         height="40"
                         viewBox="0 0 24 24"
                         fill="none"
-                        stroke="#4f46e5"
+                        stroke="var(--cp-accent)"
                         strokeWidth="2.2"
                         strokeLinecap="round"
                         strokeLinejoin="round"

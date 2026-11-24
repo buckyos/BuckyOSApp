@@ -1,5 +1,8 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { ChevronLeft } from "lucide-react";
+import { useI18n } from "../../i18n";
+import { IconButton } from "./Button";
 
 interface MobileHeaderProps {
     title: string;
@@ -9,84 +12,44 @@ interface MobileHeaderProps {
     safeAreaTop?: boolean;
 }
 
+/** The header of a page opened from another one. */
 const MobileHeader: React.FC<MobileHeaderProps> = ({ title, showBack = false, onBack, rightSlot, safeAreaTop = true }) => {
     const navigate = useNavigate();
-    const handleBack = React.useCallback(() => {
-        if (onBack) {
-            onBack();
-        } else {
-            navigate(-1);
-        }
-    }, [navigate, onBack]);
-
+    const { t } = useI18n();
     return (
         <div
             style={{
                 display: "flex",
                 alignItems: "center",
-                gap: 8,
+                flex: "none",
+                gap: 4,
                 paddingTop: safeAreaTop ? "var(--mobile-system-top)" : 0,
-                height: safeAreaTop ? "calc(var(--mobile-system-top) + 52px)" : 52,
+                height: safeAreaTop ? "calc(var(--mobile-system-top) + 44px)" : 44,
                 width: "100%",
             }}
         >
             {showBack && (
-                <button
-                    aria-label="Back"
-                    onClick={handleBack}
-                    style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        width: 36,
-                        height: 36,
-                        padding: 0,
-                        marginTop: 0,
-                        border: "none",
-                        background: "transparent",
-                        lineHeight: 0,
-                        color: "var(--header-icon)",
-                        cursor: "pointer",
-                        boxShadow: "none",
-                        borderRadius: 999,
-                    }}
-                >
-                    <svg
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth={2.5}
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        aria-hidden="true"
-                        style={{ display: "block" }}
-                    >
-                        <polyline points="15 18 9 12 15 6" />
-                    </svg>
-                </button>
+                <IconButton label={t("common.back")} onClick={() => (onBack ? onBack() : navigate(-1))}>
+                    <ChevronLeft size={20} />
+                </IconButton>
             )}
             {title && (
                 <h1
                     style={{
-                        fontSize: 20,
-                        margin: 0,
-                        lineHeight: 1.2,
+                        fontSize: 17,
+                        fontWeight: 600,
+                        lineHeight: 1.3,
                         whiteSpace: "nowrap",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
                         flex: 1,
+                        minWidth: 0,
                     }}
                 >
                     {title}
                 </h1>
             )}
-            {rightSlot ? (
-                <div style={{ marginLeft: "auto", display: "flex", alignItems: "center" }}>
-                    {rightSlot}
-                </div>
-            ) : null}
+            {rightSlot ? <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 4 }}>{rightSlot}</div> : null}
         </div>
     );
 };

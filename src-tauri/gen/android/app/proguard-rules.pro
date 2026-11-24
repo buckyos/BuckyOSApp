@@ -19,3 +19,6 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Called from Rust by name.
+-keep class com.buckyos.buckyosapp.NativeBridge { *; }

@@ -38,10 +38,10 @@ const DidInfo: React.FC<DidInfoProps> = ({ onBack }) => {
                         <div
                             key={item.title}
                             style={{
-                                borderRadius: 16,
+                                borderRadius: 12,
                                 border: "1px solid var(--border)",
                                 padding: 16,
-                                background: "var(--card-bg, rgba(255,255,255,0.9))",
+                                background: "var(--card-bg)",
                             }}
                         >
                             <div style={{ fontWeight: 600, marginBottom: 6 }}>{item.title}</div>

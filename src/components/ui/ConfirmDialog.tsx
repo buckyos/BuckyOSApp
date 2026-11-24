@@ -1,4 +1,6 @@
 import React from "react";
+import { Button } from "./Button";
+import { Dialog } from "./Dialog";
 
 interface ConfirmDialogProps {
     open: boolean;
@@ -8,6 +10,7 @@ interface ConfirmDialogProps {
     cancelText?: string;
     showCancel?: boolean;
     confirmVariant?: "primary" | "danger";
+    busy?: boolean;
     onConfirm: () => void;
     onCancel: () => void;
 }
@@ -20,89 +23,30 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
     cancelText = "Cancel",
     showCancel = true,
     confirmVariant = "primary",
+    busy = false,
     onConfirm,
     onCancel,
-}) => {
-    if (!open) return null;
-    return (
-        <div
-            role="dialog"
-            aria-modal
-            style={{
-                position: "fixed",
-                inset: 0,
-                background: "rgba(0,0,0,0.35)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: "calc(16px + var(--mobile-system-top)) calc(16px + var(--safe-area-inset-right)) calc(16px + var(--mobile-system-bottom)) calc(16px + var(--safe-area-inset-left))",
-                zIndex: 1000,
-            }}
-            onClick={onCancel}
-        >
-            <div
-                onClick={(e) => e.stopPropagation()}
-                style={{
-                    width: "100%",
-                    maxWidth: 420,
-                    background: "var(--app-bg)",
-                    color: "var(--app-text)",
-                    border: "1px solid var(--border)",
-                    borderRadius: 16,
-                    padding: 16,
-                    boxShadow: "none",
-                }}
-            >
-                <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>{title}</div>
-                {message && (
-                    <div
-                        style={{ fontSize: 14, color: "var(--muted-text)", marginBottom: 16, whiteSpace: "pre-wrap" }}
-                    >
-                        {message}
-                    </div>
-                )}
-                <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
-                    {showCancel && (
-                        <button
-                            className="soft-btn"
-                            style={{
-                                borderRadius: 12,
-                                width: 128,
-                                height: 48,
-                                padding: "0 16px",
-                                background: "#a9b1bbff",
-                                color: "#fff",
-                                boxShadow: "none",
-                                whiteSpace: "nowrap",
-                            }}
-                            onClick={onCancel}
-                        >
-                            {cancelText}
-                        </button>
-                    )}
-                    <button
-                        style={{
-                            borderRadius: 12,
-                            width: 128,
-                            height: 48,
-                            padding: "0 16px",
-                            background:
-                                confirmVariant === "danger"
-                                    ? "linear-gradient(90deg, #ef4444 0%, #f97316 100%)"
-                                    : "linear-gradient(90deg, #6366f1 0%, #6c5ce7 100%)",
-                            color: "#fff",
-                            border: "none",
-                            boxShadow: "none",
-                            whiteSpace: "nowrap",
-                        }}
-                        onClick={onConfirm}
-                    >
-                        {confirmText}
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
+}) => (
+    <Dialog
+        open={open}
+        title={title}
+        message={message}
+        locked={busy}
+        onClose={onCancel}
+        onSubmit={onConfirm}
+        actions={
+            <>
+                {showCancel ? (
+                    <Button onClick={onCancel} disabled={busy}>
+                        {cancelText}
+                    </Button>
+                ) : null}
+                <Button type="submit" variant={confirmVariant === "danger" ? "danger-solid" : "primary"} busy={busy} data-autofocus>
+                    {confirmText}
+                </Button>
+            </>
+        }
+    />
+);
 
 export default ConfirmDialog;

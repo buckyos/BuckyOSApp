@@ -1,0 +1,395 @@
+/* A content view shows through: nothing of this page may be painted where it is. */
+html[data-content-view],
+html[data-content-view] body,
+html[data-content-view] #root,
+html[data-content-view] .shell {
+    background: transparent;
+}
+
+/* ── The app in front ── */
+
+.app-container {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    --zone-mark: color-mix(in oklab, var(--zone-accent) 84%, var(--cp-text));
+    display: flex;
+    flex-direction: column;
+    color: var(--cp-text);
+    font-size: 14px;
+    line-height: 20px;
+}
+
+.container[data-covered='true'] {
+    visibility: hidden;
+}
+
+.container-strip {
+    flex: none;
+    height: var(--mobile-system-top);
+    background: var(--cp-bg);
+}
+
+.container-foot {
+    flex: none;
+    height: var(--mobile-system-bottom);
+    background: var(--cp-bg);
+}
+
+.container-stage {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+}
+
+.container-header {
+    flex: none;
+    padding-top: var(--mobile-system-top);
+    border-bottom: 1px solid var(--cp-border);
+    background: var(--cp-surface-opaque);
+}
+
+.container-bar {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    height: 48px;
+    padding: 0 6px;
+}
+
+.container-bar-gap {
+    flex: none;
+    width: 8px;
+}
+
+.container-title {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 19px;
+}
+
+.container-title > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.container-title > .container-zone {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 0;
+    font-size: 11px;
+    font-weight: 400;
+    line-height: 14px;
+    color: var(--cp-muted);
+}
+
+.container-zone > span:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.container-bar > .ui-icon-button,
+.container-capsule > .ui-icon-button {
+    color: var(--cp-text);
+}
+
+.container-capsule {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    border-radius: 999px;
+}
+
+.container-bar .container-capsule {
+    margin: 0 4px 0 2px;
+    border: 1px solid var(--cp-border);
+    overflow: hidden;
+}
+
+.container-bar .container-capsule > .ui-icon-button {
+    height: 32px;
+    border-radius: 0;
+}
+
+.container-capsule > .ui-icon-button + .ui-icon-button {
+    border-left: 1px solid var(--cp-border);
+}
+
+.container-searching .ui-search {
+    flex: 1;
+    min-width: 0;
+    margin-left: 6px;
+}
+
+.container-searching .ui-input {
+    height: 38px !important;
+}
+
+.container-second {
+    display: flex;
+    gap: 4px;
+    padding: 0 10px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.container-second::-webkit-scrollbar {
+    display: none;
+}
+
+.container-second button {
+    position: relative;
+    flex: none;
+    height: 38px;
+    padding: 0 10px;
+    border-radius: 0;
+    font-size: 14px;
+    color: var(--cp-muted);
+    white-space: nowrap;
+}
+
+.container-second button[aria-selected='true'] {
+    color: var(--cp-text);
+    font-weight: 600;
+}
+
+.container-second button[aria-selected='true']::after {
+    content: '';
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    bottom: 0;
+    height: 2px;
+    border-radius: 2px 2px 0 0;
+    background: var(--zone-mark);
+}
+
+.container-float {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 10px;
+    pointer-events: none;
+}
+
+.container-float .container-capsule {
+    border: 1px solid var(--cp-border);
+    background: color-mix(in srgb, var(--cp-surface-opaque) 82%, transparent);
+    overflow: hidden;
+    pointer-events: auto;
+}
+
+.container-float .ui-icon-button {
+    height: 36px;
+    border-radius: 0;
+}
+
+.view-cover {
+    position: absolute;
+    inset: 0;
+    background: var(--cp-bg);
+}
+
+/* ── Open apps ── */
+
+.switcher-list {
+    display: flex;
+    flex-direction: column;
+    margin: 0 -8px;
+}
+
+.switcher-row {
+    display: flex;
+    align-items: center;
+    border-radius: 10px;
+}
+
+.switcher-row[data-front='true'] {
+    background: var(--ui-hover);
+}
+
+.switcher-open {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+    padding: 9px 8px;
+    border-radius: 10px;
+    text-align: left;
+    font-size: 15px;
+    line-height: 20px;
+}
+
+/* ── A tab that shows a Zone page ── */
+
+.phone-tab {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+.phone-strip {
+    flex: none;
+    height: var(--mobile-system-top);
+    background: var(--cp-surface-opaque);
+}
+
+.phone-stage {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+}
+
+.phone-message {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 12px 16px;
+    background: var(--cp-bg);
+}
+
+.phone-message > .ui-empty {
+    flex: 1;
+}
+
+/* ── The feed's own bar ── */
+
+.feed-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: none;
+    min-height: 48px;
+    padding: calc(var(--mobile-system-top) + 6px) 10px 6px 16px;
+    background: var(--cp-bg);
+}
+
+.feed-bar .ui-segmented {
+    margin-right: auto;
+}
+
+.feed-bar .ui-segmented button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 14px;
+    font-size: 14px;
+}
+
+/* ── The phone's navigation ── */
+
+.phone-nav .tab-plus {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    height: 56px;
+}
+
+.phone-nav .tab-plus > span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 34px;
+    border-radius: 12px;
+    background: var(--ui-primary);
+    color: var(--ui-primary-text);
+}
+
+.phone-nav .tab-plus:active > span {
+    background: var(--ui-primary-active);
+}
+
+.phone-nav .tab-plus:disabled > span {
+    opacity: 0.45;
+}
+
+/* ── The plus menu ── */
+
+.create-list {
+    display: flex;
+    flex-direction: column;
+    margin: 0 -8px;
+}
+
+.create-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    min-height: 54px;
+    padding: 6px 8px;
+    border-radius: 10px;
+    text-align: left;
+    font-size: 15px;
+    line-height: 20px;
+}
+
+.create-item:active {
+    background: var(--ui-pressed);
+}
+
+.create-item:disabled {
+    opacity: 0.5;
+}
+
+.create-item > svg {
+    flex: none;
+    color: var(--cp-muted);
+}
+
+/* ── Home ── */
+
+.open-apps {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 44px;
+    padding: 6px 12px;
+    border: 1px solid var(--cp-border);
+    border-radius: 12px;
+    background: var(--cp-surface-opaque);
+    text-align: left;
+    font-size: 14px;
+}
+
+.open-apps > span:last-of-type {
+    flex: 1;
+    min-width: 0;
+}
+
+.open-apps > svg {
+    flex: none;
+    color: var(--cp-muted);
+}
+
+.open-apps-icons {
+    display: inline-flex;
+}
+
+.open-apps-icons > * + * {
+    margin-left: -8px;
+    box-shadow: 0 0 0 2px var(--cp-surface-opaque);
+}
+
+[data-mobile-shell] .app-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    row-gap: 8px;
+}

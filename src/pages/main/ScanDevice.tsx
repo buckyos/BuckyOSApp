@@ -1,407 +1,153 @@
 import React from "react";
-import { invoke } from "@tauri-apps/api/core";
-import { useNavigate } from "react-router-dom";
-import MobileHeader from "../../components/ui/MobileHeader";
-import GradientButton from "../../components/ui/GradientButton";
+import { HardDrive, Laptop } from "lucide-react";
+import { PageHeader } from "../../app/PageHeader";
+import { Button } from "../../components/ui/Button";
+import { Card } from "../../components/ui/Rows";
+import { Empty, Spinner } from "../../components/ui/States";
+import { useActivation } from "../../features/devices/ActivationContext";
+import { RemoteDeviceDialog } from "../../features/devices/RemoteDeviceDialog";
+import {
+    activationUrl,
+    candidateIps,
+    deviceAddress,
+    deviceTitle,
+    mergeDevices,
+    probeDevices,
+    probeThisDevice,
+    scanTargets,
+    type DeviceRecord,
+} from "../../features/devices/scan";
 import { useI18n } from "../../i18n";
-import { useDidContext } from "../../features/did/DidContext";
-import { getIdentityDid } from "../../features/did/identityView";
-import { resolveZoneBindingStatus } from "../../features/did/zoneBindingStatus";
 import { getLocalIPv4List } from "../../utils/network";
-import { openWebView } from "../../utils/webview";
+import { isMobileShell } from "../../utils/platform";
 import oodIllustration from "../../assets/ood.png";
 import "./ScanDevice.css";
-import "./Home.css";
 
-interface DeviceInfo {
-    hostname?: string;
-    device_type?: string;
-    active_url?: string;
-    display_ip?: string;
-    [key: string]: any;
-}
+const BATCH = 64;
 
-interface DeviceRecord extends DeviceInfo {
-    ip: string;
-    isSelf?: boolean;
-}
+type ScanState = "scanning" | "done" | "not_found" | "no_ip" | "canceled";
 
-const SCAN_BATCH_SIZE = 64;
-const SCAN_INTERLEAVE_GROUPS = 4;
-const isMobileShell = () => /Android|iPhone|iPad|iPod/i.test(window.navigator.userAgent);
-
-function hasUsableActiveUrl(value: unknown): value is string {
-    return typeof value === "string" && value.trim().length > 0;
-}
-
+/** Devices that wait to be activated: this one first, then those on the local network. */
 const ScanDevice: React.FC = () => {
     const { t, locale } = useI18n();
-    const navigate = useNavigate();
-    const { activeDid } = useDidContext();
+    const activation = useActivation();
     const [devices, setDevices] = React.useState<DeviceRecord[]>([]);
-    const [scanning, setScanning] = React.useState(false);
+    const [state, setState] = React.useState<ScanState>("scanning");
     const [progress, setProgress] = React.useState(0);
-    const [status, setStatus] = React.useState(() => t("device_scan.status_preparing"));
-    const [selfScanDone, setSelfScanDone] = React.useState(false);
-    const [showTapHint, setShowTapHint] = React.useState(false);
-    const abortRef = React.useRef<boolean>(false);
-    const selfIpSetRef = React.useRef<Set<string>>(new Set());
-    const listRef = React.useRef<HTMLUListElement | null>(null);
-    const scanInFlightRef = React.useRef(false);
-    const pendingStartRef = React.useRef(false);
-    const oodCheckInFlightRef = React.useRef(false);
+    const [remote, setRemote] = React.useState(false);
+    const turn = React.useRef(0);
 
-    const addDevice = React.useCallback((info: DeviceRecord) => {
-        setDevices((prev) => {
-            const exists = prev.some(
-                (item) =>
-                    item.ip === info.ip ||
-                    (item.hostname && item.device_type && item.hostname === info.hostname && item.device_type === info.device_type)
-            );
-            if (exists) return prev;
-            return [...prev, info];
-        });
-    }, []);
-
-    const scanDeviceBatch = React.useCallback(async (ips: string[]) => {
-        if (!ips.length) return [];
-        try {
-            const devices = await invoke<DeviceRecord[]>("scan_device_batch", { ips });
-            return devices.filter((device) => device?.ip && hasUsableActiveUrl(device.active_url));
-        } catch (err) {
-            console.debug("[ScanDevice] scan_device_batch failed", { ips, err });
-            return [];
-        }
-    }, []);
-
-    const scanSpecificIps = React.useCallback(
-        async (ips: string[]) => {
-            const devices = await scanDeviceBatch(ips);
-            if (abortRef.current) return;
-            for (const device of devices) {
-                console.info("[ScanDevice] self scan result", { ip: device.ip, device });
-                addDevice({ ...device, isSelf: selfIpSetRef.current.has(device.ip) });
-            }
-        },
-        [addDevice, scanDeviceBatch]
-    );
-
-    const normalizeCandidateIps = React.useCallback((ips: string[]) => {
-        const sanitized = ips.filter((ip) => /^\d+\.\d+\.\d+\.\d+$/.test(ip) && !ip.startsWith("127."));
-        const hasNon172 = sanitized.some((ip) => !ip.startsWith("172."));
-        return hasNon172 ? sanitized.filter((ip) => !ip.startsWith("172.")) : sanitized;
-    }, []);
-
-    React.useEffect(() => {
-        let alive = true;
-        (async () => {
-            try {
-                const locals = await getLocalIPv4List().catch(() => []);
-                console.info("[ScanDevice] local ips", locals);
-                const normalized = normalizeCandidateIps(locals);
-                console.info("[ScanDevice] normalized ips", normalized);
-                selfIpSetRef.current = new Set(normalized);
-                await scanSpecificIps(normalized);
-            } finally {
-                if (alive) setSelfScanDone(true);
-            }
-        })();
-        return () => {
-            alive = false;
-        };
-    }, [scanSpecificIps, normalizeCandidateIps]);
-
-    const deriveBaseRanges = React.useCallback((ips: string[]) => {
-        const bases = new Set<string>();
-        ips.forEach((ip) => {
-            const parts = ip.split(".");
-            if (parts.length === 4) {
-                bases.add(`${parts[0]}.${parts[1]}.${parts[2]}`);
-            }
-        });
-        return Array.from(bases);
-    }, []);
-
-    const buildScanTargets = React.useCallback((base: string) => {
-        const hosts = Array.from({ length: 254 }, (_, index) => index + 1);
-        const laneSize = Math.ceil(hosts.length / SCAN_INTERLEAVE_GROUPS);
-        const ordered: string[] = [];
-
-        for (let offset = 0; offset < laneSize; offset += 1) {
-            for (let lane = 0; lane < SCAN_INTERLEAVE_GROUPS; lane += 1) {
-                const host = hosts[lane * laneSize + offset];
-                if (host) {
-                    ordered.push(`${base}.${host}`);
-                }
-            }
-        }
-
-        return ordered;
-    }, []);
-
-    const scanTargetsConcurrently = React.useCallback(
-        async (targets: string[]) => {
-            if (!targets.length) return false;
-            let found = false;
-            let processed = 0;
-            let index = 0;
-            const total = targets.length;
-
-            while (index < total && !abortRef.current) {
-                const batch = targets.slice(index, index + SCAN_BATCH_SIZE);
-                index += batch.length;
-                const devices = await scanDeviceBatch(batch);
-                if (abortRef.current) return found;
-                for (const device of devices) {
-                    console.info("[ScanDevice] scan result", { ip: device.ip, device });
-                    addDevice({ ...device, isSelf: selfIpSetRef.current.has(device.ip) });
-                    found = true;
-                }
-                processed += batch.length;
-                setProgress(processed / total);
-            }
-
-            return found;
-        },
-        [addDevice, scanDeviceBatch]
-    );
-
-    const runScan = React.useCallback(async function runScanImpl() {
-        if (scanInFlightRef.current) return;
-        scanInFlightRef.current = true;
-        abortRef.current = false;
+    const scan = React.useCallback(async () => {
+        const mine = ++turn.current;
+        const current = () => turn.current === mine;
         setDevices([]);
         setProgress(0);
-        setStatus(t("device_scan.status_preparing"));
-        setScanning(true);
-        try {
-            const locals = await getLocalIPv4List().catch(() => []);
-            console.info("[ScanDevice] scan locals", locals);
-            const pool = normalizeCandidateIps(locals);
-            console.info("[ScanDevice] scan pool", pool);
-            if (!pool.length) {
-                setStatus(t("device_scan.status_error_no_ip"));
-                return;
-            }
-            const bases = deriveBaseRanges(pool);
-            if (!bases.length) {
-                setStatus(t("device_scan.status_error_no_ip"));
-                return;
-            }
-            const targets: string[] = [];
-            bases.forEach((base) => {
-                targets.push(...buildScanTargets(base));
-            });
-            const prioritizedTargets = targets.sort((left, right) => {
-                const leftIsLocal = selfIpSetRef.current.has(left);
-                const rightIsLocal = selfIpSetRef.current.has(right);
-                if (leftIsLocal !== rightIsLocal) {
-                    return leftIsLocal ? -1 : 1;
-                }
-                return left.localeCompare(right, undefined, { numeric: true });
-            });
-            const found = await scanTargetsConcurrently(prioritizedTargets);
-            if (!abortRef.current) {
-                setProgress(1);
-            }
-            if (abortRef.current) {
-                setStatus(t("device_scan.status_cancelled"));
-            } else if (!found) {
-                setStatus(t("device_scan.status_not_found"));
-            } else {
-                setStatus(t("device_scan.status_done"));
-            }
-        } finally {
-            setScanning(false);
-            scanInFlightRef.current = false;
-            if (pendingStartRef.current) {
-                pendingStartRef.current = false;
-                runScanImpl();
-            }
-        }
-    }, [t, normalizeCandidateIps, deriveBaseRanges, buildScanTargets, scanTargetsConcurrently]);
-
-    const startScan = React.useCallback(() => {
-        if (scanInFlightRef.current) {
-            pendingStartRef.current = true;
-            return;
-        }
-        pendingStartRef.current = false;
-        void runScan();
-    }, [runScan]);
-
-    const handleCancelScan = React.useCallback(() => {
-        if (!scanning) return;
-        abortRef.current = true;
-        setStatus(t("device_scan.status_cancelled"));
-        setProgress(0);
-        setScanning(false);
-    }, [scanning, t]);
-
-    React.useEffect(() => {
-        const kickoff = window.setTimeout(() => {
-            startScan();
-        }, 0);
-        return () => {
-            window.clearTimeout(kickoff);
-            abortRef.current = true;
+        setState("scanning");
+        let own = new Set<string>();
+        let found = 0;
+        const add = (records: DeviceRecord[]) => {
+            if (!current() || records.length === 0) return;
+            found += records.length;
+            setDevices((known) => mergeDevices(known, records, own));
         };
-    }, [startScan]);
-
-    React.useEffect(() => {
-        return () => {
-            abortRef.current = true;
-        };
+        const local = isMobileShell() ? Promise.resolve() : probeThisDevice().then((device) => add(device ? [device] : []));
+        const ips = candidateIps(await getLocalIPv4List().catch(() => []));
+        own = new Set(ips);
+        const targets = scanTargets(ips);
+        for (let index = 0; index < targets.length && current(); index += BATCH) {
+            add(await probeDevices(targets.slice(index, index + BATCH)));
+            if (current()) setProgress(Math.min(1, (index + BATCH) / targets.length));
+        }
+        await local;
+        if (!current()) return;
+        setProgress(1);
+        setState(found > 0 ? "done" : targets.length > 0 ? "not_found" : "no_ip");
     }, []);
 
     React.useEffect(() => {
-        if (!showTapHint) return;
-        const timer = window.setTimeout(() => {
-            setShowTapHint(false);
-        }, 1500);
+        // After a StrictMode remount only the second scan runs.
+        const kickoff = window.setTimeout(() => void scan(), 0);
         return () => {
-            window.clearTimeout(timer);
+            window.clearTimeout(kickoff);
+            turn.current += 1;
         };
-    }, [showTapHint]);
+    }, [scan]);
 
-    React.useEffect(() => {
-        if (!activeDid || devices.length === 0 || oodCheckInFlightRef.current) return;
+    const cancel = () => {
+        turn.current += 1;
+        setState("canceled");
+    };
 
-        let cancelled = false;
-        let timer: number | undefined;
+    const open = (device: DeviceRecord) => {
+        const url = activationUrl(device, locale);
+        if (!url) return;
+        void activation
+            ?.openActivation({ url, title: deviceTitle(device) })
+            .catch((error) => console.warn("[ScanDevice] opening the activation page failed", device.ip, error));
+    };
 
-        const pollOodBinding = async () => {
-            const currentUserDid = getIdentityDid(activeDid);
-            if (!currentUserDid) return;
-
-            try {
-                oodCheckInFlightRef.current = true;
-                const hasBoundZone = await resolveZoneBindingStatus(currentUserDid);
-                if (!cancelled && hasBoundZone === true) {
-                    navigate("/main/home");
-                    return;
-                }
-            } catch (err) {
-                console.warn("[OOD-CHECK] scan page refresh failed", err);
-            } finally {
-                oodCheckInFlightRef.current = false;
-            }
-
-            if (!cancelled) {
-                timer = window.setTimeout(pollOodBinding, 5000);
-            }
-        };
-
-        timer = window.setTimeout(pollOodBinding, 5000);
-
-        return () => {
-            cancelled = true;
-            if (timer) {
-                window.clearTimeout(timer);
-            }
-        };
-    }, [activeDid, devices.length, navigate]);
-
-    const percent = Math.min(100, Math.round(progress * 100));
-    const statusTitle = scanning ? t("device_scan.running_title") : status || t("device_scan.status_preparing");
-    const statusDesc = scanning ? t("device_scan.running_desc") : t("device_scan.result_desc");
-
+    const scanning = state === "scanning";
+    const percent = Math.round(progress * 100);
     return (
-        <div className="bind-ood-scan-page">
-            {showTapHint ? <div className="scan-device-mobile-hint">Locating...</div> : null}
-            <MobileHeader title={t("device_scan.title")} showBack safeAreaTop />
-
-            <div className="scan-device-body">
-                <div className="scan-device-hero" aria-hidden="true">
-                    <img src={oodIllustration} alt="" className="scan-device-hero-image" />
-                </div>
-
-                <div className="bind-ood-progress-card">
-                    <div className="bind-ood-progress-track" role="progressbar" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100}>
-                        <div className="bind-ood-progress-fill" style={{ width: `${percent}%` }} />
-                    </div>
-
-                    <div className="bind-ood-progress-meta">
-                        <div>
-                            <div className="bind-ood-progress-title">{statusTitle}</div>
-                            <div className="bind-ood-progress-desc">{statusDesc}</div>
-                        </div>
-                        <div className="bind-ood-progress-percent">
-                            {scanning && (
-                                <span className="scan-progress-circle" aria-hidden="true">
-                                    <span />
-                                </span>
-                            )}
-                            <span>{scanning || percent ? `${percent}%` : ""}</span>
-                        </div>
+        <div className="shell-page">
+            <PageHeader title={t("device_scan.title")} back="/main/home" />
+            <div className="shell-page-body ui-scroll" data-testid="scan-device">
+                <div className="scan-head">
+                    <img src={oodIllustration} alt="" />
+                    <div className="scan-head-text">
+                        <strong>{t(scanning ? "device_scan.running_title" : `device_scan.status_${STATUS_KEYS[state]}`)}</strong>
+                        <span>{t(scanning ? "device_scan.running_desc" : devices.length > 0 ? "device_scan.result_desc" : "device_scan.hint")}</span>
                     </div>
                 </div>
-
-                <div className="ood-device-list">
-                    <div className="device-scroll-wrapper">
-                        {!devices.length ? (
-                            <div className="ood-device-empty">
-                                {selfScanDone ? t("device_scan.pending_list_empty") : t("device_scan.pending_list_scanning")}
-                            </div>
-                        ) : (
-                            <ul className="ood-device-scroll" ref={listRef}>
-                                {devices.map((device) => {
-                                    const title = `${device.hostname || device.ip}${device.isSelf ? t("device_scan.self_suffix") : ""}`;
-                                    const typeLabel = device.device_type || "unknown";
-                                    const label = `active-${device.hostname || typeLabel}-${device.ip}`;
-                                    return (
-                                        <li
-                                            key={`${device.ip}-${device.hostname || typeLabel}`}
-                                            className="ood-device-item"
-                                            onClick={() => {
-                                                const activeUrl = (device.active_url || "").trim();
-                                                if (!activeUrl) return;
-                                                if (isMobileShell()) {
-                                                    setShowTapHint(true);
-                                                }
-                                                const baseWindowOptions = {
-                                                    center: true,
-                                                };
-                                                const target = /^https?:\/\//i.test(activeUrl)
-                                                    ? activeUrl
-                                                    : `http://${device.display_ip || device.ip}:3182${
-                                                        activeUrl.startsWith("/") ? activeUrl : `/${activeUrl}`
-                                                    }`;
-                                                const activationUrl = new URL(target);
-                                                activationUrl.searchParams.set("lang", locale);
-                                                void openWebView(activationUrl.toString(), title, label, baseWindowOptions).catch((err) => {
-                                                    console.warn("[ScanDevice] open device webview failed", {
-                                                        ip: device.ip,
-                                                        target,
-                                                        err,
-                                                    });
-                                                });
-                                            }}
-                                        >
-                                            <div className="ood-device-title-row">
-                                                <span>{title}</span>
-                                                <span className="device-chip">{typeLabel}</span>
-                                            </div>
-                                            {device.base_os_info && (
-                                                <div className="device-os-info">{device.base_os_info}</div>
-                                            )}
-                                            <small>{device.display_ip || device.ip}</small>
-                                        </li>
-                                    );
-                                })}
-                            </ul>
-                        )}
+                {scanning ? (
+                    <div className="ui-meter" role="progressbar" aria-label={t("device_scan.running_short")} aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent}>
+                        <span style={{ width: `${percent}%`, "--ui-meter": "var(--cp-accent)" } as React.CSSProperties} />
                     </div>
+                ) : null}
+                {devices.length > 0 ? (
+                    <Card testId="device-list">
+                        {devices.map((device) => {
+                            const Icon = device.isSelf && !isMobileShell() ? Laptop : HardDrive;
+                            const details = [device.device_type, device.base_os_info, deviceAddress(device)].filter(Boolean).join(" · ");
+                            return (
+                                <div key={device.ip} className="ui-row">
+                                    <Icon size={20} strokeWidth={1.7} aria-hidden="true" />
+                                    <span className="ui-row-text">
+                                        <span className="ui-row-title">
+                                            {deviceTitle(device)}
+                                            {device.isSelf ? t("device_scan.self_suffix") : ""}
+                                        </span>
+                                        <span className="ui-row-sub">{details}</span>
+                                    </span>
+                                    <Button size="sm" variant={device.isSelf ? "primary" : "secondary"} onClick={() => open(device)}>
+                                        {t("start.activate")}
+                                    </Button>
+                                </div>
+                            );
+                        })}
+                    </Card>
+                ) : (
+                    <Empty text={t(scanning ? "device_scan.pending_list_scanning" : "device_scan.pending_list_empty")}>
+                        {scanning ? <Spinner /> : null}
+                    </Empty>
+                )}
+                <div className="scan-actions">
+                    <Button onClick={scanning ? cancel : () => void scan()}>{t(scanning ? "device_scan.stop_button" : "ood.rescan_button")}</Button>
+                    <Button variant="ghost" onClick={() => setRemote(true)}>
+                        {t("start.remote")}
+                    </Button>
                 </div>
             </div>
-
-            <div className="scan-device-actions">
-                <GradientButton onClick={scanning ? handleCancelScan : startScan}>
-                    {scanning ? t("device_scan.stop_button") : t("device_scan.rescan_button")}
-                </GradientButton>
-            </div>
+            <RemoteDeviceDialog open={remote} onClose={() => setRemote(false)} />
         </div>
     );
+};
+
+const STATUS_KEYS: Record<Exclude<ScanState, "scanning">, string> = {
+    done: "done",
+    not_found: "not_found",
+    no_ip: "error_no_ip",
+    canceled: "cancelled",
 };
 
 export default ScanDevice;
