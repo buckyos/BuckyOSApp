@@ -1253,11 +1253,11 @@ pub async fn sign_json<R: Runtime>(_app: &AppHandle<R>, caller: &Caller, payload
     let mut wrong = false;
     let result = loop {
         let args = json!({
-            "zone": zone,
-            "app": caller.title,
-            "identity": identity,
+            "zone": bridge::visible(&zone),
+            "app": bridge::visible(&caller.title),
+            "identity": bridge::visible(&identity),
             "device": caller.activation,
-            "content": content,
+            "content": bridge::visible(&content),
             "wrong": wrong,
         });
         let password = match call::<Answer>("signPrompt", args).await {

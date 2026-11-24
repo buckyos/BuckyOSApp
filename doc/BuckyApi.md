@@ -6,8 +6,8 @@
 
 | 页面 | 怎么到客户端 | 能用的部分 |
 | --- | --- | --- |
-| 内容视图的顶层文档（名单内 Zone 的应用页面和系统页面） | 桌面走 Tauri IPC 的 `bucky_api_call`，Android 走 `__buckyPort` 消息通道 | 全部 |
-| 设备激活页（桌面的独立窗口、Android 的原生视图；iOS 仍是本地页面里的 iframe） | 同内容视图，只对打开时的那个源（协议、主机、端口）有效；iOS 经外层本地页面的 `postMessage` | 五个钱包方法 |
+| 内容视图的顶层文档（名单内 Zone 的应用页面和系统页面） | 桌面走 Tauri IPC 的 `bucky_api_call`，移动端走 `__buckyPort` 消息通道（iOS 是对 `WKScriptMessageHandlerWithReply` 的包装） | 全部 |
+| 设备激活页（桌面的独立窗口、移动端的原生视图） | 同内容视图，只对打开时的那个源（协议、主机、端口）有效 | 五个钱包方法 |
 | 其它页面，包括应用页面里的 iframe、名单外的网站 | 没有 | 没有 `window.BuckyApi` |
 
 脚本在页面自己的脚本之前执行，源码是 `public/bucky-api.js`。内容视图属于哪个 Zone、哪个应用由客户端在打开视图时记下，页面传的参数不算数；顶层文档离开这个 Zone 以后，调用一律以 `not_allowed` 失败。桌面上这条限制有两层：Tauri 的权限配置只给名单内 Zone 的源 `bucky_api_call` 这一个命令（`src-tauri/capabilities/`、`content/windows.rs` 的 `allow_zones`），命令自己再按视图和当前地址检查一次。
@@ -34,7 +34,16 @@
 }
 ```
 
-能力可用才列出；应用按能力清单决定用什么，不靠平台名猜。
+能力可用才列出；应用按能力清单决定用什么，不靠平台名猜。现在各平台列出的：
+
+| 能力 | 桌面 | Android | iOS |
+| --- | --- | --- | --- |
+| `app.open` | ✓ | ✓ | ✓ |
+| `notify.system` | ✓ | ✓ | |
+| `window.native`、`media.session` | ✓ | | |
+| `audio.background` | ✓ | ✓ | ✓ |
+| `audio.record` | | ✓ | ✓ |
+| `header.native` | | ✓ | ✓ |
 
 ### `BuckyApi.call(name, payload?): Promise<unknown>`
 
@@ -43,8 +52,8 @@
 | name | 说明 |
 | --- | --- |
 | `frame.post` | 把一条 app-frame 消息交给宿主（客户端）。应用用 websdk 的 `AppFrameClient`，不直接调 |
-| `audio.background.acquire` / `update` / `release` | 申请、更新、释放后台播放保活，载荷 `{title, artist?, artwork?, playing}`。桌面窗口最小化后本来就继续播放，这三个调用直接成功。Android 起媒体播放类型的前台服务并显示系统媒体控件（声音仍由页面的 `<audio>` 发出），必须在客户端处于前台时第一次申请；控件、耳机按键、拔耳机变成 `audio.background.command`。没有 `acquire` 就 `update` 是 `invalid_state` |
-| `audio.record.start / pause / resume / stop / status / list / get / delete` | 录音，能力清单里有 `audio.record` 时可用（现在只有 Android）。同一时刻整个客户端只有一个录音（`busy`）；第一次用先由客户端的原生对话框问用户，再由系统授权（`denied`）。文件是 ADTS 封装的 AAC（`audio/aac`），按账号、Zone、应用实例隔离，视图关闭时自动结束并保留；进程中途被杀的录音保留已写入的部分，没有 `durationMs` |
+| `audio.background.acquire` / `update` / `release` | 申请、更新、释放后台播放保活，载荷 `{title, artist?, artwork?, playing}`。桌面窗口最小化后本来就继续播放，这三个调用直接成功。Android 起媒体播放类型的前台服务并显示系统媒体控件（声音仍由页面的 `<audio>` 发出），必须在客户端处于前台时第一次申请；控件、耳机按键、拔耳机变成 `audio.background.command`。iOS 显示锁屏和控制中心的媒体控件，声音在后台和锁屏后继续；拔耳机由系统暂停页面的播放。没有 `acquire` 就 `update` 是 `invalid_state` |
+| `audio.record.start / pause / resume / stop / status / list / get / delete` | 录音，能力清单里有 `audio.record` 时可用（现在是 Android 和 iOS）。被来电等打断时状态是 `interrupted`，结束后自动继续。同一时刻整个客户端只有一个录音（`busy`）；第一次用先由客户端的原生对话框问用户，再由系统授权（`denied`）。文件是 ADTS 封装的 AAC（`audio/aac`），按账号、Zone、应用实例隔离，视图关闭时自动结束并保留；进程中途被杀的录音保留已写入的部分，没有 `durationMs` |
 
 ### `BuckyApi.on(event, handler): () => void`
 
@@ -119,7 +128,7 @@
   - `4` (NoActiveDid)：没有激活的 DID。
   - `8` (Busy)：当前已有签名请求在进行中，请稍后再发起新的请求。
 
-> **提示**：`signJsonWithActiveDid` 为交互式请求，可能等待用户输入较长时间。第三方页面需避免连续发送多次请求。密码由客户端自己的界面询问：桌面是一个单独的本地小窗，移动端是原生对话框，iOS 的激活页是外层本地页面里的对话框。页面看不到密码，也看不到输入它的界面。界面上写明请求方（应用名，或“设备”）、Zone 或设备的主机地址、以哪个身份签名，以及要签的内容；请求之后切换了身份，签名作废。
+> **提示**：`signJsonWithActiveDid` 为交互式请求，可能等待用户输入较长时间。第三方页面需避免连续发送多次请求。密码由客户端自己的界面询问：桌面是一个单独的本地小窗，移动端是原生对话框。页面看不到密码，也看不到输入它的界面。界面上写明请求方（应用名，或“设备”）、Zone 或设备的主机地址、以哪个身份签名，以及要签的内容；请求之后切换了身份，签名作废。
 
 ### `BuckyApi.resolve_did(did: string, docType?: DidDocType | null): Promise<{ code, message?, data?: EncodedDocument }>`
 

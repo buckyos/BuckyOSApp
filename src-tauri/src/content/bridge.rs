@@ -117,6 +117,24 @@ pub fn init_script(env: &Env) -> String {
     )
 }
 
+/// Text for a question of the client: characters that are not seen, or that change the order of
+/// others, are written out (`payload.ts` does the same for the desktop's window).
+#[cfg_attr(desktop, allow(dead_code))]
+pub fn visible(text: &str) -> String {
+    let hidden = |ch: char| {
+        matches!(ch, '\u{0}'..='\u{8}' | '\u{b}'..='\u{1f}' | '\u{7f}'..='\u{9f}' | '\u{ad}' | '\u{200b}'..='\u{200f}'
+            | '\u{2028}'..='\u{202e}' | '\u{2060}'..='\u{206f}' | '\u{feff}')
+    };
+    text.chars().fold(String::with_capacity(text.len()), |mut shown, ch| {
+        if hidden(ch) {
+            shown.push_str(&format!("\\u{:04x}", ch as u32));
+        } else {
+            shown.push(ch);
+        }
+        shown
+    })
+}
+
 /// The script that hands an event to the page's `BuckyApi.on` handlers.
 pub fn emit_script(event: &str, payload: &Value) -> String {
     let text = |value: String| value.replace('<', "\\u003c").replace('\u{2028}', "\\u2028").replace('\u{2029}', "\\u2029");
@@ -199,6 +217,12 @@ mod tests {
         let head = &script[..script.find(API_SCRIPT).unwrap()];
         assert!(!head.contains("</script>"));
         assert!(!head.contains('\u{2028}'));
+    }
+
+    #[test]
+    fn nothing_in_a_question_hides_or_turns_around() {
+        assert_eq!(visible("alice\u{202e}ecila\u{200b}"), "alice\\u202eecila\\u200b");
+        assert_eq!(visible("{\n  \"名\": 1\t}"), "{\n  \"名\": 1\t}");
     }
 
     #[test]
