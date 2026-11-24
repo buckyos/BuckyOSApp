@@ -607,6 +607,7 @@ export default {
         battery_sub: "通知可能延迟或收不到，请把电池用量设为不受限制。",
         open_settings: "打开",
         notify_phone_note: "BuckyOS 保持连接时，状态栏会有一条常驻通知。",
+        notify_ios_note: "iOS 版暂时不显示系统通知。",
     },
     start: {
         device_title: "建立自己的 Zone",

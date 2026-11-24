@@ -609,6 +609,7 @@ export default {
         battery_sub: "Notifications may be late or missing. Set battery use to unrestricted.",
         open_settings: "Open",
         notify_phone_note: "A notification of BuckyOS stays in the status bar while it keeps the connection.",
+        notify_ios_note: "BuckyOS does not show system notifications on iOS yet.",
     },
     start: {
         device_title: "Set up your own Zone",

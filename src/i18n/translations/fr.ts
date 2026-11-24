@@ -558,6 +558,7 @@ const fr = {
         battery_sub: "Les notifications peuvent arriver en retard ou manquer. Réglez l’usage de la batterie sur « sans restriction ».",
         open_settings: "Ouvrir",
         notify_phone_note: "Tant que BuckyOS garde la connexion, une notification reste dans la barre d’état.",
+        notify_ios_note: "BuckyOS n’affiche pas encore de notifications système sur iOS.",
     },
     start: {
         device_title: "Créer votre propre Zone",

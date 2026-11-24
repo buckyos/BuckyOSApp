@@ -13,11 +13,11 @@ pub trait SecretBackend: Send + Sync {
     fn delete(&self, key: &str) -> Result<(), String>;
 }
 
-#[cfg(any(test, target_os = "ios"))]
+#[cfg(test)]
 #[derive(Default)]
 pub struct MemoryBackend(Mutex<HashMap<String, Vec<u8>>>);
 
-#[cfg(any(test, target_os = "ios"))]
+#[cfg(test)]
 impl SecretBackend for MemoryBackend {
     fn get(&self, key: &str) -> Result<Option<Vec<u8>>, String> {
         Ok(self.0.lock().expect("secrets poisoned").get(key).cloned())
@@ -37,13 +37,13 @@ impl SecretBackend for MemoryBackend {
     }
 }
 
-#[cfg(desktop)]
+#[cfg(any(desktop, target_os = "ios"))]
 struct KeyringBackend;
 
-#[cfg(desktop)]
+#[cfg(any(desktop, target_os = "ios"))]
 const KEYRING_SERVICE: &str = "com.buckyos.buckyosapp";
 
-#[cfg(desktop)]
+#[cfg(any(desktop, target_os = "ios"))]
 impl SecretBackend for KeyringBackend {
     fn get(&self, key: &str) -> Result<Option<Vec<u8>>, String> {
         let entry = keyring::Entry::new(KEYRING_SERVICE, key).map_err(|e| e.to_string())?;
@@ -85,12 +85,12 @@ impl SecretStore {
         }
     }
 
-    #[cfg(desktop)]
+    #[cfg(any(desktop, target_os = "ios"))]
     pub fn system() -> Self {
         Self::new(Arc::new(KeyringBackend))
     }
 
-    #[cfg(any(test, target_os = "ios"))]
+    #[cfg(test)]
     pub fn memory() -> Self {
         Self::new(Arc::new(MemoryBackend::default()))
     }

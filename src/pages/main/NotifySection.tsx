@@ -10,7 +10,7 @@ import { useZones } from "../../features/zone/ZoneContext";
 import { zoneTitle } from "../../features/zone/types";
 import { ZoneMark } from "../../features/zone/ZoneMark";
 import { useI18n } from "../../i18n";
-import { isMobileShell } from "../../utils/platform";
+import { isIosShell, isMobileShell } from "../../utils/platform";
 
 /** Notifications of the client: on or off, from which Zones, and what the system says about it. */
 export const NotifySection: React.FC = () => {
@@ -19,13 +19,15 @@ export const NotifySection: React.FC = () => {
     const [enabled, setEnabled] = React.useState<boolean | null>(null);
     const [refused, setRefused] = React.useState(false);
     const phone = isMobileShell();
+    /** Nothing is shown by the system there yet (TODO Q18): neither its permission nor the service matter. */
+    const ios = isIosShell();
     /** Phone: the system stops the client in the background to save power. */
     const [restricted, setRestricted] = React.useState(false);
 
     React.useEffect(() => {
         let stopped = false;
         const read = () => {
-            if (phone) {
+            if (phone && !ios) {
                 nativeStatus()
                     .then((status) => {
                         if (!stopped) setRestricted(!status.batteryUnrestricted);
@@ -52,13 +54,13 @@ export const NotifySection: React.FC = () => {
             window.removeEventListener("focus", read);
             document.removeEventListener("visibilitychange", onVisible);
         };
-    }, [phone]);
+    }, [phone, ios]);
 
     const change = async (next: boolean) => {
         setEnabled(next);
         try {
             const allowed = await setNotifyEnabled(next);
-            setRefused(next && !allowed);
+            setRefused(next && !allowed && !ios);
         } catch (error) {
             console.error("[Notify] changing the switch failed", error);
             setEnabled(!next);
@@ -68,7 +70,7 @@ export const NotifySection: React.FC = () => {
     return (
         <Section
             title={t("prefs.notifications")}
-            note={enabled && refused && !phone ? t("prefs.notify_refused") : enabled && phone ? t("prefs.notify_phone_note") : undefined}
+            note={ios ? t("prefs.notify_ios_note") : enabled && refused && !phone ? t("prefs.notify_refused") : enabled && phone ? t("prefs.notify_phone_note") : undefined}
         >
             <Card testId="notify-settings">
                 <Row

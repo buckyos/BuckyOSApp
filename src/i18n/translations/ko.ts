@@ -547,6 +547,7 @@ export default {
         battery_sub: "알림이 늦거나 오지 않을 수 있습니다. 배터리 사용을 제한 없음으로 설정하세요.",
         open_settings: "열기",
         notify_phone_note: "BuckyOS가 연결을 유지하는 동안 상태 표시줄에 알림이 남습니다.",
+        notify_ios_note: "iOS에서는 아직 시스템 알림을 표시하지 않습니다.",
     },
     start: {
         device_title: "내 Zone 만들기",

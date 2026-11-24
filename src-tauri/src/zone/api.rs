@@ -131,7 +131,7 @@ impl ReqwestTransport {
     }
 
     fn client() -> Result<reqwest::Client, reqwest::Error> {
-        reqwest::Client::builder()
+        crate::http_client::builder()
             .connect_timeout(CONNECT_TIMEOUT)
             .timeout(REQUEST_TIMEOUT)
             .redirect(reqwest::redirect::Policy::none())

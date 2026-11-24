@@ -547,6 +547,7 @@ export default {
         battery_sub: "通知が遅れたり届かないことがあります。電池の使用を制限なしにしてください。",
         open_settings: "開く",
         notify_phone_note: "BuckyOS が接続を保つ間、ステータスバーに通知が残ります。",
+        notify_ios_note: "iOS 版ではまだシステム通知を表示しません。",
     },
     start: {
         device_title: "自分の Zone を作る",

@@ -98,7 +98,7 @@ pub trait Host: Send + Sync {
 }
 
 pub fn stream_client(pace: Pace) -> Result<reqwest::Client, reqwest::Error> {
-    reqwest::Client::builder()
+    crate::http_client::builder()
         .connect_timeout(Duration::from_secs(15))
         .read_timeout(pace.idle)
         .build()

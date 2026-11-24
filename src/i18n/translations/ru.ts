@@ -547,6 +547,7 @@ export default {
         battery_sub: "Уведомления могут опаздывать или не приходить. Снимите ограничение батареи.",
         open_settings: "Открыть",
         notify_phone_note: "Пока BuckyOS держит соединение, в строке состояния остаётся уведомление.",
+        notify_ios_note: "На iOS BuckyOS пока не показывает системные уведомления.",
     },
     start: {
         device_title: "Создать свою Zone",

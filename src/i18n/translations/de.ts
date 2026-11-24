@@ -558,6 +558,7 @@ const de = {
         battery_sub: "Benachrichtigungen können verspätet sein oder fehlen. Stelle die Akkunutzung auf uneingeschränkt.",
         open_settings: "Öffnen",
         notify_phone_note: "Solange BuckyOS die Verbindung hält, bleibt eine Benachrichtigung in der Statusleiste.",
+        notify_ios_note: "Unter iOS zeigt BuckyOS noch keine Systembenachrichtigungen an.",
     },
     start: {
         device_title: "Eigene Zone einrichten",

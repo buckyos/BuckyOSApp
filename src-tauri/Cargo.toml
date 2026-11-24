@@ -55,7 +55,7 @@ tauri-plugin-http = "=2.5.4"
 futures = "0.3"
 # A Zone may use a certificate of a private CA the system trusts: WebViews accept it, so the
 # client's own requests have to as well.
-reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "rustls-tls-native-roots"] }
+reqwest = { version = "0.12", default-features = false, features = ["http2", "json", "rustls-tls", "rustls-tls-native-roots"] }
 tokio = { version = "1", features = ["macros", "rt", "sync", "time"] }
 base64 = "0.22"
 url = "2"
@@ -70,9 +70,14 @@ libc = "0.2"
 jni = "0.21"
 tokio = { version = "1", features = ["net", "rt-multi-thread"] }
 
-# Used to reach the WKWebView scroll view on iOS (see ios_webview.rs).
 [target.'cfg(target_os = "ios")'.dependencies]
+# Used to reach the WKWebView scroll view (see ios_webview.rs).
 objc2 = "0.6"
+# The system keychain (zone/secret.rs).
+keyring = { version = "3", default-features = false, features = ["apple-native"] }
+# iOS cannot list the roots it trusts, so the system itself checks certificates (http_client.rs).
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
+rustls-platform-verifier = "0.6"
 
 # Desktop processes must be single-instance so repeated launches reuse the
 # existing main window instead of creating another window and tray icon.

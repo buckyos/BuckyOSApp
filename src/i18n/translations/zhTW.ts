@@ -547,6 +547,7 @@ export default {
         battery_sub: "通知可能延遲或收不到，請把電池用量設為不受限制。",
         open_settings: "開啟",
         notify_phone_note: "BuckyOS 保持連線時，狀態列會有一則常駐通知。",
+        notify_ios_note: "iOS 版暫時不顯示系統通知。",
     },
     start: {
         device_title: "建立自己的 Zone",

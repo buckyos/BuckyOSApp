@@ -35,6 +35,7 @@ mod content;
 mod deeplink;
 mod did;
 mod error;
+mod http_client;
 #[cfg(target_os = "ios")]
 mod ios_webview;
 #[cfg(desktop)]

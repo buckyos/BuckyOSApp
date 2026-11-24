@@ -26,7 +26,7 @@ pub fn setup(_app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
 }
 
 pub fn secrets<R: Runtime>(_app: &AppHandle<R>) -> SecretStore {
-    SecretStore::memory()
+    SecretStore::system()
 }
 
 pub fn zones_changed<R: Runtime>(_app: &AppHandle<R>) {}
