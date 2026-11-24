@@ -3,7 +3,7 @@
 // Three ways to the client, chosen by where this document runs:
 //  - a content view on the desktop: the top document of a native window, through Tauri's IPC;
 //  - a content view on a phone: the top document of a native WebView, through `__buckyPort`;
-//  - the activation page: a frame inside a local page of the client, through that page.
+//  - the test page: a frame inside a local page of the client, through that page.
 // Any other document gets no bridge.
 (function () {
     if (window.BuckyApi) return;
@@ -90,7 +90,7 @@
         },
     });
 
-    // ---- the activation page ----
+    // ---- the test page ----
 
     function callFrameHost(action, payload) {
         return new Promise((resolve, reject) => {

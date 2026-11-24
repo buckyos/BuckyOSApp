@@ -4,17 +4,14 @@
 mod android;
 #[cfg(target_os = "ios")]
 mod ios;
-#[cfg(target_os = "android")]
 mod views;
 
 #[cfg(target_os = "android")]
 use android as platform;
-
-#[cfg(target_os = "android")]
-pub use android::*;
 #[cfg(target_os = "ios")]
-pub use ios::*;
-#[cfg(target_os = "android")]
+use ios as platform;
+
+pub use platform::*;
 pub use views::*;
 
 use serde::{Deserialize, Serialize};

@@ -235,7 +235,7 @@ class MainActivity : TauriActivity() {
         root.style.setProperty('--android-navigation-inset-bottom', `${'$'}{navigationInsetBottom}px`);
         root.style.setProperty('--android-tappable-inset-bottom', `${'$'}{tappableInsetBottom}px`);
         root.style.setProperty('--android-system-gesture-inset-bottom', `${'$'}{gestureInsetBottom}px`);
-        window.dispatchEvent(new CustomEvent('android-window-insets-change', {
+        window.dispatchEvent(new CustomEvent('window-insets-change', {
           detail: {
             systemInsetTop,
             systemInsetRight,

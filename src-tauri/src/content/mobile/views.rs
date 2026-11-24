@@ -94,14 +94,6 @@ impl View {
     fn page(&self) -> String {
         format!("https://{}{}", self.page_host, self.info.path.as_deref().unwrap_or("/"))
     }
-
-    /// The app as the local page named it; what the page calls itself is not for questions about it.
-    fn label(&self) -> String {
-        match &self.request.zone_label {
-            Some(zone) if !zone.is_empty() => format!("{} ({zone})", self.request.title),
-            _ => self.request.title.clone(),
-        }
-    }
 }
 
 /// A device's activation page. It belongs to no Zone, so it is not among the views.
@@ -284,7 +276,12 @@ fn set_front(app: &AppHandle, id: Option<&str>, told: [&'static str; 2]) {
         emit_view(app, told[1], view);
     }
     if let Some(view) = new {
+        let unreachable = view.status == ViewStatus::Network;
         emit_view(app, told[0], view);
+        // It only tries again by itself while it is in front.
+        if unreachable {
+            retry_front(app);
+        }
     }
     tell_front(app);
 }
@@ -369,7 +366,8 @@ async fn make(app: &AppHandle, view: &View) -> Result<(), BridgeError> {
             "id": view.info.id,
             "profile": view.profile,
             "zoneHost": view.zone_host,
-            "label": view.label(),
+            // As the local page named it; what the page calls itself is not for questions about it.
+            "label": view.request.title,
             "rules": [format!("https://{}", view.zone_host), format!("https://*.{}", view.zone_host)],
             "script": script,
         }),
@@ -654,7 +652,7 @@ pub fn on_event(text: &str) {
             let _ = app.emit_to(
                 "main",
                 "content://download",
-                json!({ "view": id, "name": event.get("name"), "path": null, "success": event.get("success") }),
+                json!({ "view": id, "name": event.get("name"), "path": event.get("path"), "success": event.get("success") }),
             );
         }
         "resumed" | "paused" => {
@@ -1055,6 +1053,12 @@ pub async fn native_status() -> CommandResult<NativeStatus> {
 pub async fn native_open_settings(page: String) -> CommandResult<()> {
     tell("openSettings", json!({ "page": page })).await;
     Ok(())
+}
+
+/// Hands a downloaded file to the system's share sheet (iOS; Android's notification opens it).
+#[tauri::command]
+pub async fn native_share(path: String) -> CommandResult<()> {
+    call::<Value>("share", json!({ "path": path })).await.map(drop).map_err(|error| CommandErrors::Unsupported(error.message))
 }
 
 // ---- a device's activation page ----

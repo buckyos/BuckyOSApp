@@ -90,11 +90,15 @@ pub const PLATFORM: &str = if cfg!(target_os = "windows") {
 };
 
 pub fn capabilities() -> Vec<&'static str> {
-    let mut list = vec!["app.open", "notify.system"];
+    let mut list = vec!["app.open"];
     if cfg!(desktop) {
-        list.extend(["window.native", "audio.background", "media.session"]);
+        list.extend(["notify.system", "window.native", "audio.background", "media.session"]);
     }
     if cfg!(target_os = "android") {
+        list.extend(["notify.system", "audio.background", "audio.record", "header.native"]);
+    }
+    // Nothing is shown by the system there (notify/alerts/ios.rs).
+    if cfg!(target_os = "ios") {
         list.extend(["audio.background", "audio.record", "header.native"]);
     }
     list

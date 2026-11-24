@@ -9,7 +9,8 @@ import { Dot } from "../components/ui/States";
 import { backInView, backTarget } from "../features/container/back";
 import { clientRuntime } from "../features/content/clientRuntime";
 import { ChooseAppDialog } from "../features/content/ChooseAppDialog";
-import { backStack, setNativeLabels, toBackground } from "../features/content/mobileViews";
+import { backStack, setNativeLabels, shareFile, toBackground } from "../features/content/mobileViews";
+import { failureText } from "../features/content/openFailure";
 import { tabOfView, tabViewId, type PhoneTab } from "../features/content/phoneTabs";
 import { useBlock } from "../features/content/useOverlay";
 import { useRuntime } from "../features/content/useRuntime";
@@ -151,10 +152,7 @@ export const RuntimeHost: React.FC = () => {
             <div className="ui-toasts" aria-live="polite">
                 {runtime.failure && !(runtime.failure.reason === "need_login" && signInZone) ? (
                     <Toast key={runtime.failure.at} tone="bad" onClose={() => clientRuntime.dismissFailure()}>
-                        {t(`open.failure.${runtime.failure.reason}`, {
-                            zone: failureZone ? zoneTitle(failureZone) : "",
-                            app: failureApp,
-                        })}
+                        {failureText(t, runtime.failure, { zone: failureZone ? zoneTitle(failureZone) : "", app: failureApp })}
                     </Toast>
                 ) : null}
                 {runtime.download ? (
@@ -163,17 +161,18 @@ export const RuntimeHost: React.FC = () => {
                         tone={runtime.download.success ? "ok" : "bad"}
                         onClose={() => clientRuntime.dismissDownload()}
                         action={
-                            !isMobileShell() && runtime.download.success && runtime.download.path ? (
+                            runtime.download.success && runtime.download.path ? (
                                 <Button
                                     size="sm"
                                     variant="ghost"
                                     onClick={() => {
                                         const path = runtime.download?.path;
                                         clientRuntime.dismissDownload();
-                                        if (path) revealItemInDir(path).catch((error) => console.warn("[Download] showing the file failed", error));
+                                        const show = isMobileShell() ? shareFile : revealItemInDir;
+                                        if (path) show(path).catch((error) => console.warn("[Download] showing the file failed", error));
                                     }}
                                 >
-                                    {t("open.show_file")}
+                                    {t(isMobileShell() ? "open.share_file" : "open.show_file")}
                                 </Button>
                             ) : null
                         }
@@ -215,17 +214,21 @@ const Toast: React.FC<React.PropsWithChildren<{ tone: "ok" | "bad"; onClose: () 
     );
 };
 
-/** The phone's back button: what is open closes, then the app, its history, Home, and out. */
+/** Back on a phone: what is open closes, then the app, its history, Home, and out. */
 function useBackButton() {
     const navigate = useNavigate();
     const { current } = useZones();
     const { activeDid } = useDidContext();
     const activation = useActivation();
-    const now = React.useRef<() => Promise<void>>(async () => undefined);
-    now.current = async () => {
+    const now = React.useRef<{ back: () => Promise<void>; available: () => boolean }>({ back: async () => undefined, available: () => true });
+    // As it is now: a press may come before the last one was rendered.
+    const here = () => window.location.hash.replace(/^#/, "").split("?", 1)[0];
+    // Without an identity chosen there is only the list of them.
+    const targetOf = (pathname: string) => (pathname === "/main/setting/identities" && !activeDid ? "background" : backTarget(pathname));
+    now.current.available = () => clientRuntime.getSnapshot().front !== null || targetOf(here()) !== "background";
+    now.current.back = async () => {
         const { front, views } = clientRuntime.getSnapshot();
-        // As it is now: a press may come before the last one was rendered.
-        const pathname = window.location.hash.replace(/^#/, "").split("?", 1)[0];
+        const pathname = here();
         if (front) {
             if (await backInView(front)) return;
             clientRuntime.minimize();
@@ -237,12 +240,11 @@ function useBackButton() {
         const id = tab && current ? tabViewId(current.did, tab) : null;
         const shown = id && views.find((view) => view.id === id && view.focused);
         if (shown && tabOfView(shown.id) && (await backInView(shown.id))) return;
-        if ((pathname === "/web-container" || pathname === "/activation") && activation?.finished) {
+        if (pathname === "/activation" && activation?.finished) {
             activation.leave();
             return;
         }
-        // Without an identity chosen there is only the list of them.
-        const target = pathname === "/main/setting/identities" && !activeDid ? "background" : backTarget(pathname);
+        const target = targetOf(pathname);
         if (target === "background") await toBackground();
         else if (target === "history") navigate(-1);
         else navigate(target.to, { replace: true });
@@ -252,7 +254,7 @@ function useBackButton() {
         let stopped = false;
         let stop: (() => void) | undefined;
         backStack
-            .start(() => now.current())
+            .start(() => now.current.back(), () => now.current.available())
             .then((release) => {
                 if (stopped) release();
                 else stop = release;

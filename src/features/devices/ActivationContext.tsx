@@ -1,8 +1,7 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { listen } from "@tauri-apps/api/event";
-import { isIosShell, isMobileShell } from "../../utils/platform";
-import { openEmbeddedPage } from "../../utils/webview";
+import { isMobileShell } from "../../utils/platform";
 import { useDidContext } from "../did/DidContext";
 import { reconnectZone } from "../zone/api";
 import { useZoneActions } from "../zone/useZoneActions";
@@ -12,7 +11,6 @@ import { ACTIVATION_CLOSED_EVENT, closeActivationPage, openActivationPage } from
 
 /** Where a phone shows the page. */
 export const ACTIVATION_PATH = "/activation";
-const PAGE_PATHS = [ACTIVATION_PATH, "/web-container"];
 
 /** A Zone that was just activated may still be starting. */
 const CONNECT_TRIES = 36;
@@ -58,10 +56,6 @@ export const ActivationProvider: React.FC<React.PropsWithChildren> = ({ children
             const opened: ActivationSession = { startedAt: Date.now(), before: new Set(zonesNow.current.map((zone) => zone.did)), closedAt: null };
             // Another page while one is being waited for: what counts as new stays what it was.
             setSession((previous) => ({ ...opened, before: previous?.before ?? opened.before }));
-            if (isIosShell()) {
-                openEmbeddedPage(target.url, target.title);
-                return;
-            }
             const { id } = await openActivationPage(target.url, target.title);
             if (!isMobileShell()) return;
             setPage({ id, title: target.title });
@@ -125,7 +119,7 @@ export const ActivationProvider: React.FC<React.PropsWithChildren> = ({ children
     }, [navigate]);
 
     // A phone shows the activation page in this window: it stays until the user leaves it.
-    const onPage = PAGE_PATHS.includes(location.pathname);
+    const onPage = location.pathname === ACTIVATION_PATH;
     const wasOnPage = React.useRef(false);
     React.useEffect(() => {
         if (wasOnPage.current && !onPage) {

@@ -15,6 +15,7 @@
     "allow-native-set-labels",
     "allow-native-status",
     "allow-native-open-settings",
+    "allow-native-share",
     "allow-audio-status",
     "allow-audio-hold"
   ]

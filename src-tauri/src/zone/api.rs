@@ -117,7 +117,7 @@ pub trait ZoneTransport: Send + Sync {
     fn send(&self, request: HttpRequest) -> BoxFuture<'_, Result<HttpResponse, ZoneError>>;
     /// The network changed: connections from before are dead, and a request on one would only find
     /// that out after half a minute.
-    #[cfg_attr(not(target_os = "android"), allow(dead_code))]
+    #[cfg_attr(not(mobile), allow(dead_code))]
     fn reset(&self) {}
 }
 

@@ -22,6 +22,11 @@ vi.mock("@tauri-apps/api/app", () => ({
     },
 }));
 
+let userAgent = "Android";
+const stubWindow = () => {
+    vi.stubGlobal("navigator", { get userAgent() { return userAgent; } });
+    vi.stubGlobal("window", globalThis);
+};
 const { BackStack, Overlays, ViewStage, frontChanged, hideViews, layoutView } = await import("./mobileViews");
 const rect = (x: number, y: number, width: number, height: number) => ({ x, y, width, height });
 const element = (value: ReturnType<typeof rect>) => ({ getBoundingClientRect: () => value as DOMRect });
@@ -142,6 +147,7 @@ describe("back", () => {
     });
 
     it("takes the button until it stops", async () => {
+        stubWindow();
         let left = 0;
         const stop = await new BackStack().start(() => void (left += 1));
         pressBack?.();
@@ -149,5 +155,30 @@ describe("back", () => {
         expect(left).toBe(1);
         stop();
         expect(pressBack).toBeNull();
+    });
+
+    it("is a drag from the edge on iOS, where there is something to go back to", async () => {
+        stubWindow();
+        userAgent = "iPhone";
+        try {
+            let left = 0;
+            let root = true;
+            const stack = new BackStack();
+            const stop = await stack.start(() => void (left += 1), () => !root);
+            expect(pressBack).toBeNull();
+            expect(window.__buckyBack?.available()).toBe(false);
+            const release = stack.push(() => true);
+            expect(window.__buckyBack?.available()).toBe(true);
+            release();
+            root = false;
+            expect(window.__buckyBack?.available()).toBe(true);
+            window.__buckyBack?.go();
+            await Promise.resolve();
+            expect(left).toBe(1);
+            stop();
+            expect(window.__buckyBack).toBeUndefined();
+        } finally {
+            userAgent = "Android";
+        }
     });
 });

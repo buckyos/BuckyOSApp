@@ -1,6 +1,9 @@
 const MOBILE_SHELL_USER_AGENT_RE = /Android|iPhone|iPad|iPod/i;
 
-let androidKeyboardFocusHandlerAttached = false;
+/** The bars, the keyboard, or what they cover changed (`MainActivity.kt`, `Client.swift`). */
+export const INSETS_EVENT = "window-insets-change";
+
+let keyboardFocusHandlerAttached = false;
 const keyboardBoundDocuments = new WeakSet<Document>();
 const keyboardBoundIframes = new WeakSet<HTMLIFrameElement>();
 const keyboardScrollTimers = new WeakMap<Document, number>();
@@ -11,10 +14,6 @@ export function isMobileShell() {
 
 export function isIosShell() {
     return /iPhone|iPad|iPod/i.test(window.navigator.userAgent);
-}
-
-export function isAndroidShell() {
-    return /Android/i.test(window.navigator.userAgent);
 }
 
 function getKeyboardInsetBottom(targetDocument: Document = document) {
@@ -75,7 +74,7 @@ function bindKeyboardDocument(targetDocument: Document, listenForInsetChanges = 
     targetDocument.addEventListener("focusin", () => scrollFocusedControlIntoView(targetDocument, 160));
 
     if (listenForInsetChanges) {
-        targetDocument.defaultView?.addEventListener("android-window-insets-change", () => {
+        targetDocument.defaultView?.addEventListener(INSETS_EVENT, () => {
             if (parseCssPixelValue(getKeyboardInsetBottom(targetDocument)) > 0) {
                 scrollFocusedControlIntoView(targetDocument);
             }
@@ -95,7 +94,7 @@ function syncKeyboardInsetToIframe(iframe: HTMLIFrameElement) {
         frameDocument.documentElement.style.setProperty("--keyboard-inset-bottom", keyboardInsetBottom);
         frameDocument.documentElement.style.setProperty("--keyboard-inset", keyboardInsetBottom);
         bindKeyboardDocument(frameDocument);
-        frameWindow.dispatchEvent(new CustomEvent("android-window-insets-change", {
+        frameWindow.dispatchEvent(new CustomEvent(INSETS_EVENT, {
             detail: { keyboardInsetBottom },
         }));
     } catch {
@@ -121,13 +120,12 @@ export function applyPlatformAttributes() {
     const root = document.documentElement;
     const body = document.body;
     const mobileShell = isMobileShell();
-    const androidShell = isAndroidShell();
 
     root.toggleAttribute("data-mobile-shell", mobileShell);
     body.toggleAttribute("data-mobile-shell", mobileShell);
 
-    if (androidShell && !androidKeyboardFocusHandlerAttached) {
-        androidKeyboardFocusHandlerAttached = true;
+    if (mobileShell && !keyboardFocusHandlerAttached) {
+        keyboardFocusHandlerAttached = true;
 
         bindKeyboardDocument(document, false);
         syncKeyboardInsetsToIframes();
@@ -149,7 +147,7 @@ export function applyPlatformAttributes() {
 
         iframeObserver.observe(document.body, { childList: true, subtree: true });
 
-        window.addEventListener("android-window-insets-change", () => {
+        window.addEventListener(INSETS_EVENT, () => {
             syncKeyboardInsetsToIframes();
             if (parseCssPixelValue(getKeyboardInsetBottom()) > 0) {
                 scrollFocusedControlIntoView(document);

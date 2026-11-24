@@ -1,8 +1,8 @@
 const LOG_MAX_FILE_SIZE: u128 = 5 * 1024 * 1024; // 5 MiB
 const LOG_FILE_HISTORY: usize = 10;
 
-/// The bridge of the activation page, which runs in a frame of a local page. Content views get
-/// theirs, with their environment, from the code that opens them.
+/// The bridge of the local test page, which runs in a frame of a local page. Content views and
+/// activation pages get theirs, with their environment, from the code that opens them.
 fn bucky_runtime_plugin<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
     tauri::plugin::Builder::new("bucky-runtime")
         .js_init_script_on_all_frames(content::bridge::API_SCRIPT)
@@ -38,7 +38,7 @@ mod error;
 mod http_client;
 #[cfg(target_os = "ios")]
 mod ios_webview;
-#[cfg(any(target_os = "android", test))]
+#[cfg(any(mobile, test))]
 mod json_file;
 #[cfg(desktop)]
 mod lifecycle;
@@ -320,6 +320,7 @@ pub fn run() {
         content::mobile::native_set_labels,
         content::mobile::native_status,
         content::mobile::native_open_settings,
+        content::mobile::native_share,
         audio::audio_status,
         audio::audio_hold,
         deeplink::deeplink_ready,
