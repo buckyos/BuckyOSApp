@@ -1,6 +1,6 @@
 import React from "react";
 import { FirstZone } from "../../features/home/FirstZone";
-import { Shortcuts } from "../../features/home/Shortcuts";
+import { ShortcutsSection } from "../../features/home/ShortcutsSection";
 import { StatusCard } from "../../features/home/StatusCard";
 import { MusicCard } from "../../features/music/MusicCard";
 import { AccountArea } from "../../features/zone/AccountArea";
@@ -18,7 +18,7 @@ const Home: React.FC = () => {
                         <SessionNotice zone={current} />
                         {current.session.state === "signed_in" ? <StatusCard key={current.did} zone={current} /> : null}
                         <MusicCard key={`music-${current.did}`} zone={current} />
-                        <Shortcuts key={`shortcuts-${current.did}`} zone={current} />
+                        <ShortcutsSection key={`shortcuts-${current.did}`} zone={current} />
                     </>
                 ) : zones.length === 0 && !loading ? (
                     <FirstZone />

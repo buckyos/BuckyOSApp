@@ -25,7 +25,7 @@ interface Drag {
 }
 
 /** The apps the user keeps on Home. */
-export const Shortcuts: React.FC<{ zone: ZoneView }> = ({ zone }) => {
+export const ShortcutsSection: React.FC<{ zone: ZoneView }> = ({ zone }) => {
     const { t } = useI18n();
     const { catalog, loading, failed, reload } = useCatalog(zone);
     const { shortcuts, unsaved, editable, change } = useShortcuts(zone);
