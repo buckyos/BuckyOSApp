@@ -9,6 +9,7 @@
         "build": "tsc && vite build",
         "test": "vitest run",
         "preview": "vite preview",
+        "build:ios-sim": "rm -rf src-tauri/gen/apple/build/arm64-sim && tauri ios build --debug --target aarch64-sim --ci",
         "tauri": "tauri"
     },
     "dependencies": {

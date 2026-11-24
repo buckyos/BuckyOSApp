@@ -16,6 +16,20 @@ pnpm run tauri android init
 
 pnpm run tauri android dev
 
+## iOS
+
+iPhone only, iOS 17 or newer. Needs Xcode, `rustup target add aarch64-apple-ios aarch64-apple-ios-sim`, and the network for the first build (SwiftPM fetches `swift-rs` for Tauri's Swift package).
+
+```bash
+pnpm run build:ios-sim
+```
+
+builds for the simulator into `src-tauri/gen/apple/build/arm64-sim/BuckyOS.app`; `xcrun simctl install <device> <that path>` installs it. The script removes the bundle of the last build first: Tauri would fail at the last step with "Directory not empty" and leave the old one there.
+
+- The native side is Swift: `src-tauri/ios/ClientPlugin`, a Tauri plugin that `build.rs` compiles and links (Tauri's own Swift package is copied to `.tauri/` in it). Rust calls it by `run_mobile_plugin_async`; what needs an answer at once goes through the C functions in `ClientBridge.h`.
+- `src-tauri/Info.ios.plist` has what is only iOS's (`Info.plist` is also macOS's). Tauri merges both into `gen/apple/buckyosapp_iOS/Info.plist` at every build; the merged file is committed. A key taken out of them has to be taken out there too.
+- `project.yml` is what `project.pbxproj` was generated from; without xcodegen, change both.
+
 ## Shared sources
 
 The client uses some sources of the [buckyos](https://github.com/buckyos/buckyos) Desktop as they are (Zone API wrappers, Activity, appearance, design tokens): `@buckyos-desktop/*` is `src/frame/desktop/src/shared/*` of a buckyos checkout next to this repository (branch `main`), or of `.buckyos/` inside it, which is what CI checks out. They are referenced, never copied; change them in buckyos. The WebSDK (npm package `buckyos`) both sides import is this project's copy. Building fails with a message when no checkout is found.
