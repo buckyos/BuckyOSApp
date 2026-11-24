@@ -518,6 +518,7 @@ const de = {
         choose_title: "Öffnen mit",
         choose_none: "Keine App in dieser Zone kann das öffnen.",
         show_file: "Anzeigen",
+        share_file: "Teilen",
         file: "Datei",
         downloaded: "Heruntergeladen: {{name}}",
         download_failed: "Download fehlgeschlagen: {{name}}",
@@ -528,6 +529,8 @@ const de = {
             unreachable: "{{zone}} ist nicht erreichbar.",
             unsupported: "Der Client kann diesen Link nicht öffnen.",
             failed: "Es konnte nicht geöffnet werden.",
+            not_here: "Auf {{platform}} noch nicht verfügbar.",
+            failed_because: "Es konnte nicht geöffnet werden: {{reason}}",
         },
     },
     notify: {

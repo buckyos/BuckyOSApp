@@ -507,6 +507,7 @@ export default {
         choose_title: "Открыть с помощью",
         choose_none: "В этой Zone нет приложения, которое это открывает.",
         show_file: "Показать",
+        share_file: "Поделиться",
         file: "Файл",
         downloaded: "Загружено: {{name}}",
         download_failed: "Не удалось загрузить: {{name}}",
@@ -517,6 +518,8 @@ export default {
             unreachable: "{{zone}} недоступна.",
             unsupported: "Клиент не может открыть эту ссылку.",
             failed: "Не удалось открыть.",
+            not_here: "На {{platform}} пока не поддерживается.",
+            failed_because: "Не удалось открыть: {{reason}}",
         },
     },
     notify: {

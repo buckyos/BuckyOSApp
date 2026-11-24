@@ -518,6 +518,7 @@ const es = {
         choose_title: "Abrir con",
         choose_none: "Ninguna app de esta Zone puede abrirlo.",
         show_file: "Mostrar",
+        share_file: "Compartir",
         file: "Archivo",
         downloaded: "Descargado: {{name}}",
         download_failed: "Error al descargar: {{name}}",
@@ -528,6 +529,8 @@ const es = {
             unreachable: "No se puede conectar con {{zone}}.",
             unsupported: "El cliente no puede abrir este enlace.",
             failed: "No se pudo abrir.",
+            not_here: "Aún no disponible en {{platform}}.",
+            failed_because: "No se pudo abrir: {{reason}}",
         },
     },
     notify: {

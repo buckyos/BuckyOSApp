@@ -569,6 +569,7 @@ export default {
         choose_title: "Open with",
         choose_none: "No app in this Zone opens this.",
         show_file: "Show",
+        share_file: "Share",
         file: "File",
         downloaded: "Downloaded: {{name}}",
         download_failed: "The download failed: {{name}}",
@@ -579,6 +580,8 @@ export default {
             unreachable: "{{zone}} cannot be reached.",
             unsupported: "The client cannot open this link.",
             failed: "It could not be opened.",
+            not_here: "Not supported on {{platform}} yet.",
+            failed_because: "It could not be opened: {{reason}}",
         },
     },
     notify: {

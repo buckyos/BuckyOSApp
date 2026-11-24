@@ -18,9 +18,14 @@
     transition: background-color 120ms;
 }
 
-.account-button:hover,
 .account-button[aria-expanded='true'] {
     background: var(--ui-hover);
+}
+
+@media (hover: hover) {
+    .account-button:hover {
+        background: var(--ui-hover);
+    }
 }
 
 .account-button > svg {
@@ -100,10 +105,15 @@
     line-height: 19px;
 }
 
-.zone-menu-item:hover,
 .zone-menu-item:focus-visible {
     background: var(--ui-hover);
     box-shadow: none;
+}
+
+@media (hover: hover) {
+    .zone-menu-item:hover {
+        background: var(--ui-hover);
+    }
 }
 
 .zone-menu-item > svg {

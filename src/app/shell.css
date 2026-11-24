@@ -36,6 +36,16 @@
     padding: 4px 16px 20px;
 }
 
+/* What is at the end of a page can be scrolled clear of the keyboard. */
+[data-mobile-shell] .shell-page-body {
+    padding-bottom: calc(20px + var(--keyboard-inset-bottom));
+}
+
+[data-mobile-shell] .shell-page .ui-scroll,
+[data-mobile-shell] .shell-page.ui-scroll {
+    scroll-padding-bottom: calc(20px + var(--keyboard-inset-bottom));
+}
+
 .shell-page-body > * {
     flex: none;
 }
@@ -140,8 +150,10 @@
     background: transparent;
 }
 
-.tabbar .tab:hover {
-    color: var(--cp-text);
+@media (hover: hover) {
+    .tabbar .tab:hover {
+        color: var(--cp-text);
+    }
 }
 
 .tabbar .tab.active {

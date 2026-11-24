@@ -16,8 +16,10 @@
     transition: background-color 120ms;
 }
 
-.app-tile:hover {
-    background: var(--ui-hover);
+@media (hover: hover) {
+    .app-tile:hover {
+        background: var(--ui-hover);
+    }
 }
 
 .app-tile:active {
@@ -67,6 +69,8 @@
     background: color-mix(in srgb, var(--cp-text) 7%, transparent);
 }
 
-.app-tile-loading:hover {
-    background: none;
+@media (hover: hover) {
+    .app-tile-loading:hover {
+        background: none;
+    }
 }

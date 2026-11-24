@@ -20,7 +20,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
 /** Questions a page must not be able to draw, read or answer by itself. */
 object Dialogs {
-  fun askMicrophone(activity: AppCompatActivity, app: String, done: (Boolean) -> Unit) {
+  fun askMicrophone(activity: AppCompatActivity, app: String, zone: String, done: (Boolean) -> Unit) {
     val labels = Labels.load(activity)
     var answered = false
     val answer = { allowed: Boolean ->
@@ -30,7 +30,7 @@ object Dialogs {
       }
     }
     MaterialAlertDialogBuilder(activity)
-      .setMessage(labels.micAsk.replace("{app}", app))
+      .setMessage(labels.micAsk.replace("{zone}", zone).replace("{app}", app))
       .setPositiveButton(labels.allow) { _, _ -> answer(true) }
       .setNegativeButton(labels.deny) { _, _ -> answer(false) }
       .setOnDismissListener { answer(false) }

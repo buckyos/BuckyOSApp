@@ -53,13 +53,14 @@ pub fn decide(place: &ViewPlace, url: &Url, main_frame: Option<bool>, is_listed_
         "about" | "blob" | "data" => return Navigation::Allow,
         "buckyos" => return Navigation::DeepLink,
         "mailto" | "tel" | "sms" => return Navigation::External,
-        "tauri" => return Navigation::Allow,
+        // What a desktop window shows in place of a page; a phone's views have no local pages.
+        "tauri" if cfg!(desktop) => return Navigation::Allow,
         _ => return Navigation::Block,
     }
     let Some(host) = url.host_str() else {
         return Navigation::Block;
     };
-    if matches!(host, "tauri.localhost" | "ipc.localhost" | "asset.localhost") {
+    if cfg!(desktop) && matches!(host, "tauri.localhost" | "ipc.localhost" | "asset.localhost") {
         return Navigation::Allow;
     }
     if main_frame == Some(false) {

@@ -507,6 +507,7 @@ export default {
         choose_title: "アプリを選択",
         choose_none: "この Zone にはこれを開けるアプリがありません。",
         show_file: "表示",
+        share_file: "共有",
         file: "ファイル",
         downloaded: "ダウンロード完了：{{name}}",
         download_failed: "ダウンロード失敗：{{name}}",
@@ -517,6 +518,8 @@ export default {
             unreachable: "{{zone}} に接続できません。",
             unsupported: "クライアントはこのリンクを開けません。",
             failed: "開けませんでした。",
+            not_here: "{{platform}} ではまだ対応していません。",
+            failed_because: "開けませんでした：{{reason}}",
         },
     },
     notify: {

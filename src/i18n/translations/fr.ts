@@ -518,6 +518,7 @@ const fr = {
         choose_title: "Ouvrir avec",
         choose_none: "Aucune app de cette Zone ne peut l’ouvrir.",
         show_file: "Afficher",
+        share_file: "Partager",
         file: "Fichier",
         downloaded: "Téléchargé : {{name}}",
         download_failed: "Échec du téléchargement : {{name}}",
@@ -528,6 +529,8 @@ const fr = {
             unreachable: "{{zone}} est injoignable.",
             unsupported: "Le client ne peut pas ouvrir ce lien.",
             failed: "L’ouverture a échoué.",
+            not_here: "Pas encore disponible sur {{platform}}.",
+            failed_because: "L’ouverture a échoué : {{reason}}",
         },
     },
     notify: {

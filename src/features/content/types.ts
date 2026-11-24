@@ -26,15 +26,17 @@ export interface OpenViewRequest {
     presentation?: "window" | "tab";
 }
 
-/** `canceled`: the user decided against it, there is nothing to tell. */
-export type OpenFailure = "zone_not_found" | "app_not_found" | "need_login" | "unreachable" | "unsupported" | "canceled" | "failed";
+/** `canceled`: the user decided against it, there is nothing to tell. `not_here`: this platform has it not. */
+export type OpenFailure = "zone_not_found" | "app_not_found" | "need_login" | "unreachable" | "unsupported" | "not_here" | "canceled" | "failed";
 
 /** An open request that could not be carried out, for the page to tell the user. */
 export class OpenError extends Error {
     constructor(
         readonly reason: OpenFailure,
         readonly zone?: string,
-        readonly app?: string
+        readonly app?: string,
+        /** What went wrong, for `failed`. */
+        readonly detail?: string
     ) {
         super(reason);
     }

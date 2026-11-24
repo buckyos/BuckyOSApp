@@ -6,12 +6,13 @@ import { Empty, Spinner } from "../../components/ui/States";
 import { useStage } from "../../features/container/stage";
 import { ViewCover } from "../../features/container/ViewCover";
 import { clientRuntime } from "../../features/content/clientRuntime";
+import { failureText, type FailureTold } from "../../features/content/openFailure";
 import { hideViews, type MobileView } from "../../features/content/mobileViews";
 import { tabViewId, type PhoneTab } from "../../features/content/phoneTabs";
 import { useRuntime } from "../../features/content/useRuntime";
 import { SessionNotice } from "../../features/zone/SessionNotice";
 import { useZones } from "../../features/zone/ZoneContext";
-import type { ZoneView } from "../../features/zone/types";
+import { zoneTitle, type ZoneView } from "../../features/zone/types";
 import { useI18n } from "../../i18n";
 import "../../features/container/container.css";
 
@@ -42,7 +43,7 @@ const ZoneTab: React.FC<{ zone: ZoneView; tab: PhoneTab }> = ({ zone, tab }) => 
     const id = tabViewId(zone.did, tab);
     const view = views.find((candidate) => candidate.id === id) as MobileView | undefined;
     const ready = zone.session.state === "signed_in";
-    const [failed, setFailed] = React.useState(false);
+    const [failed, setFailed] = React.useState<FailureTold | null>(null);
     const stageRef = React.useRef<HTMLDivElement | null>(null);
     const alive = React.useRef(true);
     const opening = React.useRef(false);
@@ -59,7 +60,7 @@ const ZoneTab: React.FC<{ zone: ZoneView; tab: PhoneTab }> = ({ zone, tab }) => 
     const open = React.useCallback(async () => {
         if (opening.current) return;
         opening.current = true;
-        setFailed(false);
+        setFailed(null);
         const opened = await clientRuntime.openTab(zone.did, tab, id);
         opening.current = false;
         if (!alive.current) {
@@ -69,7 +70,7 @@ const ZoneTab: React.FC<{ zone: ZoneView; tab: PhoneTab }> = ({ zone, tab }) => 
             }
             return;
         }
-        if (!opened) setFailed(true);
+        if (!opened) setFailed(clientRuntime.getSnapshot().failure ?? { reason: "failed" });
     }, [zone.did, tab, id]);
 
     const missing = ready && !view && !front && leaving !== zone.did;
@@ -89,7 +90,7 @@ const ZoneTab: React.FC<{ zone: ZoneView; tab: PhoneTab }> = ({ zone, tab }) => 
             <SessionNotice zone={zone} />
             {ready ? (
                 failed ? (
-                    <Empty text={t("open.failure.failed")}>
+                    <Empty text={failureText(t, failed, { zone: zoneTitle(zone), app: tab === "messagehub" ? "Message Hub" : "HomeStation" })}>
                         <Button size="sm" onClick={() => void open()}>
                             {t("ui.retry")}
                         </Button>

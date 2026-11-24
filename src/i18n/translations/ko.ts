@@ -507,6 +507,7 @@ export default {
         choose_title: "연결 프로그램",
         choose_none: "이 Zone에는 이것을 열 수 있는 앱이 없습니다.",
         show_file: "보기",
+        share_file: "공유",
         file: "파일",
         downloaded: "다운로드됨: {{name}}",
         download_failed: "다운로드 실패: {{name}}",
@@ -517,6 +518,8 @@ export default {
             unreachable: "{{zone}}에 연결할 수 없습니다.",
             unsupported: "클라이언트가 이 링크를 열 수 없습니다.",
             failed: "열지 못했습니다.",
+            not_here: "{{platform}}에서는 아직 지원되지 않습니다.",
+            failed_because: "열지 못했습니다: {{reason}}",
         },
     },
     notify: {

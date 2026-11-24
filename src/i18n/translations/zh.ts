@@ -567,6 +567,7 @@ export default {
         choose_title: "打开方式",
         choose_none: "这个 Zone 里没有能打开它的应用。",
         show_file: "显示文件",
+        share_file: "分享",
         file: "文件",
         downloaded: "已下载：{{name}}",
         download_failed: "下载失败：{{name}}",
@@ -577,6 +578,8 @@ export default {
             unreachable: "连接不上 {{zone}}。",
             unsupported: "客户端不能打开这个链接。",
             failed: "没有打开成功。",
+            not_here: "{{platform}} 暂不支持。",
+            failed_because: "没有打开成功：{{reason}}",
         },
     },
     notify: {

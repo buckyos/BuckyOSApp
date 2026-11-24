@@ -209,7 +209,7 @@ class ContentView(
       activity.microphone.request(done)
       return
     }
-    Dialogs.askMicrophone(activity, label) { allowed ->
+    Dialogs.askMicrophone(activity, label, zoneHost) { allowed ->
       if (!allowed || gone) {
         done(false)
       } else {
