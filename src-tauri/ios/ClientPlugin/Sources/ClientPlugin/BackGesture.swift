@@ -21,6 +21,7 @@ final class BackGesture: NSObject, UIGestureRecognizerDelegate {
     recognizer.delegate = self
     recognizer.addTarget(self, action: #selector(moved))
     container.addGestureRecognizer(recognizer)
+    container.escape = { [weak self] in self?.go() }
     bubble.frame = CGRect(x: 0, y: 0, width: 40, height: 40)
     bubble.layer.cornerRadius = 20
     bubble.clipsToBounds = true
@@ -55,10 +56,14 @@ final class BackGesture: NSObject, UIGestureRecognizerDelegate {
       let fast = recognizer.velocity(in: container).x > 500 && distance > 24
       let back = distance >= Self.needed || fast
       hide()
-      if back { container.mainHost.web.evaluateJavaScript("window.__buckyBack && window.__buckyBack.go()") }
+      if back { go() }
     default:
       hide()
     }
+  }
+
+  private func go() {
+    container?.mainHost.web.evaluateJavaScript("window.__buckyBack && window.__buckyBack.go()")
   }
 
   private func follow(_ distance: CGFloat, _ height: CGFloat) {

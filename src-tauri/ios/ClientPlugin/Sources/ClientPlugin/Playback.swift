@@ -16,12 +16,13 @@ final class Playback {
 
   func update(_ next: [String: Any]?) throws {
     let before = item
-    item = next
     guard let next else {
+      item = nil
       if before != nil { end() }
       return
     }
     if before == nil { try begin() }
+    item = next
     show(next)
   }
 

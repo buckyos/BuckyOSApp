@@ -38,6 +38,8 @@ final class MainHost: UIView {
 
 /// Content views below, the local pages above.
 final class ContainerView: UIView {
+  /// Back, by a screen reader's gesture.
+  var escape: (() -> Void)?
   let contentHost = UIView()
   let mainHost: MainHost
 
@@ -54,6 +56,11 @@ final class ContainerView: UIView {
 
   required init?(coder: NSCoder) {
     fatalError("not from a nib")
+  }
+
+  override func accessibilityPerformEscape() -> Bool {
+    escape?()
+    return escape != nil
   }
 
   /// A screen reader gets what the touches get.
