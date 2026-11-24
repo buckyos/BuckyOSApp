@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: AGPL-3.0-only
 // Vendored file with the local desktop adaptation documented below.
 #![allow(dead_code, unused_imports, unused_variables, clippy::all)]
 

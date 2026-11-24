@@ -33,6 +33,6 @@ ImageMagick 命令移除 iOS 图标的 alpha 通道，并确保 Android hdpi 启
 
 ## License
 
-Project-authored code is licensed under [Apache-2.0](LICENSE). See [NOTICE](NOTICE) for retained notices. Third-party dependencies and bundled assets keep their own licenses. The separately installed BuckyOS runtime is [AGPL-3.0-only](https://github.com/buckyos/buckyos/blob/main/LICENSE); this repository's Apache license does not replace its terms or those of other bundled programs.
+BuckyOSApp first-party code is licensed under the GNU Affero General Public License, version 3 only (`AGPL-3.0-only`), the same license as [BuckyOS](https://github.com/buckyos/buckyos); see [LICENSE](LICENSE). See [NOTICE](NOTICE) for retained notices. Third-party dependencies and bundled assets keep their own licenses; the BuckyOS WebSDK (npm package `buckyos`) stays Apache-2.0.
 
-`src-tauri/src/node_control.rs` is the documented historical copy from BuckyOS and is licensed under Apache-2.0 as part of this repository. Future updates copied from AGPL-only BuckyOS code require a separate compatible grant; the current copy is not permission to import later AGPL-only changes.
+When distributing binaries, provide the corresponding source and build materials required by the applicable licenses.
