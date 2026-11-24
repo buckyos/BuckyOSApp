@@ -81,7 +81,7 @@ export const MusicCard: React.FC<{ zone: ZoneView; optional?: boolean }> = ({ zo
                         {music.library === "loading" ? <Spinner /> : <Music size={18} aria-hidden="true" />}
                         <p data-testid="music-status">
                             {music.folder ? <strong>{folderName(music.folder)}</strong> : null}
-                            <span>{signedIn || !music.folder ? t(messageKey(music)) : t(sessionLabelKey(zone.session))}</span>
+                            <span>{signedIn || !music.folder ? t(messageKey(music)) : t(sessionLabelKey(zone))}</span>
                         </p>
                         {!signedIn || music.library === "loading" ? null : music.library === "unavailable" || music.failed ? (
                             <Button size="sm" onClick={() => void musicPlayer.load()}>
@@ -149,7 +149,7 @@ const Playing: React.FC<{ zone: ZoneView; music: MusicSnapshot }> = ({ zone, mus
                         {title}
                     </span>
                     {!music.ready ? (
-                        <StateText tone={sessionTone(zone.session)}>{t(sessionLabelKey(zone.session))}</StateText>
+                        <StateText tone={sessionTone(zone)}>{t(sessionLabelKey(zone))}</StateText>
                     ) : music.unreachable ? (
                         <StateText tone="bad">{t("music.unreachable")}</StateText>
                     ) : (

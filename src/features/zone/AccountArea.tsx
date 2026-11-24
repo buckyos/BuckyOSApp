@@ -70,7 +70,7 @@ export const AccountArea: React.FC = () => {
                         <span className="account-zone">
                             <Dot color="var(--zone-mark)" />
                             <span className="account-zone-name">{zoneTitle(current)}</span>
-                            <span className="account-zone-state">{t(sessionLabelKey(current.session))}</span>
+                            <span className="account-zone-state">{t(sessionLabelKey(current))}</span>
                         </span>
                     ) : (
                         <span className="account-zone">{t("zones.none")}</span>
@@ -98,7 +98,7 @@ export const AccountArea: React.FC = () => {
                                     <ZoneMark zone={zone} size={28} />
                                     <span className="ui-row-text">
                                         <span className="ui-row-title">{zoneTitle(zone)}</span>
-                                        <StateText tone={sessionTone(zone.session)}>{t(sessionLabelKey(zone.session))}</StateText>
+                                        <StateText tone={sessionTone(zone)}>{t(sessionLabelKey(zone))}</StateText>
                                     </span>
                                     {zone.did === current?.did ? <Check size={16} aria-hidden="true" /> : null}
                                 </button>

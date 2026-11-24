@@ -68,7 +68,7 @@ const ZoneSettings: React.FC<{ zone: ZoneView }> = ({ zone }) => {
                 <ZoneMark zone={zone} size={48} />
                 <span className="zone-head-text">
                     <strong>{zoneTitle(zone)}</strong>
-                    <StateText tone={sessionTone(zone.session)}>{t(sessionLabelKey(zone.session))}</StateText>
+                    <StateText tone={sessionTone(zone)}>{t(sessionLabelKey(zone))}</StateText>
                 </span>
                 {zone.did === current?.did ? null : (
                     <Button size="sm" onClick={() => void switchTo(zone.did)}>

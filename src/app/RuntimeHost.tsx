@@ -246,7 +246,7 @@ function useBackButton() {
         }
         const target = targetOf(pathname);
         if (target === "background") await toBackground();
-        else if (target === "history") navigate(-1);
+        else if (target === "history" || (target.came && (window.history.state?.idx ?? 0) > 0)) navigate(-1);
         else navigate(target.to, { replace: true });
     };
     React.useEffect(() => {

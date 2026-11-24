@@ -3,25 +3,34 @@ import { sessionLabelKey, sessionNotice, sessionTone, signInName } from "./sessi
 import type { SessionState, SessionStatus } from "./types";
 
 const session = (state: SessionState, reason: string | null = null): SessionStatus => ({ state, reason, username: null, identity: null });
+const zone = (state: SessionState, reason: string | null = null, signed_out = false) => ({ session: session(state, reason), signed_out });
 
 describe("a Zone's session on screen", () => {
     it("says nothing when signed in", () => {
-        expect(sessionNotice(session("signed_in"))).toBeNull();
-        expect(sessionTone(session("signed_in"))).toBe("ok");
+        expect(sessionNotice(zone("signed_in"))).toBeNull();
+        expect(sessionTone(zone("signed_in"))).toBe("ok");
     });
 
     it("offers to sign in or to try again", () => {
-        expect(sessionNotice(session("need_password"))?.action).toBe("sign_in");
-        expect(sessionNotice(session("need_password", "no_password"))?.key).toBe("zones.notice.no_password");
-        expect(sessionNotice(session("signed_out"))?.action).toBe("sign_in");
-        expect(sessionNotice(session("offline"))?.action).toBe("retry");
-        expect(sessionNotice(session("offline", "clock"))?.key).toBe("zones.notice.clock");
-        expect(sessionNotice(session("signing_in"))?.action).toBeUndefined();
+        expect(sessionNotice(zone("need_password"))?.action).toBe("sign_in");
+        expect(sessionNotice(zone("need_password", "no_password"))?.key).toBe("zones.notice.no_password");
+        expect(sessionNotice(zone("signed_out"))?.action).toBe("sign_in");
+        expect(sessionNotice(zone("offline"))?.action).toBe("retry");
+        expect(sessionNotice(zone("offline", "clock"))?.key).toBe("zones.notice.clock");
+        expect(sessionNotice(zone("signing_in"))?.action).toBeUndefined();
+    });
+
+    it("tells the user's own signing out from a password that is not there", () => {
+        expect(sessionNotice(zone("signed_out", null, true))?.key).toBe("zones.notice.signed_out");
+        expect(sessionLabelKey(zone("signed_out", null, true))).toBe("zones.state.signed_out");
+        expect(sessionNotice(zone("signed_out"))?.key).toBe("zones.notice.need_password");
+        expect(sessionLabelKey(zone("signed_out"))).toBe("zones.state.need_password");
+        expect(sessionTone(zone("signed_out"))).toBe("warn");
     });
 
     it("names a wrong clock rather than a lost connection", () => {
-        expect(sessionLabelKey(session("offline"))).toBe("zones.state.offline");
-        expect(sessionLabelKey(session("offline", "clock"))).toBe("zones.state.clock");
+        expect(sessionLabelKey(zone("offline"))).toBe("zones.state.offline");
+        expect(sessionLabelKey(zone("offline", "clock"))).toBe("zones.state.clock");
     });
 
     it("fills in the account's own name only for its own Zone", () => {

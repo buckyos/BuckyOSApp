@@ -39,9 +39,9 @@ describe("back on a phone", () => {
     });
 
     it("leads up, to Home, and out", () => {
-        expect(backTarget("/main/setting/zones/did%3Abns%3Aa")).toEqual({ to: "/main/setting/zones" });
-        expect(backTarget("/main/setting/zones")).toEqual({ to: "/main/setting" });
-        expect(backTarget("/main/setting/about")).toEqual({ to: "/main/setting" });
+        expect(backTarget("/main/setting/zones/did%3Abns%3Aa")).toEqual({ to: "/main/setting/zones", came: true });
+        expect(backTarget("/main/setting/zones")).toEqual({ to: "/main/setting", came: true });
+        expect(backTarget("/main/setting/about")).toEqual({ to: "/main/setting", came: true });
         expect(backTarget("/main/setting")).toEqual({ to: "/main/home" });
         expect(backTarget("/main/feed")).toEqual({ to: "/main/home" });
         expect(backTarget("/main/home/ood-scan")).toEqual({ to: "/main/home" });

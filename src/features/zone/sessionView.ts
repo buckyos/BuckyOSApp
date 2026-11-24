@@ -2,8 +2,16 @@ import type { Tone } from "../../components/ui/States";
 import { failureOfReason } from "./errors";
 import type { SessionStatus, ZoneView } from "./types";
 
-export function sessionTone(session: SessionStatus): Tone {
-    switch (session.state) {
+type Signed = Pick<ZoneView, "session" | "signed_out">;
+
+/** What to show the session as: without a credential, only the user's own signing out is that. */
+function shownState({ session, signed_out }: Signed): SessionStatus["state"] {
+    return session.state === "signed_out" && !signed_out ? "need_password" : session.state;
+}
+
+export function sessionTone(zone: Signed): Tone {
+    const { session } = zone;
+    switch (shownState(zone)) {
         case "signed_in":
             return "ok";
         case "signing_in":
@@ -18,9 +26,9 @@ export function sessionTone(session: SessionStatus): Tone {
 }
 
 /** The i18n key of a session's short state. */
-export function sessionLabelKey(session: SessionStatus): string {
-    if (session.state === "offline" && session.reason === "clock") return "zones.state.clock";
-    return `zones.state.${session.state}`;
+export function sessionLabelKey(zone: Signed): string {
+    if (zone.session.state === "offline" && zone.session.reason === "clock") return "zones.state.clock";
+    return `zones.state.${shownState(zone)}`;
 }
 
 export type SessionAction = "sign_in" | "retry";
@@ -33,8 +41,9 @@ export interface SessionNotice {
 }
 
 /** What a page says above its content while the Zone cannot be used; null when there is nothing to say. */
-export function sessionNotice(session: SessionStatus): SessionNotice | null {
-    switch (session.state) {
+export function sessionNotice(zone: Signed): SessionNotice | null {
+    const { session } = zone;
+    switch (shownState(zone)) {
         case "need_password": {
             const reason = failureOfReason(session.reason);
             return {

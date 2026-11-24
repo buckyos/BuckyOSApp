@@ -33,7 +33,7 @@ const ZoneList: React.FC = () => {
                                     <ZoneMark zone={zone} size={34} />
                                     <span className="ui-row-text">
                                         <span className="ui-row-title">{zoneTitle(zone)}</span>
-                                        <StateText tone={sessionTone(zone.session)}>{t(sessionLabelKey(zone.session))}</StateText>
+                                        <StateText tone={sessionTone(zone)}>{t(sessionLabelKey(zone))}</StateText>
                                     </span>
                                     {zone.did === current?.did ? <span className="ui-row-value">{t("zones.current")}</span> : null}
                                 </button>
