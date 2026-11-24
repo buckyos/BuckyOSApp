@@ -52,5 +52,16 @@
 	<true/>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<true/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>buckyos</string>
+			</array>
+			<key>CFBundleURLName</key>
+			<string>buckyos</string>
+		</dict>
+	</array>
 </dict>
 </plist>
