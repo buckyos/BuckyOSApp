@@ -307,6 +307,7 @@ export default {
         remote_url_error_probe_failed: "無法連線到這個 OOD，或讀不到它的啟用頁位址。",
     },
     device_scan: {
+        page_failed: "裝置沒有回應。請確認它已開機，並且和手機在同一個網路裡，然後重試。",
         title: "掃描裝置",
         hint: "請確認目標裝置已開機並與目前裝置位於同一區域網路，然後點擊下方按鈕開始掃描。",
         running_title: "正在尋找附近的裝置",

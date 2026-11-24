@@ -318,6 +318,7 @@ const fr = {
         remote_url_error_probe_failed: "Cet OOD est injoignable ou sa page d’activation n’a pas pu être lue.",
     },
     device_scan: {
+        page_failed: "L’appareil ne répond pas. Vérifiez qu’il est allumé et sur le même réseau, puis réessayez.",
         title: "Scanner l'appareil",
         hint: "Assurez-vous que l'appareil cible est allumé et sur le même réseau local, puis lancez un scan ci-dessous.",
         running_title: "Recherche des appareils à proximité",

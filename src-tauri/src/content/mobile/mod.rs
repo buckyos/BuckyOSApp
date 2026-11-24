@@ -70,6 +70,8 @@ pub struct MobileView {
 }
 
 pub const ACTIVATION_CLOSED_EVENT: &str = "activation://closed";
+/// The page of an activation view could not be loaded.
+pub const ACTIVATION_FAILED_EVENT: &str = "activation://failed";
 
 #[derive(Debug, Clone, Serialize)]
 pub struct ActivationView {

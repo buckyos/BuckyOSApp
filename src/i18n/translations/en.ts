@@ -376,6 +376,7 @@ export default {
         rescan_button: "Scan again",
     },
     device_scan: {
+        page_failed: "The device does not answer. Make sure that it is on and in the same network, then try again.",
         title: "Scan Device",
         hint: "Make sure the target device is powered on and on the same local network, then start a scan below.",
         running_title: "Searching for nearby devices",

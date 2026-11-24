@@ -318,6 +318,7 @@ const de = {
         remote_url_error_probe_failed: "Diese OOD ist nicht erreichbar, oder ihre Aktivierungsseite konnte nicht gelesen werden.",
     },
     device_scan: {
+        page_failed: "Das Gerät antwortet nicht. Prüfe, ob es eingeschaltet und im selben Netzwerk ist, und versuche es erneut.",
         title: "Gerät scannen",
         hint: "Stelle sicher, dass das Zielgerät eingeschaltet und im selben lokalen Netzwerk ist, und starte dann unten einen Scan.",
         running_title: "Suche nach Geräten in der Nähe",

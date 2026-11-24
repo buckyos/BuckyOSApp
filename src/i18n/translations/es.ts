@@ -318,6 +318,7 @@ const es = {
         remote_url_error_probe_failed: "No se puede conectar con este OOD o leer su página de activación.",
     },
     device_scan: {
+        page_failed: "El dispositivo no responde. Comprueba que está encendido y en la misma red e inténtalo de nuevo.",
         title: "Escanear dispositivo",
         hint: "Asegúrate de que el dispositivo objetivo esté encendido y en la misma red local, y luego inicia un escaneo abajo.",
         running_title: "Buscando dispositivos cercanos",

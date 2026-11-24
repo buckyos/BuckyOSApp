@@ -13,7 +13,7 @@ use tauri::plugin::{PluginHandle, TauriPlugin};
 use tauri::{AppHandle, Emitter, Manager, Runtime, State, Url, Wry};
 use tauri_plugin_opener::OpenerExt;
 
-use super::{platform, ActivationView, Layout, MobileView, MobileViewChanged, NativeStatus, Overlay, Rect, ViewStatus, ACTIVATION_CLOSED_EVENT};
+use super::{platform, ActivationView, Layout, MobileView, MobileViewChanged, NativeStatus, Overlay, Rect, ViewStatus, ACTIVATION_CLOSED_EVENT, ACTIVATION_FAILED_EVENT};
 use crate::content::bridge::{self, BridgeError, Caller, Env};
 use crate::content::policy::{self, Navigation, ViewPlace};
 use crate::content::shelf::{page_path, profile_name, to_discard, Shelved, MAX_KEPT};
@@ -678,6 +678,10 @@ pub fn on_event(text: &str) {
 }
 
 fn on_failed(app: &AppHandle, id: &str, url: &str, detail: String) {
+    if views(app).activation(id).is_some() {
+        let _ = app.emit_to("main", ACTIVATION_FAILED_EVENT, json!({ "id": id, "detail": detail }));
+        return;
+    }
     change(app, id, |view| {
         let own = Url::parse(url).is_ok_and(|url| zone_page(view, &url) && url.host_str() == Some(view.page_host.as_str()));
         view.waiting = Some(if own { url.to_string() } else { view.target.clone() });

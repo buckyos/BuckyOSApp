@@ -374,6 +374,7 @@ export default {
         rescan_button: "重新扫描",
     },
     device_scan: {
+        page_failed: "设备没有响应。请确认它已开机，并且和手机在同一个网络里，然后重试。",
         title: "扫描设备",
         hint: "请确保目标设备已开启并与当前设备处于同一局域网，然后点击下方按钮开始扫描。",
         running_title: "正在寻找附近的设备",

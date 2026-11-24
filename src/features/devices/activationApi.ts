@@ -2,6 +2,8 @@ import { invoke } from "@tauri-apps/api/core";
 
 /** A device's activation page was closed. */
 export const ACTIVATION_CLOSED_EVENT = "activation://closed";
+/** A phone's page could not be loaded. */
+export const ACTIVATION_FAILED_EVENT = "activation://failed";
 
 /** The page in a WebView of its own: a window on the desktop, on a phone a view to be laid out. */
 export const openActivationPage = (url: string, title: string) => invoke<{ id: string }>("activation_open", { url, title });

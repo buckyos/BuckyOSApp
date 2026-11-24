@@ -307,6 +307,7 @@ export default {
         remote_url_error_probe_failed: "이 OOD에 연결할 수 없거나 활성화 페이지 주소를 읽을 수 없습니다.",
     },
     device_scan: {
+        page_failed: "기기가 응답하지 않습니다. 전원이 켜져 있고 같은 네트워크에 있는지 확인한 후 다시 시도하세요.",
         title: "장치 스캔",
         hint: "대상 장치의 전원이 켜져 있고 현재 장치와 같은 로컬 네트워크에 있는지 확인한 뒤 아래 버튼으로 스캔을 시작하세요.",
         running_title: "주변 장치를 찾는 중",
