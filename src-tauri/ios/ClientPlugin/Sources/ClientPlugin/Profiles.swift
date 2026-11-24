@@ -27,11 +27,15 @@ enum Profiles {
   }
 
   static func store(_ profile: String) -> WKWebsiteDataStore {
+    doomed.remove(profile)
+    return open(profile)
+  }
+
+  private static func open(_ profile: String) -> WKWebsiteDataStore {
     guard let identifier = identifier(profile) else { return .nonPersistent() }
     if let known = used[profile] { return known }
     let store = WKWebsiteDataStore(forIdentifier: identifier)
     used[profile] = store
-    doomed.remove(profile)
     return store
   }
 
@@ -96,10 +100,9 @@ enum Profiles {
       done()
       return
     }
-    store(profile).removeData(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(), modifiedSince: .distantPast) {
-      used.removeValue(forKey: profile)
-      doomed.insert(profile)
-      done()
-    }
+    // From here on it counts only when it is used again.
+    doomed.insert(profile)
+    nonisolated(unsafe) let done = done
+    open(profile).removeData(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(), modifiedSince: .distantPast) { done() }
   }
 }

@@ -51,6 +51,7 @@ final class Client: NSObject {
     web.configuration.userContentController.add(themes, name: "buckyTheme")
     Keyboard.leave(web)
     self.container = container
+    apply(UserDefaults.standard.string(forKey: Self.themeKey))
     // The page may have been there first.
     web.evaluateJavaScript("window.dispatchEvent(new Event(\"native-ready\"))")
     back = BackGesture(container)
@@ -71,8 +72,16 @@ final class Client: NSObject {
 
   private lazy var still = StillScroll()
   private lazy var themes = ThemeMessages { [weak self] theme in
-    let style: UIUserInterfaceStyle = theme == "light" ? .light : theme == "dark" ? .dark : .unspecified
-    self?.container?.window?.overrideUserInterfaceStyle = style
+    UserDefaults.standard.set(theme, forKey: Self.themeKey)
+    self?.apply(theme)
+  }
+
+  private static let themeKey = "client-theme"
+
+  /// The client's theme; kept, so that a start does not begin in the system's.
+  private func apply(_ theme: String?) {
+    let window = container?.window ?? controller?.view.window
+    window?.overrideUserInterfaceStyle = theme == "light" ? .light : theme == "dark" ? .dark : .unspecified
   }
 
   private var controller: UIViewController? {
