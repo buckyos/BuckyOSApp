@@ -60,8 +60,8 @@ pub fn decide(place: &ViewPlace, url: &Url, main_frame: Option<bool>, is_listed_
     let Some(host) = url.host_str() else {
         return Navigation::Block;
     };
-    if cfg!(desktop) && matches!(host, "tauri.localhost" | "ipc.localhost" | "asset.localhost") {
-        return Navigation::Allow;
+    if matches!(host, "tauri.localhost" | "ipc.localhost" | "asset.localhost") {
+        return if cfg!(desktop) { Navigation::Allow } else { Navigation::Block };
     }
     if main_frame == Some(false) {
         return Navigation::Allow;
