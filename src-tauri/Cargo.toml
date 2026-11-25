@@ -18,6 +18,10 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 [build-dependencies]
 tauri-build = { version = "=2.5.6", features = [] }
 
+# Builds the Swift side of the client (ios/ClientPlugin); the version tauri already uses.
+[target.'cfg(target_os = "macos")'.build-dependencies]
+tauri-utils = { version = "2.8", features = ["build"] }
+
 [dev-dependencies]
 tauri = { version = "=2.10.3", features = ["test"] }
 

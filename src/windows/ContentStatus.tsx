@@ -21,12 +21,14 @@ const ICONS = { network: CloudOff, password: KeyRound, denied: Lock, error: Circ
 interface ContentStatusViewProps {
     state: ContentState;
     detail?: string;
+    /** Instead of the usual text of that state. */
+    text?: string;
     onRetry: () => Promise<unknown>;
     onSignIn: () => Promise<unknown>;
 }
 
 /** Stands in for a Zone page that is on its way or cannot be shown. */
-export const ContentStatusView: React.FC<ContentStatusViewProps> = ({ state, detail, onRetry, onSignIn }) => {
+export const ContentStatusView: React.FC<ContentStatusViewProps> = ({ state, detail, text, onRetry, onSignIn }) => {
     const { t } = useI18n();
     const [busy, setBusy] = React.useState(false);
     const [late, setLate] = React.useState(false);
@@ -51,7 +53,7 @@ export const ContentStatusView: React.FC<ContentStatusViewProps> = ({ state, det
     };
     return (
         <div className="content-status" data-testid="content-status" data-state={state}>
-            <Empty icon={<Icon size={28} strokeWidth={1.6} />} title={t(`content.${state}_title`)} text={t(`content.${state}_text`)}>
+            <Empty icon={<Icon size={28} strokeWidth={1.6} />} title={t(`content.${state}_title`)} text={text ?? t(`content.${state}_text`)}>
                 {detail && (state === "error" || state === "network") ? (
                     <details className="content-detail">
                         <summary>{t("content.details")}</summary>

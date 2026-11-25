@@ -307,6 +307,7 @@ export default {
         remote_url_error_probe_failed: "無法連線到這個 OOD，或讀不到它的啟用頁位址。",
     },
     device_scan: {
+        page_failed: "裝置沒有回應。請確認它已開機，並且和手機在同一個網路裡，然後重試。",
         title: "掃描裝置",
         hint: "請確認目標裝置已開機並與目前裝置位於同一區域網路，然後點擊下方按鈕開始掃描。",
         running_title: "正在尋找附近的裝置",
@@ -507,6 +508,7 @@ export default {
         choose_title: "開啟方式",
         choose_none: "這個 Zone 裡沒有能開啟它的應用。",
         show_file: "顯示檔案",
+        share_file: "分享",
         file: "檔案",
         downloaded: "已下載：{{name}}",
         download_failed: "下載失敗：{{name}}",
@@ -517,6 +519,8 @@ export default {
             unreachable: "無法連線到 {{zone}}。",
             unsupported: "用戶端不能開啟這個連結。",
             failed: "沒有開啟成功。",
+            not_here: "{{platform}} 暫不支援。",
+            failed_because: "沒有開啟成功：{{reason}}",
         },
     },
     notify: {

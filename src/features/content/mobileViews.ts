@@ -2,7 +2,15 @@
 // where they show, whose the touches are, and what the back button does.
 import { onBackButtonPress } from "@tauri-apps/api/app";
 import { invoke } from "@tauri-apps/api/core";
+import { INSETS_EVENT, isIosShell } from "../../utils/platform";
 import type { ViewInfo } from "./types";
+
+declare global {
+    interface Window {
+        /** What the drag from the left edge asks and does on iOS (`BackGesture.swift`). */
+        __buckyBack?: { available: () => boolean; go: () => void };
+    }
+}
 
 export interface Rect {
     x: number;
@@ -56,7 +64,7 @@ export interface NativeLabels {
     cancel: string;
     allow: string;
     deny: string;
-    /** With `{app}`. */
+    /** With `{app}` and `{zone}`. */
     micAsk: string;
 }
 
@@ -82,6 +90,8 @@ export const retryView = (id: string) => invoke<void>("content_retry", { id });
 export const toBackground = () => invoke<void>("app_to_background");
 export const setNativeLabels = (labels: NativeLabels) => invoke<void>("native_set_labels", { labels });
 export const nativeStatus = () => invoke<NativeStatus>("native_status");
+/** Hands a downloaded file to the system (iOS). */
+export const shareFile = (path: string) => invoke<void>("native_share", { path });
 export const openSystemSettings = (page: "battery" | "notifications" | "app") => invoke<void>("native_open_settings", { page });
 export const audioStatus = () => invoke<AudioStatus>("audio_status");
 
@@ -145,7 +155,7 @@ export class ViewStage {
         this.observer = new ResizeObserver(this.update);
         this.observer.observe(element);
         window.addEventListener("resize", this.update);
-        window.addEventListener("android-window-insets-change", this.update);
+        window.addEventListener(INSETS_EVENT, this.update);
         this.update();
     }
 
@@ -165,7 +175,7 @@ export class ViewStage {
         this.observer?.disconnect();
         this.observer = null;
         window.removeEventListener("resize", this.update);
-        window.removeEventListener("android-window-insets-change", this.update);
+        window.removeEventListener(INSETS_EVENT, this.update);
         this.element = null;
         this.view = null;
         if (ViewStage.current !== this) return;
@@ -220,7 +230,7 @@ export const overlays = new Overlays();
 
 export type BackHandler = () => boolean | Promise<boolean>;
 
-/** The system's back button: the handler added last that takes it, else the fallback. */
+/** Back (Android's button, iOS's drag from the edge): the handler added last that takes it, else the fallback. */
 export class BackStack {
     private handlers: BackHandler[] = [];
     private busy = false;
@@ -249,8 +259,18 @@ export class BackStack {
         }
     }
 
-    /** From here on the button is this page's; `fallback` is what happens at the root. */
-    async start(fallback: () => unknown = toBackground): Promise<() => void> {
+    /**
+     * From here on back is this page's. `fallback` is what happens without a handler; iOS shows
+     * nothing of the drag where `available` says that nothing would.
+     */
+    async start(fallback: () => unknown = toBackground, available: () => boolean = () => true): Promise<() => void> {
+        if (isIosShell()) {
+            const gesture = { available: () => this.handlers.length > 0 || available(), go: () => void this.back(fallback) };
+            window.__buckyBack = gesture;
+            return () => {
+                if (window.__buckyBack === gesture) delete window.__buckyBack;
+            };
+        }
         const listener = await onBackButtonPress(() => void this.back(fallback));
         return () => void listener.unregister();
     }

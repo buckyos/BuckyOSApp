@@ -318,6 +318,7 @@ const de = {
         remote_url_error_probe_failed: "Diese OOD ist nicht erreichbar, oder ihre Aktivierungsseite konnte nicht gelesen werden.",
     },
     device_scan: {
+        page_failed: "Das Gerät antwortet nicht. Prüfe, ob es eingeschaltet und im selben Netzwerk ist, und versuche es erneut.",
         title: "Gerät scannen",
         hint: "Stelle sicher, dass das Zielgerät eingeschaltet und im selben lokalen Netzwerk ist, und starte dann unten einen Scan.",
         running_title: "Suche nach Geräten in der Nähe",
@@ -518,6 +519,7 @@ const de = {
         choose_title: "Öffnen mit",
         choose_none: "Keine App in dieser Zone kann das öffnen.",
         show_file: "Anzeigen",
+        share_file: "Teilen",
         file: "Datei",
         downloaded: "Heruntergeladen: {{name}}",
         download_failed: "Download fehlgeschlagen: {{name}}",
@@ -528,6 +530,8 @@ const de = {
             unreachable: "{{zone}} ist nicht erreichbar.",
             unsupported: "Der Client kann diesen Link nicht öffnen.",
             failed: "Es konnte nicht geöffnet werden.",
+            not_here: "Auf {{platform}} noch nicht verfügbar.",
+            failed_because: "Es konnte nicht geöffnet werden: {{reason}}",
         },
     },
     notify: {

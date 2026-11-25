@@ -2,12 +2,17 @@
 
 #[cfg(target_os = "android")]
 mod android;
-#[cfg(target_os = "android")]
-pub use android::*;
 #[cfg(target_os = "ios")]
 mod ios;
+mod views;
+
+#[cfg(target_os = "android")]
+use android as platform;
 #[cfg(target_os = "ios")]
-pub use ios::*;
+use ios as platform;
+
+pub use platform::*;
+pub use views::*;
 
 use serde::{Deserialize, Serialize};
 
@@ -65,6 +70,8 @@ pub struct MobileView {
 }
 
 pub const ACTIVATION_CLOSED_EVENT: &str = "activation://closed";
+/// The page of an activation view could not be loaded.
+pub const ACTIVATION_FAILED_EVENT: &str = "activation://failed";
 
 #[derive(Debug, Clone, Serialize)]
 pub struct ActivationView {
@@ -77,7 +84,7 @@ pub struct MobileViewChanged {
     pub view: MobileView,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NativeStatus {
     pub battery_unrestricted: bool,

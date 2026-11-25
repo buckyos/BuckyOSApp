@@ -129,8 +129,10 @@
     text-align: left;
 }
 
-.tray-row:hover {
-    background: var(--ui-hover);
+@media (hover: hover) {
+    .tray-row:hover {
+        background: var(--ui-hover);
+    }
 }
 
 .tray-all {

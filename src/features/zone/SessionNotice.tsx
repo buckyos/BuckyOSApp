@@ -10,7 +10,7 @@ import { useZoneActions } from "./useZoneActions";
 export const SessionNotice: React.FC<{ zone: ZoneView }> = ({ zone }) => {
     const { t } = useI18n();
     const { busy, signIn, reconnect } = useZoneActions();
-    const notice = sessionNotice(zone.session);
+    const notice = sessionNotice(zone);
     if (!notice) return null;
     return (
         <Notice

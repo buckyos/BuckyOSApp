@@ -374,6 +374,7 @@ export default {
         rescan_button: "重新扫描",
     },
     device_scan: {
+        page_failed: "设备没有响应。请确认它已开机，并且和手机在同一个网络里，然后重试。",
         title: "扫描设备",
         hint: "请确保目标设备已开启并与当前设备处于同一局域网，然后点击下方按钮开始扫描。",
         running_title: "正在寻找附近的设备",
@@ -567,6 +568,7 @@ export default {
         choose_title: "打开方式",
         choose_none: "这个 Zone 里没有能打开它的应用。",
         show_file: "显示文件",
+        share_file: "分享",
         file: "文件",
         downloaded: "已下载：{{name}}",
         download_failed: "下载失败：{{name}}",
@@ -577,6 +579,8 @@ export default {
             unreachable: "连接不上 {{zone}}。",
             unsupported: "客户端不能打开这个链接。",
             failed: "没有打开成功。",
+            not_here: "{{platform}} 暂不支持。",
+            failed_because: "没有打开成功：{{reason}}",
         },
     },
     notify: {

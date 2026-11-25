@@ -307,6 +307,7 @@ export default {
         remote_url_error_probe_failed: "この OOD に接続できないか、有効化ページのアドレスを読み取れません。",
     },
     device_scan: {
+        page_failed: "デバイスが応答しません。電源が入っていて同じネットワークにあることを確認し、もう一度お試しください。",
         title: "デバイスをスキャン",
         hint: "対象デバイスの電源が入っており、現在のデバイスと同じローカルネットワーク上にあることを確認してから、下のボタンでスキャンを開始してください。",
         running_title: "近くのデバイスを検索中",
@@ -507,6 +508,7 @@ export default {
         choose_title: "アプリを選択",
         choose_none: "この Zone にはこれを開けるアプリがありません。",
         show_file: "表示",
+        share_file: "共有",
         file: "ファイル",
         downloaded: "ダウンロード完了：{{name}}",
         download_failed: "ダウンロード失敗：{{name}}",
@@ -517,6 +519,8 @@ export default {
             unreachable: "{{zone}} に接続できません。",
             unsupported: "クライアントはこのリンクを開けません。",
             failed: "開けませんでした。",
+            not_here: "{{platform}} ではまだ対応していません。",
+            failed_because: "開けませんでした：{{reason}}",
         },
     },
     notify: {

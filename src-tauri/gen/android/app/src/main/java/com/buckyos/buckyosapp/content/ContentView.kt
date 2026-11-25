@@ -5,9 +5,13 @@ import android.graphics.Bitmap
 import android.graphics.Color
 import android.net.Uri
 import android.net.http.SslError
+import android.os.Handler
+import android.os.Looper
 import android.os.Message
 import android.view.View
 import android.webkit.GeolocationPermissions
+import android.webkit.JsPromptResult
+import android.webkit.JsResult
 import android.webkit.PermissionRequest
 import android.webkit.RenderProcessGoneDetail
 import android.webkit.SslErrorHandler
@@ -156,14 +160,16 @@ class ContentView(
 
     override fun onCreateWindow(view: WebView, isDialog: Boolean, isUserGesture: Boolean, result: Message): Boolean {
       // Views never open windows: the address is caught in a WebView that loads nothing.
+      // It is in no window, where what a view posts would never run.
       val probe = WebView(activity)
+      val later = Handler(Looper.getMainLooper())
       Profiles.use(probe, profile)
       var told = false
       val tell = { url: String ->
         if (!told && url != "about:blank") {
           told = true
           NativeBridge.onNavigate(id, url, true, true)
-          probe.post { probe.destroy() }
+          later.post { probe.destroy() }
         }
       }
       probe.webViewClient = object : WebViewClient() {
@@ -177,9 +183,22 @@ class ContentView(
         override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse =
           WebResourceResponse("text/plain", "utf-8", ByteArrayInputStream(ByteArray(0)))
       }
-      probe.postDelayed({ if (!told) { told = true; probe.destroy() } }, 10_000)
+      later.postDelayed({ if (!told) { told = true; probe.destroy() } }, 10_000)
       (result.obj as WebView.WebViewTransport).webView = probe
       result.sendToTarget()
+      return true
+    }
+
+    // A page behind another app does not get to put a dialog in front of it.
+    override fun onJsAlert(view: WebView, url: String, message: String, result: JsResult): Boolean = refused(result)
+
+    override fun onJsConfirm(view: WebView, url: String, message: String, result: JsResult): Boolean = refused(result)
+
+    override fun onJsPrompt(view: WebView, url: String, message: String, defaultValue: String?, result: JsPromptResult): Boolean = refused(result)
+
+    private fun refused(result: JsResult): Boolean {
+      if (web.visibility == View.VISIBLE) return false
+      result.cancel()
       return true
     }
 
@@ -209,7 +228,7 @@ class ContentView(
       activity.microphone.request(done)
       return
     }
-    Dialogs.askMicrophone(activity, label) { allowed ->
+    Dialogs.askMicrophone(activity, label, zoneHost) { allowed ->
       if (!allowed || gone) {
         done(false)
       } else {

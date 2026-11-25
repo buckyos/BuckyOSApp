@@ -29,8 +29,10 @@
     transition: background-color 120ms;
 }
 
-.activity-open:hover {
-    background: var(--ui-hover);
+@media (hover: hover) {
+    .activity-open:hover {
+        background: var(--ui-hover);
+    }
 }
 
 .activity-open:focus-visible {
@@ -125,10 +127,16 @@
     pointer-events: none;
 }
 
-.activity-row:hover .activity-actions,
 .activity-row:focus-within .activity-actions {
     opacity: 1;
     pointer-events: auto;
+}
+
+@media (hover: hover) {
+    .activity-row:hover .activity-actions {
+        opacity: 1;
+        pointer-events: auto;
+    }
 }
 
 @media (hover: hover) {

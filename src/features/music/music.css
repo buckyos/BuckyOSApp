@@ -9,9 +9,11 @@
     color: var(--cp-muted);
 }
 
-.music-tool:hover {
-    background: var(--ui-hover);
-    color: var(--cp-text);
+@media (hover: hover) {
+    .music-tool:hover {
+        background: var(--ui-hover);
+        color: var(--cp-text);
+    }
 }
 
 .music-tool[aria-pressed='true'] {
@@ -81,8 +83,10 @@
     margin-left: 2px;
 }
 
-.music-play:hover:not(:disabled) {
-    opacity: 0.86;
+@media (hover: hover) {
+    .music-play:hover:not(:disabled) {
+        opacity: 0.86;
+    }
 }
 
 .music-play:disabled {

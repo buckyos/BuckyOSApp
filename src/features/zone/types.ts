@@ -25,6 +25,8 @@ export interface ZoneView {
     accent: string | null;
     source: "owner" | "manual";
     notify: boolean;
+    /** The user signed out, as opposed to a credential that is not there (any more). */
+    signed_out: boolean;
     session: SessionStatus;
 }
 

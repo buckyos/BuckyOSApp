@@ -16,6 +16,7 @@ import { tabOfView, type PhoneTab } from "./phoneTabs";
 import { FrameHosts, type HostedView } from "./frameHosts";
 import { OpenService, type HandlerChoice } from "./openService";
 import { frontChanged } from "./mobileViews";
+import { openErrorOf } from "./openFailure";
 import { OpenError, type OpenFailure, type ViewInfo } from "./types";
 
 export interface ChoicePrompt extends HandlerChoice {
@@ -33,7 +34,7 @@ export interface RuntimeSnapshot {
     /** A Zone the user has to sign in to before something can go on. */
     signIn: string | null;
     /** The last thing that could not be opened. */
-    failure: { reason: OpenFailure; zone?: string; app?: string; at: number } | null;
+    failure: { reason: OpenFailure; zone?: string; app?: string; detail?: string; at: number } | null;
     download: { name: string | null; path: string | null; success: boolean; at: number } | null;
 }
 
@@ -258,11 +259,11 @@ export class ClientRuntime {
         try {
             return await work;
         } catch (error) {
-            const failure = error instanceof OpenError ? error : new OpenError("failed");
+            const failure = openErrorOf(error);
             if (failure.reason === "canceled") return null;
             console.warn("[Open] failed", error);
             this.patch({
-                failure: { reason: failure.reason, zone: failure.zone, app: failure.app, at: Date.now() },
+                failure: { reason: failure.reason, zone: failure.zone, app: failure.app, detail: failure.detail, at: Date.now() },
                 ...(failure.reason === "need_login" && failure.zone ? { signIn: failure.zone } : {}),
             });
             return null;

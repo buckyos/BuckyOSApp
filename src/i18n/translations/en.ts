@@ -376,6 +376,7 @@ export default {
         rescan_button: "Scan again",
     },
     device_scan: {
+        page_failed: "The device does not answer. Make sure that it is on and in the same network, then try again.",
         title: "Scan Device",
         hint: "Make sure the target device is powered on and on the same local network, then start a scan below.",
         running_title: "Searching for nearby devices",
@@ -569,6 +570,7 @@ export default {
         choose_title: "Open with",
         choose_none: "No app in this Zone opens this.",
         show_file: "Show",
+        share_file: "Share",
         file: "File",
         downloaded: "Downloaded: {{name}}",
         download_failed: "The download failed: {{name}}",
@@ -579,6 +581,8 @@ export default {
             unreachable: "{{zone}} cannot be reached.",
             unsupported: "The client cannot open this link.",
             failed: "It could not be opened.",
+            not_here: "Not supported on {{platform}} yet.",
+            failed_because: "It could not be opened: {{reason}}",
         },
     },
     notify: {

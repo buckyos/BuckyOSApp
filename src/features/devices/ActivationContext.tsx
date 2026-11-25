@@ -1,27 +1,33 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { listen } from "@tauri-apps/api/event";
-import { isIosShell, isMobileShell } from "../../utils/platform";
-import { openEmbeddedPage } from "../../utils/webview";
+import { isMobileShell } from "../../utils/platform";
 import { useDidContext } from "../did/DidContext";
 import { reconnectZone } from "../zone/api";
 import { useZoneActions } from "../zone/useZoneActions";
 import { useZones } from "../zone/ZoneContext";
 import { ACTIVATION_POLL_MS, activatedZone, activationOver, type ActivationSession } from "./activation";
-import { ACTIVATION_CLOSED_EVENT, closeActivationPage, openActivationPage } from "./activationApi";
+import { ACTIVATION_CLOSED_EVENT, ACTIVATION_FAILED_EVENT, closeActivationPage, openActivationPage } from "./activationApi";
 
 /** Where a phone shows the page. */
 export const ACTIVATION_PATH = "/activation";
-const PAGE_PATHS = [ACTIVATION_PATH, "/web-container"];
 
 /** A Zone that was just activated may still be starting. */
 const CONNECT_TRIES = 36;
+
+interface ActivationPage {
+    id: string;
+    title: string;
+    url: string;
+    /** Why it could not be loaded. */
+    failed: string | null;
+}
 
 interface ActivationContextValue {
     /** Opens a device's activation page and takes over the Zone it makes. */
     openActivation: (page: { url: string; title: string }) => Promise<void>;
     /** The page a phone shows. */
-    page: { id: string; title: string } | null;
+    page: ActivationPage | null;
     /** The Zone an open activation page made; shown until the user is back on Home. */
     finished: string | null;
     /** To Home, from the activation page. */
@@ -45,9 +51,12 @@ export const ActivationProvider: React.FC<React.PropsWithChildren> = ({ children
     const location = useLocation();
     const [session, setSession] = React.useState<ActivationSession | null>(null);
     const [finished, setFinished] = React.useState<string | null>(null);
-    const [page, setPage] = React.useState<{ id: string; title: string } | null>(null);
+    const [page, setPage] = React.useState<ActivationPage | null>(null);
     const pageNow = React.useRef(page);
     pageNow.current = page;
+    /** The page shown is about to be another one (tried again). */
+    const replacing = React.useRef(false);
+    const wasOnPage = React.useRef(false);
     const identity = useDidContext().activeDid?.id;
     const zonesNow = React.useRef(zones);
     zonesNow.current = zones;
@@ -58,14 +67,17 @@ export const ActivationProvider: React.FC<React.PropsWithChildren> = ({ children
             const opened: ActivationSession = { startedAt: Date.now(), before: new Set(zonesNow.current.map((zone) => zone.did)), closedAt: null };
             // Another page while one is being waited for: what counts as new stays what it was.
             setSession((previous) => ({ ...opened, before: previous?.before ?? opened.before }));
-            if (isIosShell()) {
-                openEmbeddedPage(target.url, target.title);
-                return;
+            replacing.current = true;
+            try {
+                const { id } = await openActivationPage(target.url, target.title);
+                if (!isMobileShell()) return;
+                const next = { id, title: target.title, url: target.url, failed: null };
+                pageNow.current = next;
+                setPage(next);
+            } finally {
+                replacing.current = false;
             }
-            const { id } = await openActivationPage(target.url, target.title);
-            if (!isMobileShell()) return;
-            setPage({ id, title: target.title });
-            navigate(ACTIVATION_PATH);
+            navigate(ACTIVATION_PATH, { replace: wasOnPage.current });
         },
         [navigate]
     );
@@ -77,13 +89,20 @@ export const ActivationProvider: React.FC<React.PropsWithChildren> = ({ children
         const listening = listen<{ id: string }>(ACTIVATION_CLOSED_EVENT, ({ payload }) => {
             const shown = pageNow.current;
             // A phone's earlier page, which the one just opened replaced.
-            if (isMobileShell() && shown?.id !== payload.id) return;
+            if (isMobileShell() && (replacing.current || shown?.id !== payload.id)) return;
             closed();
             // Its renderer ended, or the identity was switched: this page has nothing to show.
             if (shown) setPage(null);
         });
         return () => void listening.then((stop) => stop()).catch(() => undefined);
     }, [closed]);
+
+    React.useEffect(() => {
+        const listening = listen<{ id: string; detail: string }>(ACTIVATION_FAILED_EVENT, ({ payload }) =>
+            setPage((shown) => (shown?.id === payload.id ? { ...shown, failed: payload.detail } : shown))
+        );
+        return () => void listening.then((stop) => stop()).catch(() => undefined);
+    }, []);
 
     // It was this identity's to activate.
     React.useEffect(() => {
@@ -125,8 +144,7 @@ export const ActivationProvider: React.FC<React.PropsWithChildren> = ({ children
     }, [navigate]);
 
     // A phone shows the activation page in this window: it stays until the user leaves it.
-    const onPage = PAGE_PATHS.includes(location.pathname);
-    const wasOnPage = React.useRef(false);
+    const onPage = location.pathname === ACTIVATION_PATH;
     React.useEffect(() => {
         if (wasOnPage.current && !onPage) {
             closed();

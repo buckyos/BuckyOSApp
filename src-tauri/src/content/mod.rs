@@ -12,7 +12,7 @@ pub mod prompt;
 pub mod windows;
 #[cfg(mobile)]
 pub mod mobile;
-#[cfg(any(target_os = "android", test))]
+#[cfg(any(mobile, test))]
 pub mod shelf;
 
 #[cfg(desktop)]

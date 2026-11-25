@@ -8,5 +8,5 @@ pub use desktop::dispatch;
 mod mobile;
 #[cfg(mobile)]
 pub use mobile::*;
-#[cfg(any(target_os = "android", test))]
+#[cfg(any(mobile, test))]
 mod recordings;

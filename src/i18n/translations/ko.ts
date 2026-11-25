@@ -307,6 +307,7 @@ export default {
         remote_url_error_probe_failed: "이 OOD에 연결할 수 없거나 활성화 페이지 주소를 읽을 수 없습니다.",
     },
     device_scan: {
+        page_failed: "기기가 응답하지 않습니다. 전원이 켜져 있고 같은 네트워크에 있는지 확인한 후 다시 시도하세요.",
         title: "장치 스캔",
         hint: "대상 장치의 전원이 켜져 있고 현재 장치와 같은 로컬 네트워크에 있는지 확인한 뒤 아래 버튼으로 스캔을 시작하세요.",
         running_title: "주변 장치를 찾는 중",
@@ -507,6 +508,7 @@ export default {
         choose_title: "연결 프로그램",
         choose_none: "이 Zone에는 이것을 열 수 있는 앱이 없습니다.",
         show_file: "보기",
+        share_file: "공유",
         file: "파일",
         downloaded: "다운로드됨: {{name}}",
         download_failed: "다운로드 실패: {{name}}",
@@ -517,6 +519,8 @@ export default {
             unreachable: "{{zone}}에 연결할 수 없습니다.",
             unsupported: "클라이언트가 이 링크를 열 수 없습니다.",
             failed: "열지 못했습니다.",
+            not_here: "{{platform}}에서는 아직 지원되지 않습니다.",
+            failed_because: "열지 못했습니다: {{reason}}",
         },
     },
     notify: {

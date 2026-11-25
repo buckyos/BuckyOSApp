@@ -55,6 +55,7 @@ const COMMANDS: &[&str] = &[
     "native_set_labels",
     "native_status",
     "native_open_settings",
+    "native_share",
     "audio_status",
     "audio_hold",
     "bucky_api_call",
@@ -87,7 +88,53 @@ const COMMANDS: &[&str] = &[
     "tray_popover_open",
 ];
 
+/// Builds and links the Swift side of the client (`ios/ClientPlugin`).
+#[cfg(target_os = "macos")]
+fn link_ios_plugin() {
+    use std::path::{Path, PathBuf};
+
+    /// The plugin's package depends on Tauri's, which is inside the `tauri` crate.
+    fn copy(from: &Path, to: &Path) -> std::io::Result<()> {
+        std::fs::create_dir_all(to)?;
+        for entry in std::fs::read_dir(from)? {
+            let entry = entry?;
+            let target = to.join(entry.file_name());
+            if entry.file_type()?.is_dir() {
+                copy(&entry.path(), &target)?;
+            } else if std::fs::read(entry.path())? != std::fs::read(&target).unwrap_or_default() {
+                std::fs::copy(entry.path(), &target)?;
+            }
+        }
+        Ok(())
+    }
+
+    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() != Ok("ios") {
+        return;
+    }
+    println!("cargo:rerun-if-env-changed=DEP_TAURI_IOS_LIBRARY_PATH");
+    let tauri = PathBuf::from(std::env::var("DEP_TAURI_IOS_LIBRARY_PATH").expect("the tauri crate names its Swift package"));
+    let plugin = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").expect("a manifest")).join("ios/ClientPlugin");
+    let api = plugin.join(".tauri/tauri-api");
+    for part in ["Package.swift", "Sources"] {
+        let (from, to) = (tauri.join(part), api.join(part));
+        let copied = if from.is_dir() {
+            copy(&from, &to)
+        } else {
+            std::fs::create_dir_all(&api).and_then(|()| std::fs::copy(&from, &to)).map(drop)
+        };
+        copied.expect("Tauri's Swift package could not be copied");
+    }
+    // Xcode says which version it builds for; a plain `cargo check` does not.
+    if std::env::var_os("IPHONEOS_DEPLOYMENT_TARGET").is_none() {
+        std::env::set_var("IPHONEOS_DEPLOYMENT_TARGET", "17.0");
+    }
+    tauri_utils::build::link_apple_library("ClientPlugin", &plugin);
+}
+
 fn main() {
+    #[cfg(target_os = "macos")]
+    link_ios_plugin();
+
     let attributes = tauri_build::Attributes::new().app_manifest(tauri_build::AppManifest::new().commands(COMMANDS));
     if let Err(error) = tauri_build::try_build(attributes) {
         panic!("tauri build failed: {error:#}");

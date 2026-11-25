@@ -90,11 +90,15 @@ pub const PLATFORM: &str = if cfg!(target_os = "windows") {
 };
 
 pub fn capabilities() -> Vec<&'static str> {
-    let mut list = vec!["app.open", "notify.system"];
+    let mut list = vec!["app.open"];
     if cfg!(desktop) {
-        list.extend(["window.native", "audio.background", "media.session"]);
+        list.extend(["notify.system", "window.native", "audio.background", "media.session"]);
     }
     if cfg!(target_os = "android") {
+        list.extend(["notify.system", "audio.background", "audio.record", "header.native"]);
+    }
+    // Nothing is shown by the system there (notify/alerts/ios.rs).
+    if cfg!(target_os = "ios") {
         list.extend(["audio.background", "audio.record", "header.native"]);
     }
     list
@@ -111,6 +115,24 @@ pub fn init_script(env: &Env) -> String {
     format!(
         "if (window.top === window) Object.defineProperty(window, \"__BUCKY_ENV__\", {{ value: {env} }});\n{API_SCRIPT}"
     )
+}
+
+/// Text for a question of the client: characters that are not seen, or that change the order of
+/// others, are written out (`payload.ts` does the same for the desktop's window).
+#[cfg_attr(desktop, allow(dead_code))]
+pub fn visible(text: &str) -> String {
+    let hidden = |ch: char| {
+        matches!(ch, '\u{0}'..='\u{8}' | '\u{b}'..='\u{1f}' | '\u{7f}'..='\u{9f}' | '\u{ad}' | '\u{200b}'..='\u{200f}'
+            | '\u{2028}'..='\u{202e}' | '\u{2060}'..='\u{206f}' | '\u{feff}')
+    };
+    text.chars().fold(String::with_capacity(text.len()), |mut shown, ch| {
+        if hidden(ch) {
+            shown.push_str(&format!("\\u{:04x}", ch as u32));
+        } else {
+            shown.push(ch);
+        }
+        shown
+    })
 }
 
 /// The script that hands an event to the page's `BuckyApi.on` handlers.
@@ -195,6 +217,12 @@ mod tests {
         let head = &script[..script.find(API_SCRIPT).unwrap()];
         assert!(!head.contains("</script>"));
         assert!(!head.contains('\u{2028}'));
+    }
+
+    #[test]
+    fn nothing_in_a_question_hides_or_turns_around() {
+        assert_eq!(visible("alice\u{202e}ecila\u{200b}"), "alice\\u202eecila\\u200b");
+        assert_eq!(visible("{\n  \"名\": 1\t}"), "{\n  \"名\": 1\t}");
     }
 
     #[test]

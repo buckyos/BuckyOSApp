@@ -29,13 +29,14 @@ class MainActivity : TauriActivity() {
   lateinit var container: ContainerLayout
     private set
   private var fullscreenCallback: WebChromeClient.CustomViewCallback? = null
+  private var shownLight: Boolean? = null
   private var latestInsetsScript: String? = null
   private var pendingInsetsApply: Runnable? = null
   private var pendingInsetsReplayApply: Runnable? = null
 
   override fun onCreate(savedInstanceState: Bundle?) {
     NativeBridge.attach(this)
-    applySystemBarsTheme(isSystemLightTheme())
+    applySystemBarsTheme(isLightTheme())
     // The last in line: reached when no local page handles the back button (it has not loaded yet).
     onBackPressedDispatcher.addCallback(object : OnBackPressedCallback(true) {
       override fun handleOnBackPressed() {
@@ -50,6 +51,11 @@ class MainActivity : TauriActivity() {
   override fun onResume() {
     super.onResume()
     if (fullscreenCallback == null) lockPortraitOrientation()
+  }
+
+  override fun onConfigurationChanged(newConfig: Configuration) {
+    super.onConfigurationChanged(newConfig)
+    showTheme()
   }
 
   /** The local pages' WebView comes from Tauri; the content views go below it. */
@@ -154,8 +160,20 @@ class MainActivity : TauriActivity() {
     ViewCompat.requestApplyInsets(webView)
   }
 
-  private fun isSystemLightTheme(): Boolean {
+  /** As the client shows itself: in its own theme, or the system's. */
+  private fun isLightTheme(): Boolean {
     return (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) != Configuration.UI_MODE_NIGHT_YES
+  }
+
+  private fun showTheme() {
+    val light = isLightTheme()
+    applySystemBarsTheme(light)
+    if (this::container.isInitialized) container.setBackgroundColor(getColor(R.color.background))
+    if (light == shownLight) return
+    shownLight = light
+    // A change of the client's own mode is not told to the views, and one of the system's only when
+    // it differs from what they were told last. WebViews look at the theme when they are told.
+    window.decorView.dispatchConfigurationChanged(resources.configuration)
   }
 
   private fun applySystemBarsTheme(isLightTheme: Boolean) {
@@ -183,9 +201,12 @@ class MainActivity : TauriActivity() {
     fun setTheme(theme: String) {
       runOnUiThread {
         // Dialogs and the pages' own color scheme follow the client's theme, not the system's.
-        delegate.localNightMode = if (theme == "light") AppCompatDelegate.MODE_NIGHT_NO else AppCompatDelegate.MODE_NIGHT_YES
-        applySystemBarsTheme(theme == "light")
-        if (this@MainActivity::container.isInitialized) container.setBackgroundColor(getColor(R.color.background))
+        delegate.localNightMode = when (theme) {
+          "light" -> AppCompatDelegate.MODE_NIGHT_NO
+          "dark" -> AppCompatDelegate.MODE_NIGHT_YES
+          else -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+        }
+        showTheme()
       }
     }
   }
@@ -235,7 +256,7 @@ class MainActivity : TauriActivity() {
         root.style.setProperty('--android-navigation-inset-bottom', `${'$'}{navigationInsetBottom}px`);
         root.style.setProperty('--android-tappable-inset-bottom', `${'$'}{tappableInsetBottom}px`);
         root.style.setProperty('--android-system-gesture-inset-bottom', `${'$'}{gestureInsetBottom}px`);
-        window.dispatchEvent(new CustomEvent('android-window-insets-change', {
+        window.dispatchEvent(new CustomEvent('window-insets-change', {
           detail: {
             systemInsetTop,
             systemInsetRight,

@@ -130,8 +130,10 @@
     color: var(--cp-bg);
 }
 
-.shortcut-remove:hover {
-    background: var(--cp-text);
+@media (hover: hover) {
+    .shortcut-remove:hover {
+        background: var(--cp-text);
+    }
 }
 
 .shortcut-add .app-tile-icon {

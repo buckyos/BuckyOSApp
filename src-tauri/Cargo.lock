@@ -594,6 +594,7 @@ dependencies = [
  "tauri-plugin-store",
  "tauri-runtime",
  "tauri-runtime-wry",
+ "tauri-utils",
  "thiserror 1.0.69",
  "tokio",
  "ulid",

@@ -318,6 +318,7 @@ const es = {
         remote_url_error_probe_failed: "No se puede conectar con este OOD o leer su página de activación.",
     },
     device_scan: {
+        page_failed: "El dispositivo no responde. Comprueba que está encendido y en la misma red e inténtalo de nuevo.",
         title: "Escanear dispositivo",
         hint: "Asegúrate de que el dispositivo objetivo esté encendido y en la misma red local, y luego inicia un escaneo abajo.",
         running_title: "Buscando dispositivos cercanos",
@@ -518,6 +519,7 @@ const es = {
         choose_title: "Abrir con",
         choose_none: "Ninguna app de esta Zone puede abrirlo.",
         show_file: "Mostrar",
+        share_file: "Compartir",
         file: "Archivo",
         downloaded: "Descargado: {{name}}",
         download_failed: "Error al descargar: {{name}}",
@@ -528,6 +530,8 @@ const es = {
             unreachable: "No se puede conectar con {{zone}}.",
             unsupported: "El cliente no puede abrir este enlace.",
             failed: "No se pudo abrir.",
+            not_here: "Aún no disponible en {{platform}}.",
+            failed_because: "No se pudo abrir: {{reason}}",
         },
     },
     notify: {

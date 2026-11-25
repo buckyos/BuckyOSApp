@@ -25,6 +25,7 @@ const zoneView = (did: string, host: string, patch: Partial<ZoneView> = {}): Zon
     accent: "#112233",
     source: "manual",
     notify: true,
+    signed_out: false,
     session: { state: "signed_in", username: "bob", identity: { user_id: "bob", did, user_type: "user" }, reason: null },
     ...patch,
 });

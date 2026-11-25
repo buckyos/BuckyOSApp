@@ -39,7 +39,7 @@ class Labels private constructor(private val values: JSONObject) {
   val cancel get() = text("cancel", "Cancel")
   val allow get() = text("allow", "Allow")
   val deny get() = text("deny", "Don't allow")
-  val micAsk get() = text("micAsk", "{app} wants to use the microphone")
+  val micAsk get() = text("micAsk", "{app} ({zone}) wants to use the microphone")
 
   companion object {
     const val FILE = "native-labels.json"
