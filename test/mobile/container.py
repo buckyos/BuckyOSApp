@@ -1,9 +1,10 @@
 """What a Zone's pages may do in the content container, and what becomes of them.
 
-BUCKYOS_SIM=<udid> python3 test/ios/container.py [section …]
+BUCKYOS_SIM=<udid> python3 test/mobile/container.py [section …]
+BUCKYOS_ADB=<serial> python3 test/mobile/container.py [section …]
 """
-import http.server, json, os, signal, socket, subprocess, sys, tempfile, threading, time
-from client import UDID, Client, check, failed
+import http.server, json, os, socket, sys, tempfile, threading, time
+from client import IOS, LOCAL, Client, check, failed
 
 c = Client()
 ZONE = os.environ.get("BUCKYOS_TEST_ZONE_HOST", "test.buckyos.io")
@@ -30,10 +31,11 @@ def section_switching():
 
 
 def section_history():
+    c.invoke("content_close", id=c.open("文本编辑器", "text-editor")["id"])
     view = c.open("文本编辑器", "text-editor")["id"]
     check("there is no way back behind the sign-in", c.invoke("content_back", id=view) is False)
-    c.js(EDITOR, "(location.href = '/?one=1', true)"); time.sleep(1.5)
-    c.js(EDITOR, "(history.pushState({}, '', '/?two=2'), true)"); time.sleep(0.6)
+    c.js(EDITOR, "(location.href = '/?one=1', true)", gesture=True); time.sleep(1.5)
+    c.js(EDITOR, "(history.pushState({}, '', '/?two=2'), true)", gesture=True); time.sleep(0.6)
     check("a page's own addresses are followed", c.views()[view]["path"] == "/?two=2")
     for path in ("/?one=1", "/"):
         moved = c.invoke("content_back", id=view); time.sleep(1.2)
@@ -44,7 +46,7 @@ def section_history():
 def section_session():
     view, before = files(), c.cookies(FILES)
     check("the refresh token is kept from scripts", before["buckyos_refresh_token"]["httpOnly"] and before["buckyos_refresh_token"]["sameSite"] == "Lax")
-    for name in before: c.call(FILES, "Page.deleteCookie", cookieName=name, url=f"https://{ZONE}/")
+    for name in before: c.delete_cookie(FILES, name, ZONE)
     c.js(FILES, "(location.href = '/app/files?path=%2Fhome', true)")
     c.wait(lambda: c.cookies(FILES).get("buckyos_refresh_token", {}).get("value") not in (None, before["buckyos_refresh_token"]["value"]), 20, "a new session")
     check("a lost session is made again", c.views()[view]["status"] in ("ready", "loading"))
@@ -52,27 +54,19 @@ def section_session():
     check("without a way back to the round trip", c.invoke("content_back", id=view) is False)
 
 
-def web_processes():
-    lines = subprocess.check_output(["ps", "-axo", "pid=,ppid=,command="], text=True).splitlines()
-    simulator = next(line.split()[0] for line in lines if "launchd_sim" in line and UDID in line)
-    return [int(line.split()[0]) for line in lines if line.split()[1] == simulator and "com.apple.WebKit.WebContent" in line]
-
-
 def section_crash():
     view = files()
     hang = "(setTimeout(() => { const t = Date.now(); while (Date.now() - t < 15000) {} }, 100), true)"
-    busiest = lambda: max(web_processes(), key=lambda pid: float(subprocess.check_output(["ps", "-o", "%cpu=", "-p", str(pid)], text=True).strip() or 0))
     c.js(FILES, hang); time.sleep(1.5)
     start = time.time(); c.main("1")
     check("the local page answers while an app hangs", time.time() - start < 1)
     c.open("AI 工作区", "aiworkspace")
-    process = busiest()
-    c.main("(location.hash = '#/main/home', true)"); time.sleep(0.4)
-    c.main("([...document.querySelectorAll('.app-tile')].find((tile) => tile.textContent.includes('文件')).click(), true)"); time.sleep(0.5)
-    os.kill(process, signal.SIGKILL)
+    c.tap("文件"); time.sleep(0.5)
+    c.kill_busiest_page()
     c.wait(lambda: c.views()[view]["status"] == "ready" and not c.views()[view]["discarded"], 20, "back by itself")
     check("the one in front comes back by itself", True)
-    time.sleep(1); c.js(FILES, hang); time.sleep(2); os.kill(busiest(), signal.SIGKILL); time.sleep(2)
+    c.open("文本编辑器", "text-editor"); files()
+    time.sleep(1); c.js(FILES, hang); time.sleep(2); c.kill_busiest_page(); time.sleep(2)
     check("twice in a minute is an error to the user", c.views()[view]["status"] == "error")
     c.main("(document.querySelector('[data-testid=content-status] button').click(), true)")
     c.wait(lambda: c.views()[view]["status"] == "ready")
@@ -86,36 +80,45 @@ def section_windows():
     c.js(FILES, f"window.open('https://{EDITOR}/?via=open') === null", gesture=True)
     c.wait(lambda: any(v["focused"] and v["path"] == "/?via=open" for v in c.views().values()), 15, "window.open")
     check("new windows open as apps", True)
+    time.sleep(1)
+    check("and leave nothing behind", sum(EDITOR in url for url in c.urls()) == 1, c.urls())
     files(); count = len(c.views())
     for url in ("about:blank", "javascript:alert(1)", "data:text/html,x"): c.js(FILES, f"(window.open({json.dumps(url)}), true)", gesture=True)
     time.sleep(1)
     check("nothing opens for about:, javascript:, data:", len(c.views()) == count)
     c.open("AI 工作区", "aiworkspace")
-    check("a hidden page gets no dialog", c.js(FILES, "[confirm('?'), prompt('?')]") == [False, None])
+    try: check("a hidden page gets no dialog", c.js(FILES, "[confirm('?'), prompt('?')]", 5) == [False, None])
+    except TimeoutError:
+        check("a hidden page gets no dialog", False, "there is one")
+        c.dismiss()
 
 
 def section_downloads():
-    files(); folder = c.data() + "/Documents"
-    before = set(os.listdir(folder))
+    files(); before = c.downloads()
     for href in ("URL.createObjectURL(new Blob(['x']))", "'data:text/plain,x'", "'/favicon.ico'"):
         c.js(FILES, f"(() => {{ const a = document.createElement('a'); a.href = {href}; a.download = '../test file'; document.body.append(a); a.click(); a.remove(); return true }})()", gesture=True)
         time.sleep(2)
-    made = set(os.listdir(folder)) - before
+    made = c.downloads() - before
     check("files a page offers are saved, under a clean name", len(made) == 3 and all("/" not in name and not name.startswith(".") for name in made), made)
-    for name in made: os.remove(f"{folder}/{name}")
+    for name in made: c.remove_download(name)
 
 
+# What a document gets when it calls the client past the page's own script.
+ASK = """const handler = window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.buckyPort;
+const ask = (text) => handler.postMessage(text);""" if IOS else """const port = window.__buckyPort;
+const ask = (text) => Promise.race([new Promise((r) => { port.onmessage = (e) => r(e.data); port.postMessage(text) }), new Promise((r) => setTimeout(() => r('nothing'), 2000))]);"""
 PROBE = """
-const out = { api: typeof window.BuckyApi, port: typeof window.__buckyPort, env: typeof window.__BUCKY_ENV__ };
-const handler = window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.buckyPort;
+const out = { api: typeof window.BuckyApi };
+""" + ASK + """
 for (const name of ['getPublicKey', 'audio.record.list']) {
-  try { out[name] = await handler.postMessage(JSON.stringify({ id: 1, name, payload: {} })) } catch (error) { out[name] = 'threw ' + error }
+  try { out[name] = await ask(JSON.stringify({ id: 1, name, payload: {} })) } catch (error) { out[name] = 'threw ' + error }
 }
 """
 
 
 def refused(out):
-    return out is not None and out["api"] == out["port"] == out["env"] == "undefined" and "not_allowed" in out["getPublicKey"] and "not_allowed" in out["audio.record.list"]
+    no = lambda answer: "not_allowed" in answer or answer.startswith("threw")
+    return out is not None and out["api"] == "undefined" and no(out["getPublicKey"]) and no(out["audio.record.list"])
 
 
 def section_security():
@@ -139,11 +142,12 @@ def section_security():
     go("data:text/html,<h1>x")
     check("no top-level data: page", any(FILES in url for url in c.urls()))
     blank = next((url for url in go("about:blank") if url.startswith("about:")), None)
-    check("a top-level about:blank has no bridge", blank is None or refused(c.js(blank, f"(async () => {{{PROBE} return out}})()")))
+    check("a top-level about:blank is the app's own or has no bridge", blank is None or c.js(blank, "origin") == f"https://{ZONE}" or refused(c.js(blank, f"(async () => {{{PROBE} return out}})()")))
     c.invoke("content_retry", id=view); time.sleep(3)
-    for url in (f"https://{ZONE}/sso_callback?nonce=1", f"https://{EDITOR}/sso_callback?nonce=1", f"http://{ZONE}/", "file:///etc/passwd", "tauri://localhost/"):
+    for url in (f"https://{ZONE}/sso_callback?nonce=1", f"https://{EDITOR}/sso_callback?nonce=1", f"http://{ZONE}/", "file:///etc/passwd", f"{LOCAL}/"):
         urls = go(url)
-        check(f"not gone to: {url}", any(FILES in found for found in urls) and sum("tauri://" in found for found in urls) == 1, urls)
+        check(f"not gone to: {url}", any(FILES in found for found in urls) and sum(LOCAL in found for found in urls) == 1, urls)
+    c.foreground()
     seen = c.js(FILES, "JSON.stringify([performance.getEntries().map((e) => e.name), document.referrer, location.href])")
     check("nothing of the one-time address is to be seen", "nonce" not in seen and "sso_callback" not in seen)
     c.js(FILES, "(setTimeout(() => { location.href = '/login' }, 50), true)")
@@ -154,11 +158,11 @@ def section_security():
     check("another app opens as itself", any(EDITOR in url for url in go(f"https://{EDITOR}/", 3)) and any(FILES in url for url in c.urls()))
     files()
     out = c.js(FILES, """(async () => { const out = [typeof window.ipc, typeof window.__TAURI_INTERNALS__];
-      for (const url of ['ipc://localhost/zone_list', 'tauri://localhost/index.html', 'zonemedia://localhost/x']) { try { out.push((await fetch(url, { method: 'POST' })).status) } catch { out.push('threw') } } return out })()""")
-    check("no way to the client's commands", out == ["undefined", "undefined", "threw", "threw", "threw"], out)
+      for (const url of ['ipc://localhost/zone_list', 'tauri://localhost/index.html', 'zonemedia://localhost/x', 'http://ipc.localhost/zone_list']) { try { out.push((await fetch(url, { method: 'POST' })).status) } catch { out.push('threw') } } return out })()""")
+    check("no way to the client's commands", out == ["undefined", "undefined", "threw", "threw", "threw", "threw"], out)
     out = c.js(FILES, """(async () => { const out = []; for (const what of [{ video: true }, { video: true, audio: true }]) { try { await navigator.mediaDevices.getUserMedia(what); out.push('granted') } catch (e) { out.push(e.name) } }
       out.push(await new Promise((r) => navigator.geolocation.getCurrentPosition(() => r('granted'), (e) => r(e.code)))); return out })()""")
-    check("no camera, no place", out == ["NotAllowedError", "NotAllowedError", 1], out)
+    check("no camera, no place", out[:2] == ["NotAllowedError"] * 2 and out[2] == 1, out)
 
 
 def section_leaks():
@@ -173,7 +177,7 @@ def section_leaks():
         ("a location from a new frame", lambda: c.js(FILES, "(() => { const f = document.createElement('iframe'); document.body.append(f); f.contentWindow.navigator.geolocation.getCurrentPosition(() => 1, () => 1); return true })()")),
     ]:
         view = files(); act(); c.invoke("content_close", id=view); time.sleep(3)
-        left = [url for url in c.urls() if not url.startswith("tauri")]
+        left = [url for url in c.urls() if not url.startswith(LOCAL)]
         check(f"a closed view is gone ({name})", left == [], left)
         if left: c.restart()
 
@@ -201,9 +205,10 @@ def section_activation():
 
 SECTIONS = {name[8:]: work for name, work in list(globals().items()) if name.startswith("section_")}
 if __name__ == "__main__":
-    c.wait(lambda: c.main("document.readyState") == "complete", 30, "the client")
+    c.ready()
     for name in sys.argv[1:] or SECTIONS:
         print(f"-- {name}")
-        SECTIONS[name]()
+        try: SECTIONS[name]()
+        except Exception as error: check(f"{name} runs through", False, repr(error)[:300])
     print("failed:", failed or "none")
     sys.exit(bool(failed))
