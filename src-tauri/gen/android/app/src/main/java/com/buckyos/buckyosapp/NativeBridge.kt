@@ -38,6 +38,12 @@ object NativeBridge {
   /** A part of a Zone's file for the local pages; waits for the Zone (`LocalClient.kt`). */
   @JvmStatic external fun mediaRead(url: String, from: Long, length: Int): ByteArray?
 
+  /** The port of the client's own proxy on this device for a host of a Zone, else 0. */
+  @JvmStatic external fun proxyPort(host: String): Int
+
+  /** The handle of the Wi-Fi network, 0 for none; whether that is news. */
+  @JvmStatic external fun wifiNetwork(handle: Long): Boolean
+
   /** The `:notify` process. */
   @JvmStatic external fun serviceReload(dir: String)
 

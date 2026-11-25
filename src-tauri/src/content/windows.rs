@@ -923,6 +923,15 @@ pub async fn content_retry(app: AppHandle, webview: tauri::Webview) -> CommandRe
     Ok(())
 }
 
+/// The status page of a view asks why the Zone cannot be reached.
+#[tauri::command]
+pub async fn content_lines(app: AppHandle, webview: tauri::Webview) -> CommandResult<Vec<crate::route::Attempt>> {
+    let view = views(&app)
+        .by_label(webview.label())
+        .ok_or_else(|| CommandErrors::not_found("view"))?;
+    Ok(crate::route::client::lines_of(&view.zone_host).await)
+}
+
 /// The status page of a view asks the main window to sign in to the view's Zone.
 #[tauri::command]
 pub async fn content_sign_in(app: AppHandle, webview: tauri::Webview) -> CommandResult<()> {

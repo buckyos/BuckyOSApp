@@ -20,6 +20,7 @@ use tauri_plugin_store::StoreExt;
 
 use crate::did::active_account;
 use crate::error::{CommandErrors, CommandResult};
+use crate::route::{LineMode, LineStatus, RouteMemory};
 use api::{krpc, HttpRequest, ReqwestTransport, ZoneError};
 use host::{classify_host, normalize_host, web_url, ZoneHostKind};
 use registry::{AccountZones, OwnerZone, Registry, ZoneRecord, ZoneSource};
@@ -43,6 +44,11 @@ pub struct ZoneView {
     #[serde(flatten)]
     pub record: ZoneRecord,
     pub session: SessionStatus,
+    pub line: Option<LineStatus>,
+}
+
+fn line_of(host: &str) -> Option<LineStatus> {
+    crate::route::current().and_then(|router| router.status(host))
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -91,6 +97,7 @@ impl ZoneManager {
                 SESSION_CHANGED_EVENT,
                 SessionChanged { account: &key.account, zone: &key.zone, session },
             );
+            crate::route::client::session_changed(&handle, key, session.state);
             crate::notify::sync_soon(&handle);
         });
         Ok(Self { registry: Mutex::new(registry), sessions })
@@ -110,7 +117,7 @@ impl ZoneManager {
         }
     }
 
-    fn change<R: Runtime, T>(&self, app: &AppHandle<R>, account: &str, change: impl FnOnce(&mut AccountZones) -> T) -> T {
+    pub fn change<R: Runtime, T>(&self, app: &AppHandle<R>, account: &str, change: impl FnOnce(&mut AccountZones) -> T) -> T {
         let (result, changed) = {
             let mut registry = self.registry.lock().expect("zones poisoned");
             let zones = registry.accounts.entry(account.to_string()).or_default();
@@ -122,9 +129,22 @@ impl ZoneManager {
             self.save(app);
             let _ = app.emit(ZONES_CHANGED_EVENT, self.view(app));
             crate::content::zones_changed(app);
+            crate::route::client::sync(app);
             crate::notify::sync_soon(app);
         }
         result
+    }
+
+    /// What was found out about the ways to a Zone.
+    pub fn remember_route<R: Runtime>(&self, app: &AppHandle<R>, host: &str, memory: &RouteMemory) {
+        let Some(account) = active_account(app) else { return };
+        self.change(app, &account, |zones| {
+            for zone in zones.zones.iter_mut().filter(|zone| zone.host == host) {
+                // The rest is the user's, or was read meanwhile.
+                zone.route.local = memory.local;
+                zone.route.last_lan = memory.last_lan;
+            }
+        });
     }
 
     pub fn account_zones(&self, account: &str) -> AccountZones {
@@ -146,6 +166,7 @@ impl ZoneManager {
             zones: zones
                 .visible()
                 .map(|record| ZoneView {
+                    line: line_of(&record.host),
                     session: self.sessions.status(&ZoneKey { account: account.clone(), zone: record.did.clone() }),
                     record: record.clone(),
                 })
@@ -279,6 +300,7 @@ pub fn forget_account<R: Runtime>(app: &AppHandle<R>, account: &str) {
     manager.sessions.forget_account(account);
     manager.registry.lock().expect("zones poisoned").accounts.remove(account);
     manager.save(app);
+    crate::route::client::sync(app);
     let _ = app.emit(ZONES_CHANGED_EVENT, manager.view(app));
 }
 
@@ -287,6 +309,7 @@ pub fn account_changed<R: Runtime>(app: &AppHandle<R>) {
     let Some(manager) = app.try_state::<ZoneManager>() else {
         return;
     };
+    crate::route::client::sync(app);
     let _ = app.emit(ZONES_CHANGED_EVENT, manager.view(app));
     crate::content::zones_changed(app);
     crate::notify::sync_soon(app);
@@ -499,7 +522,7 @@ async fn user_changed(app: &AppHandle, key: &ZoneKey, host: &str, before: Option
 
 fn zone_view(app: &AppHandle, manager: &ZoneManager, zone: &str) -> CommandResult<ZoneView> {
     let handle = manager.handle(app, zone)?;
-    Ok(ZoneView { session: manager.sessions.status(&handle.key), record: handle.record })
+    Ok(ZoneView { line: line_of(handle.host()), session: manager.sessions.status(&handle.key), record: handle.record })
 }
 
 /// Says why the sign-in was refused before the message; the session status has the same reason.
@@ -582,6 +605,9 @@ pub struct ZonePatch {
     accent: Option<Option<String>>,
     #[serde(default)]
     notify: Option<bool>,
+    /// Which ways may be taken.
+    #[serde(default)]
+    line_mode: Option<LineMode>,
 }
 
 fn present<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<Option<Option<String>>, D::Error> {
@@ -599,6 +625,9 @@ pub fn zone_update(app: AppHandle, manager: State<'_, ZoneManager>, zone: String
             }
             if let Some(notify) = patch.notify {
                 record.notify = notify;
+            }
+            if let Some(mode) = patch.line_mode {
+                record.route.mode = mode;
             }
             true
         }

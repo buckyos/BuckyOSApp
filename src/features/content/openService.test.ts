@@ -27,6 +27,8 @@ const zoneView = (did: string, host: string, patch: Partial<ZoneView> = {}): Zon
     notify: true,
     signed_out: false,
     session: { state: "signed_in", username: "bob", identity: { user_id: "bob", did, user_type: "user" }, reason: null },
+    line: null,
+    route: { mode: "auto" },
     ...patch,
 });
 const bob = zoneView("did:bns:bob", "bob.example");

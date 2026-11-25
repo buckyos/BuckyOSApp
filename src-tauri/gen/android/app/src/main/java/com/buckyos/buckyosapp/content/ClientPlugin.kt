@@ -19,6 +19,9 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.webkit.JavaScriptReplyProxy
+import androidx.webkit.ProxyConfig
+import androidx.webkit.ProxyController
+import androidx.webkit.WebViewFeature
 import app.tauri.annotation.Command
 import app.tauri.annotation.TauriPlugin
 import app.tauri.plugin.Invoke
@@ -28,6 +31,7 @@ import com.buckyos.buckyosapp.Labels
 import com.buckyos.buckyosapp.MainActivity
 import com.buckyos.buckyosapp.NativeBridge
 import com.buckyos.buckyosapp.Secrets
+import com.buckyos.buckyosapp.Wifi
 import com.buckyos.buckyosapp.audio.PlaybackService
 import com.buckyos.buckyosapp.audio.RecorderService
 import com.buckyos.buckyosapp.notify.NotifyService
@@ -49,6 +53,7 @@ class ClientPlugin(private val activity: Activity) : Plugin(activity) {
   private val network = object : ConnectivityManager.NetworkCallback() {
     override fun onAvailable(network: Network) = event("online")
   }
+  private val wifi = Wifi(activity) { event("online") }
   val downloads = Downloads(activity.applicationContext)
 
   private val density get() = activity.resources.displayMetrics.density
@@ -65,6 +70,7 @@ class ClientPlugin(private val activity: Activity) : Plugin(activity) {
     host.viewTreeObserver.addOnGlobalFocusChangeListener { _, _ -> place() }
     ViewCompat.requestApplyInsets(host)
     connectivity.registerDefaultNetworkCallback(network)
+    wifi.watch()
     if (Build.VERSION.SDK_INT >= 26) webView.webViewClient = LocalClient(webView.webViewClient)
     takeAlert(activity.intent)
   }
@@ -82,6 +88,30 @@ class ClientPlugin(private val activity: Activity) : Plugin(activity) {
     px(json.optDouble("x", 0.0) + json.optDouble("width", 0.0)),
     px(json.optDouble("y", 0.0) + json.optDouble("height", 0.0)),
   )
+
+  // ---- the ways to the Zones ----
+
+  /** Pages of these hosts, and of all below them, go through the client's proxy. All profiles share the setting. */
+  @Command
+  fun setProxy(invoke: Invoke) = onMain {
+    val args = invoke.getArgs()
+    val supported = WebViewFeature.isFeatureSupported(WebViewFeature.PROXY_OVERRIDE) &&
+      WebViewFeature.isFeatureSupported(WebViewFeature.PROXY_OVERRIDE_REVERSE_BYPASS)
+    val done = { invoke.resolve(JSObject().put("supported", supported)) }
+    val hosts = args.getJSONArray("hosts").let { list -> (0 until list.length()).map { list.getString(it) } }
+    if (!supported) {
+      done()
+    } else if (hosts.isEmpty()) {
+      ProxyController.getInstance().clearProxyOverride({ it.run() }, done)
+    } else {
+      val config = ProxyConfig.Builder()
+        .addProxyRule("http://127.0.0.1:${args.getInt("port")}", ProxyConfig.MATCH_HTTPS)
+        .addDirect(ProxyConfig.MATCH_HTTPS)
+        .setReverseBypassEnabled(true)
+      for (host in hosts) config.addBypassRule(host).addBypassRule("*.$host")
+      ProxyController.getInstance().setProxyOverride(config.build(), { it.run() }, done)
+    }
+  }
 
   // ---- views ----
 
@@ -341,6 +371,19 @@ class ClientPlugin(private val activity: Activity) : Plugin(activity) {
     }
   }
 
+  /** Asked when there is a device of a Zone to connect to; without it all goes over the internet. */
+  @Command
+  fun localNetworkPermission(invoke: Invoke) = onMain {
+    if (Build.VERSION.SDK_INT < 37 || activity.applicationInfo.targetSdkVersion < 37) {
+      invoke.resolve(JSObject().put("granted", true))
+    } else {
+      main.localNetwork.request { granted ->
+        if (granted) event("online")
+        invoke.resolve(JSObject().put("granted", granted))
+      }
+    }
+  }
+
   @Command
   fun status(invoke: Invoke) = onMain {
     val power = activity.getSystemService(Activity.POWER_SERVICE) as PowerManager
@@ -442,6 +485,7 @@ class ClientPlugin(private val activity: Activity) : Plugin(activity) {
 
   override fun onDestroy() {
     connectivity.unregisterNetworkCallback(network)
+    wifi.stop()
     downloads.close()
   }
 }

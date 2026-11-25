@@ -8,6 +8,7 @@ import { getIdentityDid } from "../did/identityView";
 import { resolveOwnerZones } from "./ownerZones";
 import * as api from "./api";
 import { zoneChannel } from "./channel";
+import { onLineBack } from "./lineEvents";
 import type { SessionStatus, ZoneList, ZoneView } from "./types";
 
 interface ZoneContextValue {
@@ -51,6 +52,14 @@ export const ZoneProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
                 );
             })
         );
+        keep(
+            listen<api.LineChanged>(api.LINE_CHANGED_EVENT, ({ payload }) => {
+                setList((previous) => ({
+                    ...previous,
+                    zones: previous.zones.map((zone) => (zone.host === payload.host ? { ...zone, line: payload.line } : zone)),
+                }));
+            })
+        );
         return () => {
             stopped = true;
             unlisten.forEach((stop) => stop());
@@ -91,7 +100,11 @@ export const ZoneProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
         };
         run();
         window.addEventListener("online", run);
-        return () => window.removeEventListener("online", run);
+        const stopLine = onLineBack(run);
+        return () => {
+            stopLine();
+            window.removeEventListener("online", run);
+        };
     }, [ownerDid, syncOwner]);
 
     const current = React.useMemo(

@@ -198,6 +198,22 @@ extern "system" fn Java_com_buckyos_buckyosapp_NativeBridge_mediaRead<'a>(
         .unwrap_or_else(|| JObject::null().into())
 }
 
+/// The port of the client's own proxy for a host of a Zone, else 0.
+#[no_mangle]
+extern "system" fn Java_com_buckyos_buckyosapp_NativeBridge_proxyPort(mut env: JNIEnv, _class: JClass, host: JString) -> jint {
+    let host = text(&mut env, &host);
+    guarded(0, || {
+        let router = crate::route::current().filter(|router| router.proxy_url(&host).is_some());
+        router.map_or(0, |router| router.port().into())
+    })
+}
+
+/// The Wi-Fi network, 0 for none; whether that is news.
+#[no_mangle]
+extern "system" fn Java_com_buckyos_buckyosapp_NativeBridge_wifiNetwork(_env: JNIEnv, _class: JClass, handle: jlong) -> jboolean {
+    guarded(false, || crate::route::net::set_wifi(handle as u64)) as jboolean
+}
+
 #[no_mangle]
 extern "system" fn Java_com_buckyos_buckyosapp_NativeBridge_serviceReload(mut env: JNIEnv, _class: JClass, dir: JString) {
     let dir = PathBuf::from(text(&mut env, &dir));

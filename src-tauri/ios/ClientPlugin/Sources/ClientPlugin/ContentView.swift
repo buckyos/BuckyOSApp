@@ -311,7 +311,7 @@ extension ContentView: WKNavigationDelegate {
     if error.domain == "WebKitErrorDomain" && [102, 204].contains(error.code) { return }
     failed = true
     let url = (error.userInfo[NSURLErrorFailingURLErrorKey] as? URL) ?? web.url
-    event("failed", ["url": url?.absoluteString ?? "", "detail": error.localizedDescription])
+    event("failed", ["url": url?.absoluteString ?? "", "detail": "\(error.localizedDescription) (\(error.domain) \(error.code))"])
   }
 
   func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {

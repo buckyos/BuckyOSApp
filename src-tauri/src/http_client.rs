@@ -15,6 +15,16 @@ pub fn builder() -> reqwest::ClientBuilder {
     builder
 }
 
+/// Requests to the Zones take the ways the client's pages take (`route`); others go as they would
+/// without.
+pub fn zone_builder() -> reqwest::ClientBuilder {
+    builder().proxy(reqwest::Proxy::custom(|url| {
+        let host = url.host_str()?;
+        let own = crate::route::current().and_then(|router| router.proxy_url(host));
+        own.or_else(|| crate::route::net::system_proxy(host).map(|proxy| format!("http://{}:{}", proxy.host, proxy.port)))
+    }))
+}
+
 /// iOS has no way to list the roots it trusts: the system checks each certificate chain.
 #[cfg(target_os = "ios")]
 fn system_tls() -> Result<rustls::ClientConfig, rustls::Error> {

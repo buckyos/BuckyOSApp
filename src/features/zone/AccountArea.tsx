@@ -8,6 +8,7 @@ import { useBack } from "../content/useOverlay";
 import { useDidContext } from "../did/DidContext";
 import { getIdentityAvatar, getIdentityDid, getIdentityDisplayName } from "../did/identityView";
 import { avatarDisplayUrl } from "../did/ownerDocument";
+import { zoneStateKeys } from "./lineView";
 import { sessionLabelKey, sessionTone } from "./sessionView";
 import { zoneTitle } from "./types";
 import { useZoneActions } from "./useZoneActions";
@@ -70,7 +71,9 @@ export const AccountArea: React.FC = () => {
                         <span className="account-zone">
                             <Dot color="var(--zone-mark)" />
                             <span className="account-zone-name">{zoneTitle(current)}</span>
-                            <span className="account-zone-state">{t(sessionLabelKey(current))}</span>
+                            <span className="account-zone-state" data-testid="account-zone-state">
+                                {zoneStateKeys(current).map((key) => t(key)).join(" · ")}
+                            </span>
                         </span>
                     ) : (
                         <span className="account-zone">{t("zones.none")}</span>

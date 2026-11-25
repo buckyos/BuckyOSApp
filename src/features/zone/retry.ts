@@ -1,3 +1,5 @@
+import { onLineBack } from "./lineEvents";
+
 // Reading again what could not be read: sooner at first, and at once when the page is looked at or
 // the network is back. A Zone that cannot be reached at all shows as its session (`offline`); this
 // is for the rest, such as a service that was just starting.
@@ -17,7 +19,9 @@ export const pageEnvironment: RetryEnvironment = {
         document.addEventListener("visibilitychange", listener);
         window.addEventListener("online", listener);
         window.addEventListener("focus", listener);
+        const stopLine = onLineBack(listener);
         return () => {
+            stopLine();
             document.removeEventListener("visibilitychange", listener);
             window.removeEventListener("online", listener);
             window.removeEventListener("focus", listener);

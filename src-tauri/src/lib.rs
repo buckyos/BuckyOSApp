@@ -47,6 +47,7 @@ mod network;
 #[cfg(desktop)]
 mod node_control;
 mod notify;
+mod route;
 #[cfg(desktop)]
 mod tray;
 mod zone;
@@ -76,6 +77,7 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     let zones = zone::ZoneManager::load(&handle, secrets(&handle))?;
     app.manage(notifications);
     app.manage(zones);
+    route::client::attach(&handle);
 
     {
         use tauri_plugin_deep_link::DeepLinkExt;
@@ -140,6 +142,7 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    route::client::start();
     let builder = tauri::Builder::default();
 
     // This must be the first registered plugin so a second desktop process is
@@ -215,6 +218,10 @@ pub fn run() {
         zone::zone_rpc,
         zone::zone_fetch,
         zone::zone_image,
+        route::client::zone_lines,
+        route::client::zone_find,
+        route::client::route_status,
+        route::client::route_set_browser,
         content::windows::content_open,
         content::windows::content_focus,
         content::windows::content_close,
@@ -225,6 +232,7 @@ pub fn run() {
         content::windows::content_emit,
         content::windows::content_set_title,
         content::windows::content_retry,
+        content::windows::content_lines,
         content::windows::content_sign_in,
         content::windows::bucky_api_call,
         content::prompt::prompt_get,
@@ -304,6 +312,9 @@ pub fn run() {
         zone::zone_rpc,
         zone::zone_fetch,
         zone::zone_image,
+        route::client::zone_lines,
+        route::client::zone_find,
+        route::client::route_status,
         content::mobile::content_open,
         content::mobile::content_focus,
         content::mobile::content_close,

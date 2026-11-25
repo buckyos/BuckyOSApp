@@ -15,6 +15,36 @@ export interface SessionStatus {
     reason: string | null;
 }
 
+export type LineKind = "local" | "lan" | "internet";
+
+/** A way to a Zone: the BuckyOS on this computer, a device in the same network, or over the internet. */
+export interface Line {
+    kind: LineKind;
+    address?: string;
+}
+
+export type LineOutcome = "usable" | "expired" | "untrusted" | "refused" | "timeout" | "unreachable";
+
+export interface LineAttempt extends Line {
+    outcome: LineOutcome;
+    detail: string;
+}
+
+export interface LineStatus {
+    /** Null until the first try. */
+    line: Line | null;
+    /** The BuckyOS on this computer is the way and does not answer right now. */
+    waiting: boolean;
+    /** The last attempt over the internet failed. */
+    unreachable: boolean;
+    attempts: LineAttempt[];
+    /** The end of the certificate's validity (Unix seconds), where it was seen. */
+    cert_expires_at: number | null;
+}
+
+/** `internet`: never directly. */
+export type LineMode = "auto" | "internet";
+
 /** One Zone on the active account's list. */
 export interface ZoneView {
     did: string;
@@ -28,6 +58,8 @@ export interface ZoneView {
     /** The user signed out, as opposed to a credential that is not there (any more). */
     signed_out: boolean;
     session: SessionStatus;
+    line: LineStatus | null;
+    route: { mode: LineMode };
 }
 
 export interface ZoneList {

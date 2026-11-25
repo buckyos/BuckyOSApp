@@ -18,6 +18,32 @@
     margin-top: 6px;
 }
 
+.content-ways {
+    display: grid;
+    gap: 4px;
+    margin: 4px 0 0;
+    padding: 0;
+    list-style: none;
+    max-width: 420px;
+    font-size: 13px;
+    line-height: 18px;
+    text-align: left;
+}
+
+.content-ways li {
+    display: grid;
+    grid-template-columns: 96px 1fr;
+    gap: 12px;
+}
+
+.content-ways li > :first-child {
+    color: var(--cp-text);
+}
+
+.content-ways li:not([data-ok]) > :last-child {
+    color: var(--cp-muted);
+}
+
 .content-detail {
     max-width: 420px;
     font-size: 12px;

@@ -1,4 +1,5 @@
 import Foundation
+import Network
 import WebKit
 
 /// One data store per account and Zone: its own cookies and storage. The activation page gets a new
@@ -7,6 +8,7 @@ import WebKit
 enum Profiles {
   private static let doomedKey = "content-profiles-doomed"
   private static var used: [String: WKWebsiteDataStore] = [:]
+  private static var proxies: [ProxyConfiguration] = []
 
   private static var doomed: Set<String> {
     get { Set(UserDefaults.standard.stringArray(forKey: doomedKey) ?? []) }
@@ -35,8 +37,20 @@ enum Profiles {
     guard let identifier = identifier(profile) else { return .nonPersistent() }
     if let known = used[profile] { return known }
     let store = WKWebsiteDataStore(forIdentifier: identifier)
+    store.proxyConfigurations = proxies
     used[profile] = store
     return store
+  }
+
+  /// Pages of these hosts, and of all below them, go through the client's own proxy.
+  static func setProxy(port: UInt16, hosts: [String]) {
+    proxies = []
+    if let port = NWEndpoint.Port(rawValue: port), port != 0, !hosts.isEmpty {
+      var proxy = ProxyConfiguration(httpCONNECTProxy: .hostPort(host: "127.0.0.1", port: port))
+      proxy.matchDomains = hosts
+      proxies = [proxy]
+    }
+    for store in used.values { store.proxyConfigurations = proxies }
   }
 
   /// Stores of Zones signed out of: what was in them is gone already, and one that was used in a

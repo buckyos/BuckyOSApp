@@ -21,6 +21,7 @@ import { getThemePreference, setThemePreference, subscribeTheme, type ThemePrefe
 import { parseCommandError } from "../../utils/commandError";
 import { isMobileShell } from "../../utils/platform";
 import { openEmbeddedPage } from "../../utils/webview";
+import { BrowserSection } from "./BrowserSection";
 import { NotifySection } from "./NotifySection";
 
 const icon = { size: 17, strokeWidth: 1.8, "aria-hidden": true } as const;
@@ -95,6 +96,7 @@ const Setting: React.FC = () => {
 
                 <NotifySection />
                 {isTrayCapable() ? <StartupSection /> : null}
+                {isMobileShell() ? null : <BrowserSection />}
 
                 <Section title={t("prefs.identity")}>
                     <Card>

@@ -3,6 +3,7 @@ import { ContentStatusView } from "../../windows/ContentStatus";
 import { clientRuntime } from "../content/clientRuntime";
 import { retryView, type MobileView } from "../content/mobileViews";
 import { useBlock } from "../content/useOverlay";
+import { zoneLines } from "../zone/api";
 import "../../windows/windows.css";
 import "./container.css";
 
@@ -17,6 +18,7 @@ export const ViewCover: React.FC<{ view: MobileView }> = ({ view }) => {
             <ContentStatusView
                 state={view.status}
                 detail={view.detail}
+                readLines={() => zoneLines(view.zone)}
                 onRetry={() => retryView(view.id)}
                 onSignIn={async () => clientRuntime.askSignIn(view.zone)}
             />

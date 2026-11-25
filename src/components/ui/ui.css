@@ -365,6 +365,15 @@ input[type='password']:focus {
     color: var(--cp-muted);
 }
 
+.ui-section-note p {
+    margin: 0;
+}
+
+.ui-section-note ul {
+    margin: 4px 0 0;
+    padding-left: 16px;
+}
+
 .ui-card {
     border: 1px solid var(--cp-border);
     border-radius: 12px;

@@ -24,6 +24,7 @@ final class ClientPlugin: Plugin {
   @objc public func reply(_ invoke: Invoke) { run(invoke) { $0.reply } }
   @objc public func getCookies(_ invoke: Invoke) { run(invoke) { $0.getCookies } }
   @objc public func setCookies(_ invoke: Invoke) { run(invoke) { $0.setCookies } }
+  @objc public func setProxy(_ invoke: Invoke) { run(invoke) { $0.setProxy } }
   @objc public func clearProfile(_ invoke: Invoke) { run(invoke) { $0.clearProfile } }
   @objc public func signPrompt(_ invoke: Invoke) { run(invoke) { $0.signPrompt } }
   @objc public func signDone(_ invoke: Invoke) { run(invoke) { $0.signDone } }

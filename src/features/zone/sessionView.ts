@@ -2,7 +2,7 @@ import type { Tone } from "../../components/ui/States";
 import { failureOfReason } from "./errors";
 import type { SessionStatus, ZoneView } from "./types";
 
-type Signed = Pick<ZoneView, "session" | "signed_out">;
+type Signed = Pick<ZoneView, "session" | "signed_out"> & { line?: ZoneView["line"] };
 
 /** What to show the session as: without a credential, only the user's own signing out is that. */
 function shownState({ session, signed_out }: Signed): SessionStatus["state"] {
@@ -55,7 +55,7 @@ export function sessionNotice(zone: Signed): SessionNotice | null {
         case "offline":
             return session.reason === "clock"
                 ? { tone: "warn", key: "zones.notice.clock", action: "retry" }
-                : { tone: "bad", key: "zones.notice.offline", action: "retry" };
+                : { tone: "bad", key: zone.line?.waiting ? "zones.notice.local_down" : "zones.notice.offline", action: "retry" };
         case "signed_out":
             return { tone: "idle", key: "zones.notice.signed_out", action: "sign_in" };
         case "signing_in":

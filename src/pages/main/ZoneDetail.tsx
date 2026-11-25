@@ -10,6 +10,8 @@ import { StateText } from "../../components/ui/States";
 import { clientRuntime } from "../../features/content/clientRuntime";
 import { AccentPicker } from "../../features/zone/AccentPicker";
 import { updateZone } from "../../features/zone/api";
+import { LineNotice } from "../../features/zone/LineNotice";
+import { LineSection } from "../../features/zone/LineSection";
 import { SessionNotice } from "../../features/zone/SessionNotice";
 import { sessionLabelKey, sessionTone } from "../../features/zone/sessionView";
 import { UnbindZoneDialog } from "../../features/zone/UnbindZoneDialog";
@@ -77,6 +79,7 @@ const ZoneSettings: React.FC<{ zone: ZoneView }> = ({ zone }) => {
                 )}
             </div>
             <SessionNotice zone={zone} />
+            <LineNotice zone={zone} />
             <Section>
                 <Card>
                     <Row title={t("zones.host")} sub={<span className="selectable">{zone.host}</span>} wrapSub />
@@ -122,6 +125,7 @@ const ZoneSettings: React.FC<{ zone: ZoneView }> = ({ zone }) => {
                     />
                 </Card>
             </Section>
+            <LineSection zone={zone} />
             <Section title={t("zones.account")} note={zone.source === "owner" ? t("zones.unbind_note") : undefined}>
                 <Card>
                     <Row

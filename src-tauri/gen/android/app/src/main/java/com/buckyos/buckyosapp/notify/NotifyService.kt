@@ -26,6 +26,7 @@ import com.buckyos.buckyosapp.MainActivity
 import com.buckyos.buckyosapp.NativeBridge
 import com.buckyos.buckyosapp.R
 import com.buckyos.buckyosapp.Secrets
+import com.buckyos.buckyosapp.Wifi
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -40,6 +41,7 @@ class NotifyService : Service() {
   private val network = object : ConnectivityManager.NetworkCallback() {
     override fun onAvailable(network: Network) = NativeBridge.serviceWake()
   }
+  private val wifi by lazy { Wifi(this) { NativeBridge.serviceWake() } }
 
   override fun onBind(intent: Intent?): IBinder? = null
 
@@ -49,6 +51,7 @@ class NotifyService : Service() {
     NativeBridge.attach(this)
     createChannels(this)
     getSystemService(ConnectivityManager::class.java).registerDefaultNetworkCallback(network)
+    wifi.watch()
   }
 
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -89,6 +92,7 @@ class NotifyService : Service() {
   override fun onDestroy() {
     instance = null
     getSystemService(ConnectivityManager::class.java).unregisterNetworkCallback(network)
+    wifi.stop()
     (getSystemService(Context.ALARM_SERVICE) as AlarmManager).cancel(heartbeat())
     super.onDestroy()
     // Nothing else runs in this process; its connections end with it.

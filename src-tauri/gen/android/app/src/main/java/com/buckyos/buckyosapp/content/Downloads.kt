@@ -29,6 +29,8 @@ import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.net.HttpURLConnection
+import java.net.InetSocketAddress
+import java.net.Proxy
 import java.net.URL
 import java.util.UUID
 import java.util.concurrent.Executors
@@ -83,7 +85,9 @@ class Downloads(private val context: Context) {
     var url = URL(address)
     repeat(MAX_REDIRECTS) {
       if (url.protocol != "https" || !inZone(url.host)) throw IOException("a redirect left the Zone")
-      val connection = url.openConnection() as HttpURLConnection
+      val port = NativeBridge.proxyPort(url.host)
+      val opened = if (port == 0) url.openConnection() else url.openConnection(Proxy(Proxy.Type.HTTP, InetSocketAddress("127.0.0.1", port)))
+      val connection = opened as HttpURLConnection
       connection.instanceFollowRedirects = false
       connection.connectTimeout = TIMEOUT_MS
       connection.readTimeout = TIMEOUT_MS

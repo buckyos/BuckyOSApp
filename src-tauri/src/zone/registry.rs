@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use super::host::{find_zone, normalize_host};
+use crate::route::RouteMemory;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -37,6 +38,8 @@ pub struct ZoneRecord {
     /// The user signed out: only the user signs in again.
     #[serde(default)]
     pub signed_out: bool,
+    #[serde(default)]
+    pub route: RouteMemory,
 }
 
 fn default_true() -> bool {
@@ -112,6 +115,7 @@ impl AccountZones {
                 notify: true,
                 hidden: false,
                 signed_out: false,
+                route: RouteMemory::default(),
             }),
         }
         self.fix_current();
@@ -145,6 +149,7 @@ impl AccountZones {
                     notify: true,
                     hidden: false,
                     signed_out: false,
+                    route: RouteMemory::default(),
                 }),
             }
         }

@@ -4,6 +4,7 @@ import { ShortcutsSection } from "../../features/home/ShortcutsSection";
 import { StatusCard } from "../../features/home/StatusCard";
 import { MusicCard } from "../../features/music/MusicCard";
 import { AccountArea } from "../../features/zone/AccountArea";
+import { LineNotice } from "../../features/zone/LineNotice";
 import { SessionNotice } from "../../features/zone/SessionNotice";
 import { useZones } from "../../features/zone/ZoneContext";
 
@@ -16,6 +17,7 @@ const Home: React.FC = () => {
                 {current ? (
                     <>
                         <SessionNotice zone={current} />
+                        <LineNotice zone={current} />
                         {current.session.state === "signed_in" ? <StatusCard key={current.did} zone={current} /> : null}
                         <MusicCard key={`music-${current.did}`} zone={current} />
                         <ShortcutsSection key={`shortcuts-${current.did}`} zone={current} />

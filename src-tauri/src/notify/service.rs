@@ -13,6 +13,7 @@ use super::core::{self, Changed, ConnectionState, Host, Labels, Pace};
 use super::model::{Alert, Seen, Summary};
 use super::shown_alerts;
 use crate::json_file::{read_json, write_json};
+use crate::route::RouteZone;
 use crate::zone::api::{HttpRequest, HttpResponse, ReqwestTransport, ZoneError, ZoneTransport};
 use crate::zone::registry::ZoneRecord;
 use crate::zone::secret::{SecretBackend, SecretStore};
@@ -208,6 +209,11 @@ impl Service {
         } else {
             HashMap::new()
         };
+        if let Some(router) = crate::route::current() {
+            router.set_zones(
+                wanted.values().map(|handle| RouteZone { host: handle.host().to_string(), memory: handle.record.route.clone() }).collect(),
+            );
+        }
         let mut ended = Vec::new();
         let mut inner = self.lock();
         inner.labels = config.labels;
@@ -357,6 +363,9 @@ impl Host for ServiceHost {
 #[cfg(target_os = "android")]
 mod process {
     use super::*;
+    use crate::route::net::SystemNet;
+    use crate::route::proxy::{listen, Entry, Listening};
+    use crate::route::{Options, Router};
     use std::sync::OnceLock;
 
     struct Android;
@@ -387,12 +396,33 @@ mod process {
     struct Running {
         runtime: tokio::runtime::Runtime,
         service: Arc<Service>,
+        _proxy: Option<Listening>,
+    }
+
+    /// The ways to the Zones, in this process too. A phone in a pocket looks for better ones only
+    /// when its network changes.
+    fn start_routes(runtime: &tokio::runtime::Runtime) -> Option<Listening> {
+        let _runtime = runtime.enter();
+        let router = Router::new(Arc::new(SystemNet), Options { by_itself: false, ..Options::default() });
+        let entry = Entry::Client { pac_path: String::new(), pass_others: false };
+        match listen(router.clone(), 0, entry) {
+            Ok(listening) => {
+                router.set_port(listening.port);
+                crate::route::install(router);
+                Some(listening)
+            }
+            Err(error) => {
+                log::error!("[route] the proxy of the client did not start: {error}");
+                None
+            }
+        }
     }
 
     static RUNNING: OnceLock<Option<Running>> = OnceLock::new();
 
     fn start(dir: PathBuf) -> Option<Running> {
         crate::android::init_log();
+        crate::zone::api::use_odd_nonces();
         let runtime = tokio::runtime::Builder::new_multi_thread()
             .worker_threads(1)
             .thread_name("notify")
@@ -400,10 +430,11 @@ mod process {
             .build()
             .map_err(|error| log::error!("[notify] no runtime: {error}"))
             .ok()?;
+        let proxy = start_routes(&runtime);
         let service = Service::new(dir, crate::android::keystore(), Arc::new(Android))
             .map_err(|error| log::error!("[notify] no service: {error}"))
             .ok()?;
-        Some(Running { runtime, service })
+        Some(Running { runtime, service, _proxy: proxy })
     }
 
     fn running() -> Option<&'static Running> {
@@ -419,7 +450,13 @@ mod process {
 
     pub fn wake() {
         if let Some(running) = running() {
-            running.service.wake();
+            let service = running.service.clone();
+            running.runtime.spawn(async move {
+                if let Some(router) = crate::route::current() {
+                    router.network_changed().await;
+                }
+                service.wake();
+            });
         }
     }
 

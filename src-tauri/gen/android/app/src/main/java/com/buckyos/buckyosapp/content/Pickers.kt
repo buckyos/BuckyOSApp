@@ -71,6 +71,9 @@ class PermissionAsker(private val activity: AppCompatActivity, private val permi
   companion object {
     fun microphone(activity: AppCompatActivity) = PermissionAsker(activity, Manifest.permission.RECORD_AUDIO)
 
+    /** From API 37 on. */
+    fun localNetwork(activity: AppCompatActivity) = PermissionAsker(activity, "android.permission.ACCESS_LOCAL_NETWORK")
+
     fun notifications(activity: AppCompatActivity) =
       PermissionAsker(activity, if (Build.VERSION.SDK_INT >= 33) Manifest.permission.POST_NOTIFICATIONS else "android.permission.POST_NOTIFICATIONS")
   }

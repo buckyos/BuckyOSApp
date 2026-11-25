@@ -60,7 +60,12 @@ futures = "0.3"
 # A Zone may use a certificate of a private CA the system trusts: WebViews accept it, so the
 # client's own requests have to as well.
 reqwest = { version = "0.12", default-features = false, features = ["http2", "json", "rustls-tls", "rustls-tls-native-roots"] }
-tokio = { version = "1", features = ["macros", "rt", "sync", "time"] }
+tokio = { version = "1", features = ["io-util", "macros", "net", "rt", "sync", "time"] }
+# The ways to the Zones (route/): all of these are what reqwest itself uses.
+http = "1"
+hyper-util = { version = "0.1", default-features = false, features = ["client-proxy", "client-proxy-system"] }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
+tokio-rustls = { version = "0.26", default-features = false, features = ["ring", "tls12"] }
 base64 = "0.22"
 url = "2"
 tauri-plugin-deep-link = "=2.4.5"
@@ -72,7 +77,7 @@ libc = "0.2"
 # NativeBridge.kt, and the runtime of the notification process (notify/service.rs).
 [target.'cfg(target_os = "android")'.dependencies]
 jni = "0.21"
-tokio = { version = "1", features = ["net", "rt-multi-thread"] }
+tokio = { version = "1", features = ["rt-multi-thread"] }
 
 [target.'cfg(target_os = "ios")'.dependencies]
 # Used to reach the WKWebView scroll view (see ios_webview.rs).
@@ -80,8 +85,11 @@ objc2 = "0.6"
 # The system keychain (zone/secret.rs).
 keyring = { version = "3", default-features = false, features = ["apple-native"] }
 # iOS cannot list the roots it trusts, so the system itself checks certificates (http_client.rs).
-rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
 rustls-platform-verifier = "0.6"
+
+[target.'cfg(not(target_os = "ios"))'.dependencies]
+rustls-native-certs = "0.8"
+webpki-roots = "1"
 
 # Desktop processes must be single-instance so repeated launches reuse the
 # existing main window instead of creating another window and tray icon.
@@ -99,13 +107,15 @@ windows-registry = "0.5"
 [target.'cfg(target_os = "macos")'.dependencies]
 keyring = { version = "3", default-features = false, features = ["apple-native"] }
 objc2 = "0.6"
-objc2-foundation = { version = "0.3", features = ["NSBundle", "NSError", "NSString"] }
+objc2-foundation = { version = "0.3", features = ["NSArray", "NSBundle", "NSError", "NSString"] }
 objc2-user-notifications = "0.3"
 block2 = "0.6"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 keyring = { version = "3", default-features = false, features = ["sync-secret-service", "crypto-rust"] }
 notify-rust = "4"
+# The version wry already uses (route/webview.rs).
+webkit2gtk = { version = "=2.0.2", features = ["v2_40"] }
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem

@@ -5,6 +5,7 @@
 
 use futures::future::BoxFuture;
 use serde_json::{json, Value};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -89,12 +90,21 @@ pub fn now_ms() -> u64 {
         .unwrap_or_default()
 }
 
-/// Strictly increasing milliseconds. A sign-in nonce used twice for the same user and target is
-/// taken for a replay and revokes the session.
+static ODD_NONCES: AtomicBool = AtomicBool::new(false);
+
+/// Android's notification process signs in at the same moments as the client itself.
+#[cfg(target_os = "android")]
+pub fn use_odd_nonces() {
+    ODD_NONCES.store(true, Ordering::SeqCst);
+}
+
+/// Strictly increasing milliseconds, even ones or odd ones. A sign-in nonce used twice for the same
+/// user and target is taken for a replay and revokes the session.
 pub fn next_nonce() -> u64 {
     static LAST: Mutex<u64> = Mutex::new(0);
     let mut last = LAST.lock().expect("nonce poisoned");
-    *last = now_ms().max(*last + 1);
+    let next = now_ms().max(*last + 1);
+    *last = next + (next ^ u64::from(ODD_NONCES.load(Ordering::SeqCst))) % 2;
     *last
 }
 
@@ -117,7 +127,6 @@ pub trait ZoneTransport: Send + Sync {
     fn send(&self, request: HttpRequest) -> BoxFuture<'_, Result<HttpResponse, ZoneError>>;
     /// The network changed: connections from before are dead, and a request on one would only find
     /// that out after half a minute.
-    #[cfg_attr(not(mobile), allow(dead_code))]
     fn reset(&self) {}
 }
 
@@ -131,7 +140,7 @@ impl ReqwestTransport {
     }
 
     fn client() -> Result<reqwest::Client, reqwest::Error> {
-        crate::http_client::builder()
+        crate::http_client::zone_builder()
             .connect_timeout(CONNECT_TIMEOUT)
             .timeout(REQUEST_TIMEOUT)
             .redirect(reqwest::redirect::Policy::none())
@@ -256,7 +265,7 @@ mod tests {
         let mut last = 0;
         for _ in 0..1000 {
             let next = next_nonce();
-            assert!(next > last);
+            assert!(next > last && next % 2 == 0);
             last = next;
         }
     }

@@ -62,6 +62,7 @@ final class Client: NSObject {
     for name in [UIResponder.keyboardWillChangeFrameNotification, UIResponder.keyboardWillHideNotification] {
       center.addObserver(self, selector: #selector(keyboardChanged), name: name, object: nil)
     }
+    center.addObserver(self, selector: #selector(waking), name: UIApplication.willEnterForegroundNotification, object: nil)
     center.addObserver(self, selector: #selector(resigned), name: UIApplication.willResignActiveNotification, object: nil)
     center.addObserver(self, selector: #selector(activated), name: UIApplication.didBecomeActiveNotification, object: nil)
     network.pathUpdateHandler = { path in
@@ -103,6 +104,11 @@ final class Client: NSObject {
     var top = controller
     while let next = top?.presentedViewController, !next.isBeingDismissed { top = next }
     return top
+  }
+
+  /// The pages go on before the app is active.
+  @objc private func waking() {
+    Native.event("waking")
   }
 
   @objc private func resigned() {
@@ -314,6 +320,12 @@ final class Client: NSObject {
       return
     }
     Profiles.setCookies(profile, url, args["cookies"] as? [String] ?? []) { invoke.resolve() }
+  }
+
+  func setProxy(_ invoke: Invoke) {
+    let args = arguments(invoke)
+    Profiles.setProxy(port: (args["port"] as? NSNumber)?.uint16Value ?? 0, hosts: args["hosts"] as? [String] ?? [])
+    invoke.resolve(["supported": true])
   }
 
   func clearProfile(_ invoke: Invoke) {

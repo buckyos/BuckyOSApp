@@ -657,22 +657,24 @@ pub fn on_event(text: &str) {
                 json!({ "view": id, "name": event.get("name"), "path": event.get("path"), "success": event.get("success") }),
             );
         }
+        "waking" => spawn(crate::route::client::waking()),
         "resumed" | "paused" => {
             platform::nudge(app);
-            views(app).lock().resumed = kind == "resumed";
+            let resumed = kind == "resumed";
+            views(app).lock().resumed = resumed;
             tell_front(app);
-            if kind == "resumed" {
-                crate::notify::wake_all(app);
-                retry_front(app);
-            }
+            spawn(async move {
+                crate::route::client::shown(resumed).await;
+                if resumed {
+                    crate::notify::wake_all(app);
+                    retry_front(app);
+                }
+            });
         }
-        "online" => {
-            if let Some(manager) = app.try_state::<ZoneManager>() {
-                manager.sessions.transport().reset();
-            }
-            crate::notify::wake_all(app);
+        "online" => spawn(async move {
+            crate::route::client::network_changed(app).await;
             retry_front(app);
-        }
+        }),
         "media" => crate::audio::on_media(&id, &string("command")),
         "record" => crate::audio::on_record(&event),
         _ => {}
@@ -1182,6 +1184,51 @@ pub fn zones_changed<R: Runtime>(_app: &AppHandle<R>) {
             destroy(app, &view.info.id);
         }
     }
+}
+
+static PROXY_SUPPORTED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+pub fn proxy_supported() -> bool {
+    PROXY_SUPPORTED.load(Ordering::SeqCst)
+}
+
+static LOCAL_NETWORK: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(true);
+
+pub fn local_network_allowed() -> bool {
+    LOCAL_NETWORK.load(Ordering::SeqCst)
+}
+
+/// There is a device of a Zone in some local network. Once in a run: iOS asks by itself.
+#[cfg(target_os = "android")]
+pub fn ask_local_network() {
+    static ASKED: std::sync::Once = std::sync::Once::new();
+    #[derive(serde::Deserialize)]
+    struct Answer {
+        granted: bool,
+    }
+    ASKED.call_once(|| {
+        spawn(async {
+            if let Ok(answer) = call::<Answer>("localNetworkPermission", json!({})).await {
+                LOCAL_NETWORK.store(answer.granted, Ordering::SeqCst);
+            }
+        });
+    });
+}
+
+/// The client's own proxy, and the hosts (with all below them) whose pages are to go through it.
+pub fn set_proxy(port: u16, hosts: Vec<String>) {
+    // One after the other: the last one told is the one that counts.
+    static TURN: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+    #[derive(serde::Deserialize)]
+    struct Answer {
+        supported: bool,
+    }
+    spawn(async move {
+        let _turn = TURN.lock().await;
+        if let Ok(answer) = call::<Answer>("setProxy", json!({ "port": port, "hosts": hosts })).await {
+            PROXY_SUPPORTED.store(answer.supported, Ordering::SeqCst);
+        }
+    });
 }
 
 pub fn close_zone<R: Runtime>(_app: &AppHandle<R>, account: &str, zone: &str) {

@@ -19,6 +19,7 @@ import { useMusicHost } from "../features/music/useMusic";
 import { appName, findApp } from "../features/apps/catalog";
 import { notifySettings, notifyPermission, setNotifyEnabled, setNotifyLabels } from "../features/notify/api";
 import { reconnectZone } from "../features/zone/api";
+import { onLineBack } from "../features/zone/lineEvents";
 import { SignInDialog } from "../features/zone/SignInDialog";
 import { useZoneActions } from "../features/zone/useZoneActions";
 import { useActivation } from "../features/devices/ActivationContext";
@@ -293,7 +294,9 @@ function useReconnect(zone: string | undefined, offline: boolean) {
         };
         const timer = window.setInterval(attempt, RECONNECT_MS);
         window.addEventListener("online", attempt);
+        const stopLine = onLineBack(attempt);
         return () => {
+            stopLine();
             window.clearInterval(timer);
             window.removeEventListener("online", attempt);
         };

@@ -26,6 +26,7 @@ class MainActivity : TauriActivity() {
   val fileChooser = FileChooser(this)
   val microphone = PermissionAsker.microphone(this)
   val notifications = PermissionAsker.notifications(this)
+  val localNetwork = PermissionAsker.localNetwork(this)
   lateinit var container: ContainerLayout
     private set
   private var fullscreenCallback: WebChromeClient.CustomViewCallback? = null
