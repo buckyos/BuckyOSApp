@@ -31,10 +31,10 @@ describe("links", () => {
     });
 
     it("of the buckyos scheme open apps of listed Zones and nothing else", () => {
-        const link = formatAppOpenUrl({ zoneHost: "team.example.org", app: "messagehub", path: "/messagehub?notify=1" });
+        const link = formatAppOpenUrl({ zoneHost: "team.example.org", app: "messagehub", path: "/?notify=1" });
         expect(readLink(link, zones)).toEqual({
             kind: "app",
-            request: { zone: "did:web:team.example.org", app: "messagehub", path: "/messagehub?notify=1" },
+            request: { zone: "did:web:team.example.org", app: "messagehub", path: "/?notify=1" },
         });
         expect(readLink(formatAppOpenUrl({ zoneHost: "other.org", app: "x" }), zones)).toEqual({ kind: "unknown-zone" });
         expect(readLink("buckyos://sign.payload?v=1&request_url=https%3A%2F%2Fa.b", zones)).toEqual({ kind: "unsupported" });
