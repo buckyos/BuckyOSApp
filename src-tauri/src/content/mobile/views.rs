@@ -64,6 +64,8 @@ struct View {
     detail: String,
     /// Has a WebView.
     live: bool,
+    /// A WebView is being made for it, to show this page.
+    reviving: Option<String>,
     /// The page being opened, behind the sign-in round trip.
     target: String,
     /// The page to load once the Zone can be signed in to.
@@ -852,11 +854,26 @@ fn shown(app: &AppHandle, id: &str) -> CommandResult<MobileView> {
     views(app).get(id).map(|view| view.shown()).ok_or_else(|| CommandErrors::not_found("view"))
 }
 
-/// Gives a view its WebView back, with the page it was on or another.
+/// Gives a view its WebView back, with the page it was on or another. Coming to the front both lays
+/// it out and opens what was asked for: it is made once, and shows what was asked for.
 async fn revive(app: &AppHandle, id: &str, url: Option<String>) {
-    let Some(view) = views(app).get(id) else { return };
-    let page = url.or(view.waiting.clone()).unwrap_or_else(|| view.page());
-    match make(app, &view).await {
+    let claimed = views(app).update(id, |view| {
+        let first = !view.live && view.reviving.is_none();
+        if !view.live && (first || url.is_some()) {
+            view.reviving = Some(url.clone().or(view.waiting.clone()).unwrap_or_else(|| view.page()));
+        }
+        (first, view.clone())
+    });
+    let Some((first, view)) = claimed else { return };
+    if !first {
+        if let Some(url) = url.filter(|_| view.live) {
+            start(app, id, url);
+        }
+        return;
+    }
+    let made = make(app, &view).await;
+    let Some(page) = views(app).update(id, |view| view.reviving.take()).flatten() else { return };
+    match made {
         Ok(()) => {
             shelve(app);
             start(app, id, page);
@@ -899,6 +916,7 @@ pub async fn content_open(app: AppHandle, view: OpenView) -> CommandResult<Mobil
         status: ViewStatus::Loading,
         detail: String::new(),
         live: false,
+        reviving: None,
         target: url.to_string(),
         waiting: None,
         sign_ins: Vec::new(),
