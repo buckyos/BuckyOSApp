@@ -6,7 +6,7 @@ const STORAGE_KEY = 'buckyos.theme';
 declare global {
     interface Window {
         BuckySystemBars?: {
-            setTheme?: (theme: Theme) => void;
+            setTheme?: (theme: ThemePreference) => void;
         };
         webkit?: {
             messageHandlers?: {
@@ -44,15 +44,16 @@ export function applyTheme(theme: Theme) {
     root.setAttribute('data-theme', theme);
     document.body.setAttribute('data-theme', theme);
     root.style.colorScheme = theme;
-    syncSystemBars(theme);
+    syncSystemBars();
 }
 
 /** The status bar, the keyboard and the system's dialogs follow the client's theme. */
-function syncSystemBars(theme: Theme) {
+function syncSystemBars() {
+    // Told the theme that comes of it, the system would no longer say when its own changes.
+    const preference = getThemePreference();
     try {
-        window.BuckySystemBars?.setTheme?.(theme);
-        // iOS: told the theme, the system would no longer say when its own changes.
-        window.webkit?.messageHandlers?.buckyTheme?.postMessage(getThemePreference());
+        window.BuckySystemBars?.setTheme?.(preference);
+        window.webkit?.messageHandlers?.buckyTheme?.postMessage(preference);
     } catch {
         // The native bridges are only there on a phone.
     }
@@ -93,7 +94,7 @@ export function initTheme() {
     };
     systemDark()?.addEventListener?.('change', follow);
     // iOS: the native side came after this page.
-    window.addEventListener('native-ready', () => syncSystemBars(getTheme()));
+    window.addEventListener('native-ready', syncSystemBars);
     window.addEventListener('storage', (event) => {
         if (event.key === STORAGE_KEY) follow();
     });
