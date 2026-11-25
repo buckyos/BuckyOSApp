@@ -6,7 +6,7 @@
     "type": "module",
     "scripts": {
         "dev": "vite",
-        "build": "tsc && vite build",
+        "build": "pnpm update --no-save buckyos && tsc && vite build",
         "test": "vitest run",
         "preview": "vite preview",
         "build:ios-sim": "rm -rf src-tauri/gen/apple/build/arm64-sim && tauri ios build --debug --target aarch64-sim --ci",
@@ -18,7 +18,7 @@
         "@tauri-apps/plugin-log": "2.8.0",
         "@tauri-apps/plugin-opener": "2.5.0",
         "@types/react-router-dom": "^5.3.3",
-        "buckyos": "^0.7.154",
+        "buckyos": "latest",
         "lucide-react": "^0.544.0",
         "react": "^19.1.0",
         "react-dom": "^19.1.0",
