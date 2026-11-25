@@ -91,6 +91,16 @@ def section_windows():
     except TimeoutError:
         check("a hidden page gets no dialog", False, "there is one")
         c.dismiss()
+    files(); c.open("AI 工作区", "aiworkspace")
+    sign = "BuckyApi.signJsonWithActiveDid([{ hello: 'world' }])"
+    try: check("a hidden page gets no signature dialog", c.js(FILES, sign, 5)["code"] == 7)
+    except TimeoutError:
+        check("a hidden page gets no signature dialog", False, "there is one")
+        c.dismiss()
+    view = files()
+    c.js(FILES, f"(window.__answer = null, {sign}.then((answer) => window.__answer = answer), true)"); time.sleep(2)
+    check("the one in front does", c.js(FILES, "window.__answer") is None, c.js(FILES, "window.__answer"))
+    c.invoke("content_close", id=view); time.sleep(1)
 
 
 def section_downloads():

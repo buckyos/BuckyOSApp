@@ -1258,6 +1258,11 @@ pub async fn sign_json<R: Runtime>(_app: &AppHandle<R>, caller: &Caller, payload
         Some((account, name)) if account == caller.account => if name.is_empty() { account } else { name },
         _ => return did::bridge_cancelled(),
     };
+    // A page behind another app does not get to ask in front of it.
+    if views(app).lock().front.as_deref() != Some(caller.view.as_str()) {
+        log::info!("[content] a signature asked for by a view that is not in front was refused");
+        return did::bridge_cancelled();
+    }
     {
         let mut signing = SIGNING.lock().expect("signing poisoned");
         if signing.is_some() {
