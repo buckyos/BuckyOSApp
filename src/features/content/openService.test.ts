@@ -103,6 +103,18 @@ describe("opening", () => {
         expect(options.focusView).toHaveBeenNthCalledWith(2, views[0].id, undefined);
     });
 
+    it("tells which app a new window is for, and not again when it is only brought forward", async () => {
+        const made = vi.fn();
+        const open = service({ opened: made });
+        await open.open({ zone: bob.did, app: "notes", window: "a" });
+        await open.open({ zone: bob.did, app: "notes", window: "a" });
+        expect(made).toHaveBeenCalledTimes(1);
+        const [view, zone, entry] = made.mock.calls[0];
+        expect(view).toMatchObject({ id: views[0].id, app: "notes" });
+        expect(zone).toBe(bob);
+        expect(entry).toMatchObject({ id: "notes", instance: "notes@bob", kind: "app" });
+    });
+
     it("keeps Zones apart", async () => {
         const open = service();
         await open.open({ zone: bob.did, app: "messagehub" });

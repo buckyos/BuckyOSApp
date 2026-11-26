@@ -17,3 +17,5 @@ export const listViews = () => invoke<ViewInfo[]>("content_list");
 export const emitToView = (id: string, event: string, payload: unknown) =>
     invoke<void>("content_emit", { id, event, payload: payload ?? null });
 export const setViewTitle = (id: string, title: string) => invoke<void>("content_set_title", { id, title });
+/** Desktop: the window's icon, a base64 PNG. */
+export const setViewIcon = (id: string, png: string) => invoke<void>("content_set_icon", { id, png });

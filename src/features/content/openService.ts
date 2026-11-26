@@ -44,6 +44,8 @@ export interface OpenServiceOptions {
     choose: (choice: HandlerChoice) => Promise<string | null>;
     /** A phone shows one Zone at a time: it goes to the Zone before something of it opens. */
     enterZone?: (zone: string) => Promise<boolean>;
+    /** A window was made for the app (desktop: it gets the app's icon). */
+    opened?: (view: ViewInfo, zone: ZoneView, entry: AppEntry) => void;
     readCatalog?: typeof readCatalog;
 }
 
@@ -136,7 +138,7 @@ export class OpenService {
             return this.options.focusView(decision.windowId, decision.navigate ? pageUrl(entry, decision.navigate) : undefined);
         }
         const several = this.options.zones().length > 1;
-        return this.options.openView({
+        const view = await this.options.openView({
             id: decision.windowId,
             zone: zone.did,
             app: entry.id,
@@ -148,6 +150,8 @@ export class OpenService {
             ...(several ? { zoneLabel: zoneTitle(zone) } : {}),
             ...(zone.accent ? { accent: zone.accent } : {}),
         });
+        this.options.opened?.(view, zone, entry);
+        return view;
     }
 
     async openLink(link: string): Promise<ViewInfo> {

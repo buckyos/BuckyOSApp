@@ -80,6 +80,7 @@
     "allow-content-list",
     "allow-content-emit",
     "allow-content-set-title",
+    "allow-content-set-icon",
     "allow-content-layout",
     "allow-content-overlay",
     "allow-content-back",

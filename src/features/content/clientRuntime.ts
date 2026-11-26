@@ -6,7 +6,7 @@ import { invoke } from "@tauri-apps/api/core";
 import type { HeaderState } from "buckyos/app-frame";
 import type { ActivityEntry } from "@buckyos-desktop/activity/model.ts";
 import { isMobileShell } from "../../utils/platform";
-import { zoneLocale } from "../apps/catalog";
+import { appName, zoneLocale } from "../apps/catalog";
 import { getTheme } from "../../theme";
 import * as notifyApi from "../notify/api";
 import type { Alert } from "../notify/types";
@@ -17,6 +17,7 @@ import { FrameHosts, type HostedView } from "./frameHosts";
 import { OpenService, type HandlerChoice } from "./openService";
 import { frontChanged } from "./mobileViews";
 import { openErrorOf } from "./openFailure";
+import { renderWindowIcon } from "./windowIcon";
 import { OpenError, type OpenFailure, type ViewInfo } from "./types";
 
 export interface ChoicePrompt extends HandlerChoice {
@@ -109,7 +110,12 @@ export class ClientRuntime {
             choose: (choice) => this.choose(choice),
             ...(this.formFactor === "mobile"
                 ? { enterZone: (zone: string) => this.hooks?.enterZone(zone) ?? Promise.resolve(true) }
-                : {}),
+                : {
+                      opened: (view, zone, entry) =>
+                          void renderWindowIcon({ zone: zone.did, icon: entry.icon, name: appName(entry, this.locale), id: entry.id })
+                              .then((png) => (png ? api.setViewIcon(view.id, png) : undefined))
+                              .catch((error) => console.info("[Content] no window icon", view.id, error)),
+                  }),
         });
     }
 

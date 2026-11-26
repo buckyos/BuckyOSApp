@@ -14,6 +14,7 @@ use tauri_plugin_store::StoreExt;
 
 use super::bridge::{self, BridgeError, Caller, Env};
 use super::policy::{self, Navigation, ViewPlace};
+use super::window_icon::{Icon, TaskbarApp};
 use super::{OpenUrlRequest, OpenView, ViewChanged, ViewInfo, CLOSE_REQUEST_EVENT, OPEN_URL_EVENT, VIEW_EVENT};
 use crate::error::{CommandErrors, CommandResult};
 use crate::zone::api::{now_ms, ZoneError};
@@ -511,6 +512,8 @@ fn build<R: Runtime>(app: &AppHandle<R>, view: &View, request: &OpenView) -> tau
     .maximizable(declaration.resizable && declaration.allow_maximize)
     .minimizable(declaration.allow_minimize)
     .maximized(maximized)
+    // Windows: shown once the window is the app's on the taskbar.
+    .visible(!cfg!(target_os = "windows"))
     .background_throttling(BackgroundThrottlingPolicy::Disabled)
     .initialization_script(bridge::init_script(&env))
     .on_navigation(move |url| {
@@ -584,6 +587,19 @@ fn build<R: Runtime>(app: &AppHandle<R>, view: &View, request: &OpenView) -> tau
         None => builder = builder.center(),
     }
     let window = builder.build()?;
+    #[cfg(target_os = "windows")]
+    {
+        let taskbar = taskbar_app(app, view);
+        let icon_file = icon_file(app, &taskbar).filter(|file| file.is_file());
+        match (window.hwnd(), std::env::current_exe()) {
+            (Ok(hwnd), Ok(exe)) => super::window_icon::taskbar::claim(hwnd, &taskbar, &exe, icon_file.as_deref()),
+            _ => log::warn!("[content] {id}: no taskbar identity"),
+        }
+        if let Err(error) = window.show() {
+            log::warn!("[content] {id}: showing the window: {error}");
+        }
+        let _ = window.set_focus();
+    }
 
     let event_app = app.clone();
     let event_window = window.clone();
@@ -699,6 +715,8 @@ fn on_window_event<R: Runtime>(app: &AppHandle<R>, window: &WebviewWindow<R>, id
         }
         WindowEvent::Resized(_) => note_minimized(app, window, id),
         WindowEvent::Destroyed => {
+            #[cfg(target_os = "windows")]
+            super::window_icon::taskbar::forget(window.label());
             let removed = views(app).views.lock().expect("views poisoned").remove(id);
             if let Some(view) = removed {
                 emit_view(app, "closed", view.info);
@@ -762,6 +780,16 @@ fn destroy<R: Runtime>(app: &AppHandle<R>, id: &str) {
     views(app).update(id, |view| view.closing = true);
     super::prompt::close_where(app, |caller| caller.view == id);
     if let Some(window) = window_of(app, id) {
+        // Tasks for the main thread run in order: the properties go before the window does.
+        #[cfg(target_os = "windows")]
+        {
+            let releasing = window.clone();
+            let _ = app.run_on_main_thread(move || {
+                if let Ok(hwnd) = releasing.hwnd() {
+                    super::window_icon::taskbar::release(hwnd);
+                }
+            });
+        }
         let _ = window.destroy();
     }
 }
@@ -904,6 +932,64 @@ pub async fn content_emit(app: AppHandle, id: String, event: String, payload: Va
 #[tauri::command]
 pub async fn content_set_title(app: AppHandle, id: String, title: String) -> CommandResult<()> {
     set_title(&app, &id, title.trim());
+    Ok(())
+}
+
+#[cfg_attr(not(target_os = "windows"), allow(dead_code))]
+fn taskbar_app<R: Runtime>(app: &AppHandle<R>, view: &View) -> TaskbarApp {
+    TaskbarApp::new(&app.config().identifier, &view.info.zone, &view.zone_host, &view.info.app, &view.app_name)
+}
+
+/// Where the app's icon is kept for a pinned taskbar button to show after its windows are gone.
+#[cfg_attr(not(target_os = "windows"), allow(dead_code))]
+fn icon_file<R: Runtime>(app: &AppHandle<R>, taskbar: &TaskbarApp) -> Option<std::path::PathBuf> {
+    let name = taskbar.id.rsplit('.').next()?;
+    Some(app.path().app_data_dir().ok()?.join("app-icons").join(format!("{name}.ico")))
+}
+
+/// The app's icon for its window, a square PNG the local page drew.
+#[tauri::command]
+pub async fn content_set_icon(app: AppHandle, id: String, png: String) -> CommandResult<()> {
+    let icon = Icon::decode(&png).map_err(CommandErrors::internal)?;
+    let view = views(&app).get(&id).ok_or_else(|| CommandErrors::not_found("view"))?;
+    let window = window_of(&app, &id).ok_or_else(|| CommandErrors::not_found("view"))?;
+    #[cfg(target_os = "windows")]
+    {
+        use super::window_icon::taskbar;
+        let sizes = icon.sizes(16);
+        let file = icon_file(&app, &taskbar_app(&app, &view)).filter(|file| {
+            let written = file.parent().is_some_and(|folder| std::fs::create_dir_all(folder).is_ok())
+                && std::fs::write(file, Icon::to_ico(&sizes)).is_ok();
+            if !written {
+                log::warn!("[content] {id}: the app's icon was not kept");
+            }
+            written
+        });
+        let scale = window.scale_factor().unwrap_or(1.0);
+        let main_app = app.clone();
+        app.run_on_main_thread(move || {
+            // Gone meanwhile: nothing would destroy the icons.
+            if views(&main_app).get(&id).is_none() {
+                return;
+            }
+            let Ok(hwnd) = window.hwnd() else { return };
+            taskbar::set_icons(hwnd, &view.label, &sizes, scale);
+            if let Some(file) = file {
+                taskbar::set_relaunch_icon(hwnd, &file);
+            }
+        })
+        .map_err(|error| CommandErrors::internal(error.to_string()))?;
+    }
+    #[cfg(target_os = "linux")]
+    {
+        let _ = view;
+        window
+            .set_icon(tauri::image::Image::new_owned(icon.rgba, icon.size, icon.size))
+            .map_err(|error| CommandErrors::internal(error.to_string()))?;
+    }
+    // A macOS window has no icon of its own.
+    #[cfg(target_os = "macos")]
+    let _ = (icon, view, window);
     Ok(())
 }
 

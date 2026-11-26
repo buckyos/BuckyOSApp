@@ -142,6 +142,9 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let context = tauri::generate_context!();
+    #[cfg(target_os = "windows")]
+    content::window_icon::taskbar::keep_client_identity(&context.config().identifier);
     route::client::start();
     let builder = tauri::Builder::default();
 
@@ -231,6 +234,7 @@ pub fn run() {
         content::windows::content_list,
         content::windows::content_emit,
         content::windows::content_set_title,
+        content::windows::content_set_icon,
         content::windows::content_retry,
         content::windows::content_lines,
         content::windows::content_sign_in,
@@ -347,7 +351,7 @@ pub fn run() {
     ]);
 
     builder
-        .build(tauri::generate_context!())
+        .build(context)
         .expect("error while running tauri application")
         .run(|_app, _event| {
             // The Dock icon, while the main window is hidden.

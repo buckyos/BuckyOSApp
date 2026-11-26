@@ -9,6 +9,8 @@ pub mod policy;
 #[cfg(desktop)]
 pub mod prompt;
 #[cfg(desktop)]
+pub mod window_icon;
+#[cfg(desktop)]
 pub mod windows;
 #[cfg(mobile)]
 pub mod mobile;

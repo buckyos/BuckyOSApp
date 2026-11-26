@@ -50,6 +50,7 @@ const COMMANDS: &[&str] = &[
     "content_list",
     "content_emit",
     "content_set_title",
+    "content_set_icon",
     "content_retry",
     "content_lines",
     "content_sign_in",
