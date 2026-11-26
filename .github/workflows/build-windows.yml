@@ -55,7 +55,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
       - name: Build BuckyOSApp
-        run: pnpm tauri build --no-bundle --no-sign --target ${{ inputs.arch }}-pc-windows-msvc -- --locked
+        # The frontend build updates pnpm dependencies and can rewrite tauri.cmd while it is running.
+        run: node ./node_modules/@tauri-apps/cli/tauri.js build --no-bundle --no-sign --target ${{ inputs.arch }}-pc-windows-msvc -- --locked
       - name: Prepare staged payload
         shell: pwsh
         env:
